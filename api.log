@@ -1,0 +1,28 @@
+INFO:     Started server process [14784]
+INFO:     Waiting for application startup.
+INFO:__main__:✅ Student Success Prediction API started successfully
+INFO:__main__:✅ Model loaded with 31 features
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+✅ Models loaded successfully from results/models
+INFO:     127.0.0.1:44476 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44482 - "GET /status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44484 - "GET /models/info HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44486 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44494 - "POST /predict/batch HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44504 - "POST /interventions/recommend HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44520 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44534 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44548 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44562 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44566 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44582 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44590 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44592 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44606 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44608 - "POST /predict/single HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:44620 - "GET / HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [14784]
