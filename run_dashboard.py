@@ -26,15 +26,17 @@ def main():
     try:
         # Launch Streamlit
         print("📊 Launching Streamlit dashboard...")
-        print("🌐 Dashboard will be available at: http://localhost:8501")
+        print("🌐 Dashboard will be available at: http://localhost:8010")
         print("⏹️  Press Ctrl+C to stop the dashboard")
         print("=" * 60)
         
         subprocess.run([
             sys.executable, "-m", "streamlit", "run", 
             str(dashboard_path),
-            "--server.port=8501",
-            "--server.address=0.0.0.0"
+            "--server.port=8010",
+            "--server.address=localhost",
+            "--server.headless=true",
+            "--browser.serverAddress=localhost"
         ])
         
     except KeyboardInterrupt:

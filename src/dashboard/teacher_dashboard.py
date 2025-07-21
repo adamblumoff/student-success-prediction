@@ -65,6 +65,11 @@ def load_data():
     try:
         data_dir = Path("data/processed")
         df = pd.read_csv(data_dir / "student_features_engineered.csv")
+        
+        # Handle missing values same as in training
+        df['registration_delay'] = df['registration_delay'].fillna(df['registration_delay'].median())
+        df = df.fillna(0)
+        
         return df
     except Exception as e:
         st.error(f"Error loading data: {e}")
