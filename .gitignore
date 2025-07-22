@@ -1,26 +1,45 @@
-# Data files
-data/raw/*
-!data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
-
-# Models
-results/models/*.pkl
-results/models/*.h5
-
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
 venv/
+env/
+ENV/
 .venv/
+.env/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Database files
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
 
 # IDE
 .vscode/
@@ -31,3 +50,24 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Model artifacts (large files)
+results/models/*.pkl
+results/figures/*.png
+results/figures/*.jpg
+
+# Data files (keep structure but not content)
+data/raw/*.csv
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# API keys and secrets
+config/secrets.yaml
+config/production.yaml
