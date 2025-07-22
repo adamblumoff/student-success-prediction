@@ -1,0 +1,15 @@
+{
+  "total_records": 32593,
+  "total_features": 31,
+  "demographic_features": 10,
+  "vle_features": 10,
+  "assessment_features": 11,
+  "vle_time_window": 28,
+  "assessment_time_window": 70,
+  "target_distribution": {
+    "Pass": 12361,
+    "Withdrawn": 10156,
+    "Fail": 7052,
+    "Distinction": 3024
+  }
+}

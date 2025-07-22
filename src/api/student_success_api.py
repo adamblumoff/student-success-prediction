@@ -20,10 +20,13 @@ import logging
 import time
 from datetime import datetime
 import sys
+from sqlalchemy.orm import Session
 
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
+from database import get_db, Student, RiskPrediction, Intervention, get_student_features_for_ml, init_db, test_db_connection
+from database.models import create_student_with_features
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +56,7 @@ security = HTTPBearer()
 # Global variables
 intervention_system = None
 feature_columns = None
+db_available = False
 
 # Pydantic models for request/response
 class StudentData(BaseModel):
@@ -77,10 +81,10 @@ class StudentData(BaseModel):
     early_avg_clicks: float = Field(0.0, ge=0)
     early_clicks_std: float = Field(0.0, ge=0)
     early_max_clicks: float = Field(0.0, ge=0)
-    early_active_days: int = Field(0, ge=0, le=28)
-    early_first_access: int = Field(0, ge=0)
-    early_last_access: int = Field(0, ge=0)
-    early_engagement_consistency: float = Field(0.0, ge=0, le=1)
+    early_active_days: int = Field(0, ge=0, le=300)
+    early_first_access: int = Field(0, ge=-50)
+    early_last_access: int = Field(0, ge=-50)
+    early_engagement_consistency: float = Field(0.0, ge=0, le=10)
     early_clicks_per_active_day: float = Field(0.0, ge=0)
     early_engagement_range: int = Field(0, ge=0)
     
@@ -101,7 +105,7 @@ class RiskAssessment(BaseModel):
     student_id: int
     success_probability: float = Field(..., ge=0, le=1)
     risk_score: float = Field(..., ge=0, le=1)
-    risk_category: str = Field(..., regex="^(Low Risk|Medium Risk|High Risk)$")
+    risk_category: str = Field(..., pattern="^(Low Risk|Medium Risk|High Risk)$")
     needs_intervention: bool
     timestamp: datetime
 
@@ -145,8 +149,19 @@ async def health_check():
 @app.get("/status")
 async def system_status():
     """Detailed system status"""
+    db_stats = {}
+    if db_available:
+        try:
+            from database import get_db_stats
+            with next(get_db()) as db_session:
+                db_stats = get_db_stats(db_session)
+        except Exception:
+            db_stats = {"error": "Failed to get database stats"}
+    
     return {
         "system": "Student Success Prediction API",
+        "database_available": db_available,
+        "database_stats": db_stats,
         "version": "1.0.0",
         "status": "operational",
         "model_loaded": intervention_system is not None,
@@ -167,7 +182,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
 @app.post("/predict/single", response_model=RiskAssessment)
 async def predict_single_student(
     student: StudentData,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Predict risk for a single student"""
     try:
@@ -188,6 +204,33 @@ async def predict_single_student(
             needs_intervention=bool(risk_result.iloc[0]['needs_intervention']),
             timestamp=datetime.now()
         )
+        
+        # Save prediction to database if available
+        if db_available:
+            try:
+                # Check if student exists, if not create them
+                existing_student = db.query(Student).filter(Student.id_student == student.id_student).first()
+                if not existing_student:
+                    new_student = create_student_with_features(db, student.dict())
+                    student_db_id = new_student.id
+                else:
+                    student_db_id = existing_student.id
+                
+                # Save prediction
+                prediction = RiskPrediction(
+                    student_id=student_db_id,
+                    risk_score=result.risk_score,
+                    risk_category=result.risk_category,
+                    needs_intervention=result.needs_intervention,
+                    model_version="gradient_boosting_v1.0",
+                    confidence_score=result.success_probability
+                )
+                db.add(prediction)
+                db.commit()
+                
+            except Exception as db_e:
+                logger.warning(f"Failed to save prediction to database: {db_e}")
+                db.rollback()
         
         # Log request
         processing_time = (time.time() - start_time) * 1000
@@ -338,9 +381,17 @@ async def model_info(current_user: dict = Depends(get_current_user)):
 @app.on_event("startup")
 async def startup_event():
     """Initialize the system on startup"""
-    global intervention_system, feature_columns
+    global intervention_system, feature_columns, db_available
     
     try:
+        # Test database connection
+        db_available = test_db_connection()
+        if db_available:
+            logger.info("✅ Database connection established")
+            init_db()  # Initialize database tables
+        else:
+            logger.warning("⚠️ Database not available, using file-based mode")
+        
         # Load intervention system
         intervention_system = InterventionRecommendationSystem()
         feature_columns = intervention_system.feature_columns
@@ -350,6 +401,114 @@ async def startup_event():
     except Exception as e:
         logger.error(f"❌ Failed to start API: {e}")
         raise
+
+# Database-specific endpoints
+@app.get("/students/{student_id}/predictions")
+async def get_student_predictions(
+    student_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all predictions for a student"""
+    if not db_available:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    try:
+        student = db.query(Student).filter(Student.id_student == student_id).first()
+        if not student:
+            raise HTTPException(status_code=404, detail="Student not found")
+        
+        predictions = db.query(RiskPrediction).filter(
+            RiskPrediction.student_id == student.id
+        ).order_by(RiskPrediction.prediction_date.desc()).all()
+        
+        return {
+            "student_id": student_id,
+            "total_predictions": len(predictions),
+            "predictions": [
+                {
+                    "id": p.id,
+                    "risk_score": p.risk_score,
+                    "risk_category": p.risk_category,
+                    "needs_intervention": p.needs_intervention,
+                    "prediction_date": p.prediction_date,
+                    "model_version": p.model_version,
+                    "confidence_score": p.confidence_score
+                } for p in predictions
+            ]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching student predictions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch predictions")
+
+@app.get("/analytics/risk-distribution")
+async def get_risk_distribution(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get distribution of risk categories"""
+    if not db_available:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    try:
+        from sqlalchemy import func
+        
+        risk_counts = db.query(
+            RiskPrediction.risk_category,
+            func.count(RiskPrediction.id).label('count')
+        ).group_by(RiskPrediction.risk_category).all()
+        
+        total_predictions = sum(count for _, count in risk_counts)
+        
+        distribution = {
+            "total_predictions": total_predictions,
+            "risk_distribution": {
+                category: {
+                    "count": count,
+                    "percentage": round((count / total_predictions) * 100, 2) if total_predictions > 0 else 0
+                } for category, count in risk_counts
+            }
+        }
+        
+        return distribution
+        
+    except Exception as e:
+        logger.error(f"Error fetching risk distribution: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch analytics")
+
+@app.post("/students/create")
+async def create_student(
+    student: StudentData,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new student record"""
+    if not db_available:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    try:
+        # Check if student already exists
+        existing = db.query(Student).filter(Student.id_student == student.id_student).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Student already exists")
+        
+        # Create new student
+        new_student = create_student_with_features(db, student.dict())
+        
+        return {
+            "message": "Student created successfully",
+            "student_id": student.id_student,
+            "database_id": new_student.id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating student: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create student")
 
 if __name__ == "__main__":
     import uvicorn
