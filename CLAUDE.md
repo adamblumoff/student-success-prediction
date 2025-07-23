@@ -262,3 +262,51 @@ except Exception as e:
 - Check model metadata in `results/models/model_metadata.json`
 
 The system is designed for both educational demonstration (MVP) and production deployment, with comprehensive security, monitoring, and scalability features.
+
+## Development Guidelines for Claude Code
+
+### Commit Frequently and Update Documentation
+- **Commit after every significant change** - Don't batch multiple unrelated changes
+- **Update this CLAUDE.md file** after every commit that adds new features, changes architecture, or modifies development workflows
+- **Use descriptive commit messages** that explain the business value, not just technical changes
+- **Include security considerations** in commit messages when adding new endpoints or file handling
+
+### When to Update CLAUDE.md
+Update this file whenever you:
+- Add new API endpoints or modify existing ones
+- Change database schema or add new models
+- Implement new security features or authentication methods
+- Add new deployment options or Docker configurations
+- Create new development scripts or change existing workflows
+- Modify the universal gradebook converter or add new platform support
+- Change the ML model training process or add new features
+- Update environment variable requirements or configuration patterns
+
+### CLAUDE.md Update Pattern
+After making changes, always:
+1. **Review this file** to ensure it reflects current architecture
+2. **Add new patterns** you've implemented to the relevant sections
+3. **Update commands** if you've added new scripts or changed existing ones
+4. **Document new security measures** in the security framework section
+5. **Commit the updated CLAUDE.md** along with your code changes
+
+Example commit workflow:
+```bash
+# Make your code changes
+git add src/new_feature.py
+
+# Update CLAUDE.md to reflect the changes
+# (Add new commands, update architecture notes, etc.)
+git add CLAUDE.md
+
+# Commit both together with descriptive message
+git commit -m "Add new risk assessment endpoint with rate limiting
+
+- Implement POST /api/risk/detailed for granular risk analysis
+- Add rate limiting (20 requests/hour) for detailed analysis
+- Update CLAUDE.md with new endpoint documentation and usage patterns
+
+🤖 Generated with [Claude Code](https://claude.ai/code)"
+```
+
+This ensures future Claude instances always have up-to-date guidance that reflects the current state of the codebase.
