@@ -6,17 +6,20 @@ Simple, educator-focused endpoints for the MVP web application.
 Uses SQLite for simplicity and focuses on core prediction workflow.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Security
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import sys
 import json
 import logging
+import os
 from typing import List, Dict, Any
 import io
 import sqlite3
@@ -25,6 +28,8 @@ from datetime import datetime
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
+from security import secure_validator, security_manager, rate_limiter
+from security.auth import require_read_permission, require_write_permission
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,8 +39,43 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Student Success Prediction MVP",
     description="Simple web app for educators to identify at-risk students",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs" if os.getenv('DEVELOPMENT_MODE') == 'true' else None,
+    redoc_url="/redoc" if os.getenv('DEVELOPMENT_MODE') == 'true' else None
 )
+
+# Security middleware
+allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
+
+# CORS middleware with secure defaults
+allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:8001').split(',')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
+    max_age=3600
+)
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    
+    # Remove server header
+    response.headers.pop("server", None)
+    
+    return response
 
 # Static files and templates
 app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
@@ -527,16 +567,19 @@ async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/api/mvp/analyze")
-async def analyze_student_data(file: UploadFile = File(...)):
+async def analyze_student_data(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_write_permission)
+):
     """Analyze uploaded CSV file and return risk predictions"""
     try:
-        # Validate file type
-        if not file.filename.endswith('.csv'):
-            raise HTTPException(status_code=400, detail="Please upload a CSV file")
+        # Rate limiting for file uploads
+        rate_limiter.enforce_rate_limit(request, 'upload')
         
-        # Read CSV data
+        # Secure file validation and processing
         contents = await file.read()
-        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        df = secure_validator.secure_process_upload(contents, file.filename or "upload.csv")
         
         logger.info(f"Processing CSV file: {file.filename} with {len(df)} students")
         
@@ -647,8 +690,13 @@ async def analyze_student_data(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 @app.get("/api/mvp/sample")
-async def get_sample_data():
+async def get_sample_data(
+    request: Request,
+    current_user: dict = Depends(require_read_permission)
+):
     """Return sample student data for demo purposes"""
+    # Rate limiting for analysis requests
+    rate_limiter.enforce_rate_limit(request, 'analysis')
     try:
         global sample_data
         if sample_data is None:
