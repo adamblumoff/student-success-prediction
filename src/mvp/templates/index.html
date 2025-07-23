@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Success Predictor - Help Students Succeed</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>📊 Student Success Predictor</h1>
+                <p>Identify at-risk students early and provide targeted support</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Step 1: Upload Data -->
+            <section class="upload-section" id="upload-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">1</span>
+                        <h2>Upload Student Data</h2>
+                        <p>Upload your class roster with student engagement data to get started</p>
+                    </div>
+                    
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Drop your CSV file here or click to browse</p>
+                        <p class="upload-hint">Required columns: student_id, early_avg_score, early_total_clicks, studied_credits</p>
+                        <input type="file" id="file-input" accept=".csv" hidden>
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                            Choose File
+                        </button>
+                    </div>
+
+                    <div class="sample-data-section">
+                        <p>Don't have data ready? <button class="btn btn-link" id="load-sample">Try with sample data</button></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Analysis Results -->
+            <section class="results-section hidden" id="results-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">2</span>
+                        <h2>At-Risk Students Identified</h2>
+                        <p>Students who need immediate attention and support</p>
+                    </div>
+
+                    <div class="summary-stats" id="summary-stats">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <div class="students-list" id="students-list">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: Intervention Tracking -->
+            <section class="interventions-section hidden" id="interventions-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">3</span>
+                        <h2>Track Your Interventions</h2>
+                        <p>Mark actions you've taken and track their effectiveness</p>
+                    </div>
+
+                    <div class="intervention-tracking" id="intervention-tracking">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Analyzing student data...</p>
+        </div>
+    </div>
+
+    <!-- Student Detail Modal -->
+    <div class="modal hidden" id="student-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-student-name">Student Details</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
