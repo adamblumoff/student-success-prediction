@@ -27,6 +27,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
 from database import get_db, Student, RiskPrediction, Intervention, get_student_features_for_ml, init_db, test_db_connection
 from database.models import create_student_with_features
+from api.canvas_endpoints import canvas_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +50,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include Canvas integration router
+app.include_router(canvas_router)
 
 # Security
 security = HTTPBearer()

@@ -8,9 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # MVP (Simple educator interface)
 python3 run_mvp.py                    # Port 8001, SQLite, web UI
+# Access Canvas integration at: http://localhost:8001/canvas
 
 # Production API
 python src/api/student_success_api.py # Port 8000, PostgreSQL
+# Canvas API endpoints at: http://localhost:8000/canvas/*
 
 # Docker development (full stack)
 docker-compose up                     # All services + monitoring
@@ -150,7 +152,7 @@ GET  /api/mvp/stats         # Simple analytics
 The system automatically detects and converts multiple gradebook formats:
 
 **Supported Platforms**:
-- **Canvas LMS**: Detects "Student", "ID", "Current Score" columns
+- **Canvas LMS**: Detects "Student", "ID", "Current Score" columns + OAuth2 API integration
 - **Blackboard Learn**: Detects "Last Name", "First Name" separate columns
 - **Moodle**: Detects "Email address", "Course total"
 - **Google Classroom**: Detects "Timestamp", "Score" patterns
@@ -163,6 +165,30 @@ The system automatically detects and converts multiple gradebook formats:
 format_type = detect_gradebook_format(df)
 df = universal_gradebook_converter(df)
 ```
+
+### Canvas LMS API Integration
+
+**Complete OAuth2 Integration** (`src/integrations/canvas.py`):
+- OAuth2 authorization flow with Canvas Developer Keys
+- Automatic course and student data synchronization
+- Real-time gradebook access and analysis
+- Risk prediction integration with Canvas course data
+
+**Canvas API Endpoints** (`src/api/canvas_endpoints.py`):
+```
+POST /canvas/configure        # Configure Canvas connection
+GET  /canvas/auth/url         # Get OAuth2 authorization URL
+POST /canvas/auth/callback    # Handle OAuth2 callback
+GET  /canvas/courses          # List Canvas courses
+POST /canvas/courses/{id}/sync # Sync course data and predict risk
+GET  /canvas/status           # Integration status
+```
+
+**Canvas Integration UI**:
+- Web interface at `/canvas` for educators
+- Step-by-step Canvas connection setup
+- Course selection and risk analysis
+- Automatic prediction generation from Canvas data
 
 ## Key Development Patterns
 
@@ -214,6 +240,12 @@ except Exception as e:
 - `.env.production.template` - Production deployment template
 - `docker-compose.yml` - Full stack deployment
 - `requirements.txt` - Python dependencies
+
+### Integration Files
+- `src/integrations/canvas.py` - Canvas LMS OAuth2 integration
+- `src/integrations/base.py` - Base LMS integration interface
+- `src/api/canvas_endpoints.py` - Canvas API endpoints
+- `src/mvp/templates/canvas_integration.html` - Canvas integration UI
 
 ### Security-Critical Files
 - `src/security/` - Complete security framework

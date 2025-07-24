@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Integration - Student Success Predictor</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .integration-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .integration-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .integration-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .integration-steps {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .step-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background: var(--primary-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .canvas-config {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .config-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-field label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--gray-700);
+        }
+
+        .config-field input {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+        }
+
+        .config-field input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--primary-color-light);
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .course-card {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .course-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .course-name {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 5px;
+        }
+
+        .course-code {
+            color: var(--gray-600);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .course-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .sync-results {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+        }
+
+        .risk-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .risk-stat {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .risk-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .risk-stat-label {
+            font-size: 12px;
+            color: var(--gray-600);
+            text-transform: uppercase;
+        }
+
+        .risk-high .risk-stat-value { color: var(--danger-color); }
+        .risk-medium .risk-stat-value { color: var(--warning-color); }
+        .risk-low .risk-stat-value { color: var(--success-color); }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-connected {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-disconnected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+
+        .spinner {
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="integration-container">
+        <div class="integration-header">
+            <h1>🎨 Canvas LMS Integration</h1>
+            <p>Connect your Canvas courses to automatically analyze student risk and get intervention recommendations</p>
+            <div id="connection-status"></div>
+        </div>
+
+        <div class="integration-steps">
+            <!-- Step 1: Canvas Configuration -->
+            <div class="step-card" id="config-step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Configure Canvas Connection</div>
+                </div>
+                <p>Enter your Canvas instance details to establish connection:</p>
+                
+                <div class="canvas-config">
+                    <div class="config-field">
+                        <label for="canvas-url">Canvas URL</label>
+                        <input type="url" id="canvas-url" placeholder="https://school.instructure.com" required>
+                    </div>
+                    <div class="config-field">
+                        <label for="client-id">Developer Key Client ID</label>
+                        <input type="text" id="client-id" placeholder="Enter your Client ID" required>
+                    </div>
+                    <div class="config-field">
+                        <label for="client-secret">Developer Key Secret</label>
+                        <input type="password" id="client-secret" placeholder="Enter your Client Secret" required>
+                    </div>
+                    <div class="config-field">
+                        <label for="redirect-uri">Redirect URI</label>
+                        <input type="url" id="redirect-uri" placeholder="http://localhost:8001/canvas/callback" required>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="configureCanvas()">Configure Canvas</button>
+            </div>
+
+            <!-- Step 2: OAuth Authentication -->
+            <div class="step-card" id="auth-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Authorize Access</div>
+                </div>
+                <p>Grant access to your Canvas account to retrieve course data:</p>
+                
+                <button class="btn btn-primary" onclick="authenticateCanvas()">Connect to Canvas</button>
+                <div id="auth-instructions" style="display: none;">
+                    <p><strong>Instructions:</strong></p>
+                    <ol>
+                        <li>Click the "Connect to Canvas" button above</li>
+                        <li>You'll be redirected to Canvas to authorize access</li>
+                        <li>After authorization, you'll return here automatically</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Step 3: Course Selection -->
+            <div class="step-card" id="courses-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Select Course to Analyze</div>
+                </div>
+                <p>Choose a Canvas course to analyze for student success prediction:</p>
+                
+                <button class="btn btn-secondary" onclick="loadCourses()">Load My Courses</button>
+                
+                <div id="courses-container" class="courses-grid"></div>
+            </div>
+
+            <!-- Step 4: Results -->
+            <div class="step-card" id="results-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Student Risk Analysis Results</div>
+                </div>
+                
+                <div id="sync-results" class="sync-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div id="loading-message">Processing...</div>
+        </div>
+    </div>
+
+    <script>
+        class CanvasIntegration {
+            constructor() {
+                this.canvasConfigured = false;
+                this.authenticated = false;
+                this.selectedCourse = null;
+                this.init();
+            }
+
+            init() {
+                this.checkConnectionStatus();
+                this.setupEventListeners();
+            }
+
+            async checkConnectionStatus() {
+                try {
+                    const response = await fetch('/canvas/status');
+                    const status = await response.json();
+                    
+                    const statusElement = document.getElementById('connection-status');
+                    if (status.status === 'configured' && status.authenticated) {
+                        statusElement.innerHTML = '<span class="status-indicator status-connected">✓ Connected to Canvas</span>';
+                        this.canvasConfigured = true;
+                        this.authenticated = true;
+                        this.showStep('courses-step');
+                    } else if (status.status === 'configured') {
+                        statusElement.innerHTML = '<span class="status-indicator status-disconnected">⚠ Configured but not authenticated</span>';
+                        this.canvasConfigured = true;
+                        this.showStep('auth-step');
+                    } else {
+                        statusElement.innerHTML = '<span class="status-indicator status-disconnected">✗ Not configured</span>';
+                    }
+                } catch (error) {
+                    console.error('Status check failed:', error);
+                }
+            }
+
+            setupEventListeners() {
+                // Handle OAuth callback
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('code')) {
+                    this.handleOAuthCallback(urlParams.get('code'), urlParams.get('state'));
+                }
+            }
+
+            showLoading(message = 'Processing...') {
+                document.getElementById('loading-message').textContent = message;
+                document.getElementById('loading-overlay').classList.remove('hidden');
+            }
+
+            hideLoading() {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
+
+            showStep(stepId) {
+                // Hide all steps
+                document.querySelectorAll('.step-card').forEach(step => {
+                    step.style.display = 'none';
+                });
+                
+                // Show current and previous steps
+                const steps = ['config-step', 'auth-step', 'courses-step', 'results-step'];
+                const currentIndex = steps.indexOf(stepId);
+                
+                for (let i = 0; i <= currentIndex; i++) {
+                    document.getElementById(steps[i]).style.display = 'block';
+                }
+            }
+
+            async configureCanvas() {
+                const canvasUrl = document.getElementById('canvas-url').value;
+                const clientId = document.getElementById('client-id').value;
+                const clientSecret = document.getElementById('client-secret').value;
+                const redirectUri = document.getElementById('redirect-uri').value;
+
+                if (!canvasUrl || !clientId || !clientSecret || !redirectUri) {
+                    alert('Please fill in all configuration fields');
+                    return;
+                }
+
+                this.showLoading('Configuring Canvas connection...');
+
+                try {
+                    const response = await fetch('/canvas/configure', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer dev-key-change-me' // Dev mode
+                        },
+                        body: JSON.stringify({
+                            base_url: canvasUrl,
+                            client_id: clientId,
+                            client_secret: clientSecret,
+                            redirect_uri: redirectUri
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert('Canvas configured successfully!');
+                        this.canvasConfigured = true;
+                        this.showStep('auth-step');
+                    } else {
+                        const error = await response.json();
+                        alert(`Configuration failed: ${error.detail}`);
+                    }
+                } catch (error) {
+                    console.error('Configuration error:', error);
+                    alert('Configuration failed. Please check your settings.');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async authenticateCanvas() {
+                this.showLoading('Getting authorization URL...');
+
+                try {
+                    const response = await fetch('/canvas/auth/url', {
+                        headers: {
+                            'Authorization': 'Bearer dev-key-change-me' // Dev mode
+                        }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        document.getElementById('auth-instructions').style.display = 'block';
+                        // Redirect to Canvas for authorization
+                        window.location.href = result.authorization_url;
+                    } else {
+                        const error = await response.json();
+                        alert(`Authentication setup failed: ${error.detail}`);
+                    }
+                } catch (error) {
+                    console.error('Auth URL error:', error);
+                    alert('Failed to set up authentication.');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async handleOAuthCallback(code, state) {
+                this.showLoading('Completing Canvas authentication...');
+
+                try {
+                    const response = await fetch(`/canvas/auth/callback?code=${code}&state=${state || ''}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer dev-key-change-me' // Dev mode
+                        }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert('Successfully connected to Canvas!');
+                        this.authenticated = true;
+                        this.showStep('courses-step');
+                        // Clear URL parameters
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        const error = await response.json();
+                        alert(`Authentication failed: ${error.detail}`);
+                    }
+                } catch (error) {
+                    console.error('OAuth callback error:', error);
+                    alert('Authentication completion failed.');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            async loadCourses() {
+                this.showLoading('Loading your Canvas courses...');
+
+                try {
+                    const response = await fetch('/canvas/courses', {
+                        headers: {
+                            'Authorization': 'Bearer dev-key-change-me' // Dev mode
+                        }
+                    });
+
+                    if (response.ok) {
+                        const courses = await response.json();
+                        this.displayCourses(courses);
+                    } else {
+                        const error = await response.json();
+                        alert(`Failed to load courses: ${error.detail}`);
+                    }
+                } catch (error) {
+                    console.error('Load courses error:', error);
+                    alert('Failed to load courses.');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            displayCourses(courses) {
+                const container = document.getElementById('courses-container');
+                
+                if (courses.length === 0) {
+                    container.innerHTML = '<p>No courses found. Make sure you have instructor access to Canvas courses.</p>';
+                    return;
+                }
+
+                const coursesHTML = courses.map(course => `
+                    <div class="course-card" onclick="canvasIntegration.selectCourse(${course.id}, '${course.name}')">
+                        <div class="course-name">${course.name}</div>
+                        <div class="course-code">${course.course_code}</div>
+                        <div class="course-stats">
+                            <span>Students: ${course.total_students || 'Unknown'}</span>
+                            <span>ID: ${course.id}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = coursesHTML;
+            }
+
+            async selectCourse(courseId, courseName) {
+                if (confirm(`Analyze students in "${courseName}"?\n\nThis will sync all student data and generate risk predictions.`)) {
+                    this.selectedCourse = { id: courseId, name: courseName };
+                    await this.syncCourse(courseId);
+                }
+            }
+
+            async syncCourse(courseId) {
+                this.showLoading('Syncing course data and analyzing student risk...');
+
+                try {
+                    const response = await fetch(`/canvas/courses/${courseId}/sync`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer dev-key-change-me' // Dev mode
+                        }
+                    });
+
+                    if (response.ok) {
+                        const results = await response.json();
+                        this.displayResults(results);
+                        this.showStep('results-step');
+                    } else {
+                        const error = await response.json();
+                        alert(`Course sync failed: ${error.detail}`);
+                    }
+                } catch (error) {
+                    console.error('Course sync error:', error);
+                    alert('Course synchronization failed.');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            displayResults(results) {
+                const container = document.getElementById('sync-results');
+                
+                const highRisk = results.risk_predictions.filter(p => p.risk_category === 'High Risk').length;
+                const mediumRisk = results.risk_predictions.filter(p => p.risk_category === 'Medium Risk').length;
+                const lowRisk = results.risk_predictions.filter(p => p.risk_category === 'Low Risk').length;
+
+                container.innerHTML = `
+                    <h3>📊 Analysis Results for "${results.course_name}"</h3>
+                    
+                    <div class="risk-summary">
+                        <div class="risk-stat risk-high">
+                            <div class="risk-stat-value">${highRisk}</div>
+                            <div class="risk-stat-label">High Risk</div>
+                        </div>
+                        <div class="risk-stat risk-medium">
+                            <div class="risk-stat-value">${mediumRisk}</div>
+                            <div class="risk-stat-label">Medium Risk</div>
+                        </div>
+                        <div class="risk-stat risk-low">
+                            <div class="risk-stat-value">${lowRisk}</div>
+                            <div class="risk-stat-label">Low Risk</div>
+                        </div>
+                        <div class="risk-stat">
+                            <div class="risk-stat-value">${results.students_synced}</div>
+                            <div class="risk-stat-label">Total Students</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <p><strong>Analysis Summary:</strong></p>
+                        <ul>
+                            <li>Synced ${results.students_synced} students from Canvas</li>
+                            <li>Found ${results.assignments_found} assignments</li>
+                            <li>${results.high_risk_count} students need immediate intervention</li>
+                            <li>Analysis completed at ${new Date(results.sync_timestamp).toLocaleString()}</li>
+                        </ul>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <button class="btn btn-primary" onclick="window.location.href='/'">
+                            📋 View Detailed Student Analysis
+                        </button>
+                        <button class="btn btn-secondary" onclick="canvasIntegration.loadCourses()">
+                            🔄 Analyze Another Course
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize Canvas integration
+        window.canvasIntegration = new CanvasIntegration();
+
+        // Global functions for onclick handlers
+        window.configureCanvas = () => canvasIntegration.configureCanvas();
+        window.authenticateCanvas = () => canvasIntegration.authenticateCanvas();
+        window.loadCourses = () => canvasIntegration.loadCourses();
+    </script>
+</body>
+</html>
