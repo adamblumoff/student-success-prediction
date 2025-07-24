@@ -13,7 +13,12 @@ import joblib
 import json
 from typing import Dict, List, Tuple, Optional
 import warnings
+import sys
 warnings.filterwarnings('ignore')
+
+# Import explainable AI module
+sys.path.append(str(Path(__file__).parent))
+from explainable_ai import ExplainableAI
 
 class InterventionRecommendationSystem:
     """
@@ -31,6 +36,7 @@ class InterventionRecommendationSystem:
         self.model = None
         self.scaler = None
         self.feature_columns = None
+        self.explainable_ai = None
         self.load_models()
         
     def load_models(self):
@@ -47,8 +53,12 @@ class InterventionRecommendationSystem:
             # Load feature columns
             with open(self.models_dir / "feature_columns.json", 'r') as f:
                 self.feature_columns = json.load(f)
+            
+            # Initialize explainable AI
+            self.explainable_ai = ExplainableAI(self.model, self.feature_columns)
                 
             print(f"✅ Models loaded successfully from {self.models_dir}")
+            print(f"✅ Explainable AI initialized with {len(self.feature_columns)} features")
             
         except Exception as e:
             print(f"❌ Error loading models: {e}")
@@ -370,6 +380,77 @@ class InterventionRecommendationSystem:
                     report.append("")
         
         return "\\n".join(report)
+
+    def get_explainable_predictions(self, student_data: pd.DataFrame) -> List[Dict]:
+        """
+        Get explainable predictions for students with detailed reasoning
+        
+        Args:
+            student_data: DataFrame with student features
+            
+        Returns:
+            List of detailed prediction explanations
+        """
+        try:
+            # Get risk predictions
+            risk_results = self.assess_student_risk(student_data)
+            
+            explanations = []
+            for i, (_, row) in enumerate(risk_results.iterrows()):
+                student_dict = student_data.iloc[i].to_dict()
+                
+                # Get detailed explanation
+                explanation = self.explainable_ai.explain_prediction(
+                    student_dict, 
+                    row['risk_score'], 
+                    row['risk_category']
+                )
+                
+                explanations.append(explanation)
+            
+            return explanations
+            
+        except Exception as e:
+            print(f"Error generating explainable predictions: {e}")
+            return []
+    
+    def get_global_insights(self) -> Dict:
+        """
+        Get global insights about the model and feature importance
+        
+        Returns:
+            Dictionary with global model insights
+        """
+        try:
+            if self.explainable_ai is None:
+                return {'error': 'Explainable AI not initialized'}
+            
+            return self.explainable_ai.get_global_feature_importance()
+            
+        except Exception as e:
+            print(f"Error getting global insights: {e}")
+            return {'error': str(e)}
+    
+    def analyze_risk_trends(self, student_id: int, historical_predictions: List[Dict]) -> Dict:
+        """
+        Analyze risk trends for a student over time
+        
+        Args:
+            student_id: Student identifier
+            historical_predictions: List of historical prediction data
+            
+        Returns:
+            Trend analysis results
+        """
+        try:
+            if self.explainable_ai is None:
+                return {'error': 'Explainable AI not initialized'}
+            
+            return self.explainable_ai.generate_risk_trend_analysis(historical_predictions)
+            
+        except Exception as e:
+            print(f"Error analyzing risk trends: {e}")
+            return {'error': str(e)}
 
 def main():
     """Main function to demonstrate the intervention system"""
