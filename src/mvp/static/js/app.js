@@ -160,46 +160,72 @@ class StudentSuccessApp {
         ).sort((a, b) => b.risk_score - a.risk_score);
 
         const studentsHTML = atRiskStudents.map(student => `
-            <div class="student-card" onclick="app.showStudentDetail(${student.id_student})">
+            <div class="student-card risk-${student.risk_category.toLowerCase().replace(' ', '-')}" onclick="app.showStudentDetail(${student.id_student})">
                 <div class="student-header">
                     <div class="student-name">Student #${student.id_student}</div>
                     <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
-                        ${student.risk_category}
+                        ${student.risk_category} • ${Math.round(student.risk_score * 100)}%
                     </div>
                 </div>
                 
                 <div class="student-details">
                     <div class="detail-item">
-                        <div class="detail-value">${Math.round(student.risk_score * 100)}%</div>
-                        <div class="detail-label">Risk Score</div>
+                        <div class="detail-value">${student.success_probability ? Math.round(student.success_probability * 100) : Math.round((1 - student.risk_score) * 100)}%</div>
+                        <div class="detail-label">Success Probability</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-value">${student.early_avg_score || 'N/A'}</div>
-                        <div class="detail-label">Avg Score</div>
+                        <div class="detail-value">${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</div>
+                        <div class="detail-label">Assignment Score</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-value">${student.early_total_clicks || 0}</div>
-                        <div class="detail-label">Engagement</div>
+                        <div class="detail-value">${student.early_active_days || student.early_total_clicks || 0}</div>
+                        <div class="detail-label">Engagement Level</div>
                     </div>
                 </div>
 
                 <div class="interventions-preview">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; font-size: 14px; color: #374151; font-weight: 600;">🎯 Recommended Actions</h4>
+                        <span style="font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 10px;">AI-Powered</span>
+                    </div>
                     ${this.getInterventionsPreview(student)}
                 </div>
             </div>
         `).join('');
 
         document.getElementById('students-list').innerHTML = studentsHTML;
+        
+        // Enhance student cards with explainable AI buttons if available
+        if (window.explainableUI && window.explainableUI.enhanceStudentCards) {
+            setTimeout(() => {
+                console.log('Enhancing student cards with AI features...');
+                window.explainableUI.enhanceStudentCards();
+            }, 200);
+        } else {
+            console.log('ExplainableUI not available yet');
+        }
     }
 
     getInterventionsPreview(student) {
         const interventions = this.getRecommendedInterventions(student);
-        return interventions.slice(0, 2).map(intervention => `
+        const interventionItems = interventions.slice(0, 2).map(intervention => `
             <div class="intervention-item">
                 <span class="intervention-text">${intervention.title}</span>
                 <span class="intervention-status">Suggested</span>
             </div>
         `).join('');
+        
+        // Add the AI explanation button
+        const explainButton = `
+            <div class="intervention-item explain-button">
+                <span class="intervention-text" onclick="window.explainableUI && window.explainableUI.showStudentExplanation(${student.id_student})" style="cursor: pointer; color: #2563eb; font-weight: 600;">
+                    🔍 Explain AI Prediction
+                </span>
+                <span class="intervention-status available">AI Analysis</span>
+            </div>
+        `;
+        
+        return interventionItems + explainButton;
     }
 
     getRecommendedInterventions(student) {

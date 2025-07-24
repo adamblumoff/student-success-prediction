@@ -6,7 +6,7 @@ Simple, educator-focused endpoints for the MVP web application.
 Uses SQLite for simplicity and focuses on core prediction workflow.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Security
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -508,9 +508,24 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "mvp-api", "timestamp": datetime.now().isoformat()}
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Simple authentication dependency"""
-    return simple_auth(credentials)
+async def get_current_user(request: Request):
+    """Simple authentication dependency with fallback for browser requests"""
+    # For development/demo mode, allow requests from localhost without auth
+    if os.getenv('DEVELOPMENT_MODE', 'true').lower() == 'true':
+        client_host = request.client.host
+        if client_host in ['127.0.0.1', 'localhost', '::1']:
+            return {"user": "demo_user", "permissions": ["read", "write"]}
+    
+    # Try to get credentials from Authorization header
+    auth_header = request.headers.get('authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        from fastapi.security import HTTPAuthorizationCredentials
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        return simple_auth(credentials)
+    
+    # No credentials and not localhost - require auth
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 def ensure_system_initialized():
     """Ensure the intervention system is initialized"""
