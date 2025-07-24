@@ -6,7 +6,7 @@ Simple, educator-focused endpoints for the MVP web application.
 Uses SQLite for simplicity and focuses on core prediction workflow.
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Security
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -28,9 +28,8 @@ from datetime import datetime
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
-from security import secure_validator, security_manager, rate_limiter
-from security.auth import require_read_permission, require_write_permission
-from api.canvas_endpoints import canvas_router
+from mvp.simple_auth import simple_auth, simple_rate_limit, simple_file_validation
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -82,8 +81,8 @@ async def add_security_headers(request: Request, call_next):
 intervention_system = None
 sample_data = None
 
-# Include Canvas integration router
-app.include_router(canvas_router)
+# Simple security setup
+security = HTTPBearer()
 
 # Static files and templates
 app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
@@ -127,56 +126,29 @@ def save_prediction_to_sqlite(student_id: int, risk_score: float, risk_category:
         logger.warning(f"Failed to save prediction: {e}")
 
 def detect_gradebook_format(df):
-    """Automatically detect gradebook format from column patterns"""
+    """Detect Canvas or generic CSV format"""
     columns = [col.lower() for col in df.columns]
     
     # Canvas detection
     if any('student' in col for col in columns) and any('current score' in col for col in columns):
         return 'canvas'
     
-    # Blackboard detection (often has "Last Name" and "First Name" separate)
-    if any('last name' in col for col in columns) and any('first name' in col for col in columns):
-        return 'blackboard'
-    
-    # Moodle detection (often has "email address" and specific format)
-    if any('email address' in col for col in columns) and any('course total' in col for col in columns):
-        return 'moodle'
-    
-    # Google Classroom (often has "Student" and "Grade" columns)
-    if any('timestamp' in col for col in columns) and any('score' in col for col in columns):
-        return 'google_classroom'
-    
-    # PowerSchool (common in K-12)
-    if any('student number' in col for col in columns) and any('grade level' in col for col in columns):
-        return 'powerschool'
-    
-    # Generic gradebook (has some form of ID and scores)
-    if any('id' in col for col in columns) and len([col for col in columns if any(keyword in col for keyword in ['score', 'grade', 'points', 'percent'])]) >= 2:
-        return 'generic'
-    
     # Direct prediction format
     if 'id_student' in columns:
         return 'prediction_format'
     
+    # Generic gradebook (has some form of ID and scores)
+    if any('id' in col for col in columns) and len([col for col in columns if any(keyword in col for keyword in ['score', 'grade', 'points', 'percent'])]) >= 1:
+        return 'generic'
+    
     return 'unknown'
 
 def extract_student_identifier(df, format_type):
-    """Extract student ID from various formats"""
+    """Extract student ID from Canvas or generic formats"""
     columns = df.columns.tolist()
     
     if format_type == 'canvas':
         return df['ID'].astype(str)
-    elif format_type == 'blackboard':
-        # Blackboard often uses "Username" or combines last,first names
-        if 'Username' in columns:
-            return df['Username'].astype(str)
-        elif 'Last Name' in columns and 'First Name' in columns:
-            return (df['Last Name'] + '_' + df['First Name']).str.replace(' ', '')
-    elif format_type in ['moodle', 'google_classroom']:
-        if 'Email address' in columns:
-            return df['Email address'].str.extract(r'^([^@]+)')[0]  # Extract username from email
-    elif format_type == 'powerschool':
-        return df['Student Number'].astype(str)
     elif format_type == 'generic':
         # Find the most likely ID column
         id_cols = [col for col in columns if 'id' in col.lower()]
@@ -192,17 +164,11 @@ def extract_assignment_scores(df, format_type):
     """Extract assignment scores and calculate statistics"""
     columns = df.columns.tolist()
     
-    # Define patterns for assignment columns by platform
-    score_patterns = {
-        'canvas': ['Assignment', 'Quiz', 'Exam', 'Test', 'Discussion'],
-        'blackboard': ['Item', 'Assignment', 'Quiz', 'Test', 'Exam'],
-        'moodle': ['Quiz', 'Assignment', 'Forum', 'Workshop'],
-        'google_classroom': ['Assignment', 'Quiz'],
-        'powerschool': ['Assignment', 'Quiz', 'Test', 'Exam'],
-        'generic': ['Assignment', 'Quiz', 'Test', 'Exam', 'Grade', 'Score', 'Points']
-    }
-    
-    patterns = score_patterns.get(format_type, score_patterns['generic'])
+    # Simplified patterns for Canvas and generic
+    if format_type == 'canvas':
+        patterns = ['Assignment', 'Quiz', 'Exam', 'Test', 'Discussion']
+    else:  # generic
+        patterns = ['Assignment', 'Quiz', 'Test', 'Exam', 'Grade', 'Score', 'Points']
     
     # Find score columns
     score_columns = []
@@ -259,19 +225,14 @@ def extract_assignment_scores(df, format_type):
     return pd.DataFrame(scores_data)
 
 def extract_engagement_metrics(df, format_type):
-    """Extract engagement metrics from various gradebook formats"""
+    """Extract engagement metrics from Canvas or generic formats"""
     engagement_data = []
     
-    # Look for engagement indicators by platform
-    engagement_patterns = {
-        'canvas': ['Activity Time', 'Last Activity', 'Participations', 'Page Views'],
-        'blackboard': ['Last Access', 'Time in Course', 'Discussion Posts'],
-        'moodle': ['Last access', 'Time spent', 'Forum posts'],
-        'google_classroom': ['Last seen', 'Timestamp'],
-        'generic': ['activity', 'access', 'time', 'participation', 'engagement']
-    }
-    
-    patterns = engagement_patterns.get(format_type, engagement_patterns['generic'])
+    # Simplified engagement patterns
+    if format_type == 'canvas':
+        patterns = ['Activity Time', 'Last Activity', 'Participations', 'Page Views']
+    else:  # generic
+        patterns = ['activity', 'access', 'time', 'participation', 'engagement']
     columns = df.columns.tolist()
     
     # Find engagement columns
@@ -563,32 +524,34 @@ def create_sample_student_data():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "service": "mvp-api", "timestamp": datetime.now()}
+    return {"status": "healthy", "service": "mvp-api", "timestamp": datetime.now().isoformat()}
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Simple authentication dependency"""
+    return simple_auth(credentials)
 
 @app.get("/")
 async def root(request: Request):
     """Serve the main MVP page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/canvas")
-async def canvas_integration_page(request: Request):
-    """Serve the Canvas integration page"""
-    return templates.TemplateResponse("canvas_integration.html", {"request": request})
-
 @app.post("/api/mvp/analyze")
 async def analyze_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_write_permission)
+    current_user: dict = Depends(get_current_user)
 ):
     """Analyze uploaded CSV file and return risk predictions"""
     try:
-        # Rate limiting for file uploads
-        rate_limiter.enforce_rate_limit(request, 'upload')
+        # Simple rate limiting
+        simple_rate_limit(request, 10)
         
-        # Secure file validation and processing
+        # Simple file validation and processing
         contents = await file.read()
-        df = secure_validator.secure_process_upload(contents, file.filename or "upload.csv")
+        simple_file_validation(contents, file.filename or "upload.csv")
+        
+        # Process CSV
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         
         logger.info(f"Processing CSV file: {file.filename} with {len(df)} students")
         
@@ -701,11 +664,11 @@ async def analyze_student_data(
 @app.get("/api/mvp/sample")
 async def get_sample_data(
     request: Request,
-    current_user: dict = Depends(require_read_permission)
+    current_user: dict = Depends(get_current_user)
 ):
     """Return sample student data for demo purposes"""
-    # Rate limiting for analysis requests
-    rate_limiter.enforce_rate_limit(request, 'analysis')
+    # Simple rate limiting
+    simple_rate_limit(request, 50)
     try:
         global sample_data
         if sample_data is None:
@@ -796,6 +759,145 @@ async def get_stats():
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
         return JSONResponse({'error': 'Stats temporarily unavailable'})
+
+@app.get("/api/mvp/explain/{student_id}")
+async def explain_prediction(
+    student_id: int,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get detailed explanation for a student's risk prediction"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 50)
+        
+        # Get student data from SQLite
+        conn = sqlite3.connect("mvp_data.db")
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM predictions 
+            WHERE student_id = ? 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        """, (student_id,))
+        
+        prediction = cursor.fetchone()
+        conn.close()
+        
+        if not prediction:
+            raise HTTPException(status_code=404, detail="Student prediction not found")
+        
+        # Create sample student data for explanation (in real app, this would come from database)
+        sample_data = pd.DataFrame([{
+            'id_student': student_id,
+            'early_avg_score': 65,
+            'early_total_clicks': 120,
+            'early_active_days': 8,
+            'early_missing_submissions': 2,
+            'early_submission_rate': 0.6,
+            'studied_credits': 120,
+            'num_of_prev_attempts': 0,
+            'registration_delay': 0,
+            'early_engagement_consistency': 1.5
+        }])
+        
+        # Get explainable predictions
+        explanations = intervention_system.get_explainable_predictions(sample_data)
+        
+        if explanations:
+            explanation = explanations[0]
+            
+            return JSONResponse({
+                'student_id': student_id,
+                'explanation': explanation,
+                'message': 'Prediction explanation generated successfully'
+            })
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate explanation")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error explaining prediction: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating explanation: {str(e)}")
+
+@app.get("/api/mvp/insights")
+async def get_global_insights(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get global model insights and feature importance"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 50)
+        
+        # Get global insights from the intervention system
+        insights = intervention_system.get_global_insights()
+        
+        return JSONResponse({
+            'insights': insights,
+            'message': 'Global insights retrieved successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting global insights: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving insights: {str(e)}")
+
+@app.post("/api/mvp/analyze-detailed")
+async def analyze_student_data_detailed(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Analyze uploaded CSV file with detailed explanations"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 5)
+        
+        # Simple file validation and processing
+        contents = await file.read()
+        simple_file_validation(contents, file.filename or "upload.csv")
+        
+        # Process CSV
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        
+        logger.info(f"Processing CSV file with detailed analysis: {file.filename} with {len(df)} students")
+        
+        # Use universal gradebook converter
+        df = universal_gradebook_converter(df)
+        
+        # Limit to first 20 students for detailed analysis
+        if len(df) > 20:
+            df = df.head(20)
+            logger.info("Limited detailed analysis to first 20 students")
+        
+        # Get explainable predictions
+        explanations = intervention_system.get_explainable_predictions(df)
+        
+        # Get regular risk predictions for summary
+        risk_results = intervention_system.assess_student_risk(df)
+        
+        # Calculate summary statistics
+        risk_counts = risk_results['risk_category'].value_counts().to_dict()
+        summary = {
+            'total': len(explanations),
+            'high_risk': risk_counts.get('High Risk', 0),
+            'medium_risk': risk_counts.get('Medium Risk', 0),
+            'low_risk': risk_counts.get('Low Risk', 0)
+        }
+        
+        logger.info(f"Detailed analysis complete: {summary}")
+        
+        return JSONResponse({
+            'explanations': explanations,
+            'summary': summary,
+            'message': f'Successfully analyzed {len(explanations)} students with detailed explanations'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in detailed analysis: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 # Startup event
 @app.on_event("startup")

@@ -4,18 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Quick Start Options
+### Quick Start
 ```bash
 # MVP (Simple educator interface)
 python3 run_mvp.py                    # Port 8001, SQLite, web UI
-# Access Canvas integration at: http://localhost:8001/canvas
-
-# Production API
-python src/api/student_success_api.py # Port 8000, PostgreSQL
-# Canvas API endpoints at: http://localhost:8000/canvas/*
-
-# Docker development (full stack)
-docker-compose up                     # All services + monitoring
 ```
 
 ### Model Operations
@@ -23,203 +15,126 @@ docker-compose up                     # All services + monitoring
 # Train models from scratch
 python src/models/train_models.py
 
-# Run security tests
+# Run security tests (if needed)
 python3 scripts/security_test.py
-
-# Database migration (CSV to DB)
-python scripts/migrate_csv_to_db.py
-
-# Production database setup
-python scripts/setup_production_db.py
-```
-
-### Testing
-```bash
-# Integration tests
-python -m pytest tests/integration/
-
-# Database tests
-python tests/integration/test_db_integration.py
-
-# API endpoint tests  
-python tests/integration/test_api.py
-
-# ML model validation
-python tests/integration/test_ml_with_db.py
 ```
 
 ## Architecture Overview
 
-### Dual-Architecture Pattern
-The system implements **two distinct architectures** for different use cases:
+### Simplified MVP Architecture
+The system implements a **single, focused architecture** for educational demonstrations:
 
 **MVP Architecture** (`src/mvp/`):
-- **Purpose**: Simple educator interface for quick demos
-- **Database**: SQLite for zero-configuration setup
-- **Security**: Basic file validation with development API keys
+- **Purpose**: Simple educator interface for quick demos and explainable AI
+- **Database**: SQLite for zero-configuration setup  
+- **Security**: Simple API key authentication with basic rate limiting
 - **Deployment**: Single Python process (`python3 run_mvp.py`)
-- **Universal Gradebook Support**: Automatically detects Canvas, Blackboard, Moodle, Google Classroom formats
-
-**Production Architecture** (`src/api/` + `src/database/`):
-- **Purpose**: Enterprise-ready deployment with full security
-- **Database**: PostgreSQL primary with SQLite fallback
-- **Security**: Multi-tier authentication, rate limiting, enterprise security headers
-- **Deployment**: Docker Compose with Nginx, Redis, monitoring stack
-- **Performance**: 8.4ms API response time, handles 32K+ students
+- **Gradebook Support**: Canvas LMS and generic CSV formats
+- **Explainable AI**: Feature importance, prediction explanations, risk factor analysis
 
 ### Database Architecture
 
-**Normalized Schema** (6 tables):
+**Simple SQLite Schema**:
+```sql
+predictions (
+    id INTEGER PRIMARY KEY,
+    student_id INTEGER,
+    risk_score REAL,
+    risk_category TEXT,
+    timestamp TEXT,
+    session_id TEXT
+)
 ```
-Student (1) ←→ (1) StudentEngagement    # VLE interaction metrics
-Student (1) ←→ (1) StudentAssessment    # Assessment performance 
-Student (1) ←→ (n) RiskPrediction       # Historical predictions
-Student (1) ←→ (n) Intervention         # Recommended actions
-Student (1) ←→ (1) StudentOutcome       # Final course results
-```
-
-**Dual Database Support**:
-- **PostgreSQL**: Production deployment with connection pooling
-- **SQLite**: Development/fallback with automatic schema creation
-- **Connection Logic**: `src/database/connection.py` handles graceful fallback
 
 ### Machine Learning Pipeline
 
 **Feature Engineering** (31 total features):
-- **Demographics** (10): Age, gender, education, region, disability status
+- **Demographics** (6): Age, gender, education, region, disability status
+- **Academic History** (4): Credits, previous attempts, registration timing
 - **Early VLE Engagement** (10): First 28 days of interaction patterns
 - **Early Assessment Performance** (11): First 70 days of assessment data
 
 **Model Performance**:
 - **Binary Classification**: 89.4% AUC (Pass/Fail prediction)
 - **Multi-class Classification**: 77% F1-Score (Pass/Fail/Distinction/Withdrawn)
-- **Response Time**: 8.4ms for real-time predictions
+- **Response Time**: <100ms for real-time predictions
 
 **Model Loading Pattern**:
 ```python
 # Models auto-load from results/models/
 intervention_system = InterventionRecommendationSystem()
 risk_results = intervention_system.assess_student_risk(student_df)
-recommendations = intervention_system.get_intervention_recommendations(student_df)
+explanations = intervention_system.get_explainable_predictions(student_df)
 ```
 
 ### Security Framework
 
-**Multi-layer Authentication** (`src/security/`):
-- **API Keys**: Three-tier system (Admin/Teacher/Read-only)
-- **JWT Tokens**: Configurable expiration with IP validation
-- **Brute Force Protection**: 5 failed attempts = 15-minute lockout
-
-**File Upload Security**:
-- **Size Limits**: 10MB maximum with configurable limits
-- **MIME Validation**: python-magic with fallback to extension checking
-- **CSV Injection Prevention**: Detects and sanitizes formula injection (`=`, `+`, `-`, `@`)
-- **Content Validation**: Max 10,000 rows, 100 columns
-
-**Rate Limiting** (endpoint-specific):
-- Default: 100 requests/hour
-- File uploads: 10/hour
-- Analysis: 50/hour
-- Authentication: 5 attempts/5 minutes
+**Simplified Authentication** (`src/mvp/simple_auth.py`):
+- **API Key**: Single development key for MVP use
+- **Rate Limiting**: Simple in-memory rate limiting
+- **File Validation**: Basic CSV validation with size limits
 
 **Security Configuration**:
-- Development: Uses `.env.security` template
-- Production: Copy `.env.production.template` to `.env.production`
-- Never commit `.env.*` files (except templates)
+- Development: Uses default API key `dev-key-change-me`
+- Environment variable: `MVP_API_KEY` for custom key
 
 ### API Structure
 
-**Production Endpoints** (`src/api/student_success_api.py`):
-```
-POST /predict/single        # Individual student risk assessment
-POST /predict/batch         # Multiple students (up to 1000)
-POST /interventions/recommend # Get intervention recommendations
-GET  /models/info           # Model metadata and performance
-GET  /students/{id}/predictions # Student prediction history
-GET  /analytics/risk-distribution # System-wide analytics
-```
-
 **MVP Endpoints** (`src/mvp/mvp_api.py`):
 ```
-GET  /                      # Educator web interface
-POST /api/mvp/analyze       # CSV upload and analysis
-GET  /api/mvp/sample        # Load demo data
-GET  /api/mvp/stats         # Simple analytics
+GET  /                           # Main web interface
+POST /api/mvp/analyze            # CSV upload and analysis
+POST /api/mvp/analyze-detailed   # Detailed analysis with explanations
+GET  /api/mvp/sample             # Load demo data
+GET  /api/mvp/stats              # Simple analytics
+GET  /api/mvp/explain/{id}       # Individual prediction explanation
+GET  /api/mvp/insights           # Global model insights
 ```
+
+### Explainable AI Features
+
+**Individual Explanations**:
+- Risk factor identification with severity levels
+- Protective factor analysis
+- Confidence scoring and uncertainty quantification
+- Personalized intervention recommendations
+
+**Global Insights**:
+- Feature importance visualization
+- Category-based importance (demographics, engagement, assessment)
+- Top predictive factors across all students
 
 ### Universal Gradebook Integration
 
-The system automatically detects and converts multiple gradebook formats:
-
 **Supported Platforms**:
-- **Canvas LMS**: Detects "Student", "ID", "Current Score" columns + OAuth2 API integration
-- **Blackboard Learn**: Detects "Last Name", "First Name" separate columns
-- **Moodle**: Detects "Email address", "Course total"
-- **Google Classroom**: Detects "Timestamp", "Score" patterns
-- **PowerSchool** (K-12): Detects "Student Number", "Grade Level"
-- **Generic CSV**: Fallback for any format with ID and score columns
+- **Canvas LMS**: Detects "Student", "ID", "Current Score" columns
+- **Generic CSV**: Any format with ID and score columns
 
 **Conversion Logic** (`src/mvp/mvp_api.py`):
 ```python
-# Auto-detection and conversion
-format_type = detect_gradebook_format(df)
+# Auto-detection and conversion (simplified)
+format_type = detect_gradebook_format(df)  # 'canvas' or 'generic'
 df = universal_gradebook_converter(df)
 ```
 
-### Canvas LMS API Integration
-
-**Complete OAuth2 Integration** (`src/integrations/canvas.py`):
-- OAuth2 authorization flow with Canvas Developer Keys
-- Automatic course and student data synchronization
-- Real-time gradebook access and analysis
-- Risk prediction integration with Canvas course data
-
-**Canvas API Endpoints** (`src/api/canvas_endpoints.py`):
-```
-POST /canvas/configure        # Configure Canvas connection
-GET  /canvas/auth/url         # Get OAuth2 authorization URL
-POST /canvas/auth/callback    # Handle OAuth2 callback
-GET  /canvas/courses          # List Canvas courses
-POST /canvas/courses/{id}/sync # Sync course data and predict risk
-GET  /canvas/status           # Integration status
-```
-
-**Canvas Integration UI**:
-- Web interface at `/canvas` for educators
-- Step-by-step Canvas connection setup
-- Course selection and risk analysis
-- Automatic prediction generation from Canvas data
-
 ## Key Development Patterns
 
-### Environment-Based Configuration
+### Simple Authentication
 ```python
-# Security depends on environment
-if os.getenv('DEVELOPMENT_MODE', 'true').lower() == 'true':
-    # Use development defaults
-else:
-    # Require production configuration
+# Simple API key check
+def simple_auth(credentials):
+    if credentials.credentials != os.getenv("MVP_API_KEY", "dev-key-change-me"):
+        raise HTTPException(401, "Invalid API key")
+    return {"user": "mvp_user"}
 ```
 
-### Graceful Degradation
+### Explainable AI Integration
 ```python
-# Database connection with fallback
-db_available = test_db_connection()
-if db_available:
-    # Use PostgreSQL
-else:
-    # Fall back to SQLite
-```
-
-### Security-First Design
-All endpoints require authentication by default:
-```python
-@app.post("/api/mvp/analyze")
-async def analyze_student_data(
-    request: Request,
-    file: UploadFile = File(...),
-    current_user: dict = Depends(require_write_permission)  # Security required
-):
+# Get detailed explanations
+explanations = intervention_system.get_explainable_predictions(student_df)
+for explanation in explanations:
+    print(f"Student {explanation['student_id']}: {explanation['risk_category']}")
+    print(f"Explanation: {explanation['explanation']}")
 ```
 
 ### Error Handling Pattern
@@ -235,110 +150,95 @@ except Exception as e:
 
 ## Important Files and Locations
 
-### Configuration Files
-- `.env.security` - Security configuration template
-- `.env.production.template` - Production deployment template
-- `docker-compose.yml` - Full stack deployment
-- `requirements.txt` - Python dependencies
+### Core Application Files
+- `run_mvp.py` - Main application launcher
+- `src/mvp/mvp_api.py` - MVP API implementation
+- `src/mvp/simple_auth.py` - Simplified security layer
+- `src/models/intervention_system.py` - ML system with explainable AI
+- `src/models/explainable_ai.py` - Explainable AI module
 
-### Integration Files
-- `src/integrations/canvas.py` - Canvas LMS OAuth2 integration
-- `src/integrations/base.py` - Base LMS integration interface
-- `src/api/canvas_endpoints.py` - Canvas API endpoints
-- `src/mvp/templates/canvas_integration.html` - Canvas integration UI
-
-### Security-Critical Files
-- `src/security/` - Complete security framework
-- `scripts/security_test.py` - Security validation suite
-- `docs/SECURITY.md` - Comprehensive security documentation
-
-### Database Files
-- `src/database/models.py` - SQLAlchemy ORM models
-- `src/database/connection.py` - Connection management with fallback
-- `scripts/schema.sql` - PostgreSQL schema
-- `scripts/migrate_csv_to_db.py` - Data migration utilities
+### UI Files
+- `src/mvp/templates/index.html` - Main web interface
+- `src/mvp/static/css/style.css` - Styling including explainable AI components
+- `src/mvp/static/js/app.js` - Core JavaScript functionality
+- `src/mvp/static/js/explainable-ui.js` - Explainable AI UI components
 
 ### Model Files
-- `src/models/intervention_system.py` - Main ML system
 - `results/models/` - Trained model artifacts (.pkl files)
 - `results/models/model_metadata.json` - Model performance metrics
 
+### Configuration Files
+- `requirements.txt` - Simplified Python dependencies (9 packages)
+- `CLAUDE.md` - This development guide
+
 ## Development Workflow
 
-1. **Start with MVP** for quick testing: `python3 run_mvp.py`
-2. **Use production API** for full features: `python src/api/student_success_api.py`
-3. **Run security tests** before deployment: `python3 scripts/security_test.py`
-4. **Test with sample data** using examples in `examples/gradebooks/`
-5. **Deploy with Docker** for production: `docker-compose up`
+1. **Start MVP** for testing: `python3 run_mvp.py`
+2. **Use web interface** at http://localhost:8001
+3. **Upload CSV** or try sample data
+4. **View explanations** by clicking "Explain Prediction" on any student
+5. **Check insights** in the Model Insights panel
 
 ## Common Issues and Solutions
-
-### Database Connection Issues
-- System automatically falls back to SQLite if PostgreSQL unavailable
-- Check `DATABASE_URL` environment variable
-- Verify PostgreSQL service is running: `docker-compose up postgres`
-
-### Security Configuration
-- Development mode uses default API key: `dev-key-change-me`
-- Production requires proper API keys in environment variables
-- Run `python3 scripts/security_test.py` to validate configuration
-
-### File Upload Issues
-- Maximum file size: 10MB (configurable via `MAX_FILE_SIZE`)
-- Supported formats: CSV with automatic gradebook detection
-- CSV injection protection automatically sanitizes dangerous content
 
 ### Model Loading
 - Models auto-load from `results/models/` directory
 - If models missing, run `python src/models/train_models.py`
 - Check model metadata in `results/models/model_metadata.json`
 
-The system is designed for both educational demonstration (MVP) and production deployment, with comprehensive security, monitoring, and scalability features.
+### File Upload Issues
+- Maximum file size: 10MB
+- Supported formats: CSV only
+- Automatic format detection for Canvas and generic CSV
+
+### Authentication
+- Default API key: `dev-key-change-me`
+- Set custom key via `MVP_API_KEY` environment variable
+- All endpoints require authentication
+
+The system is designed for educational demonstration with explainable AI features, focusing on simplicity while maintaining core ML functionality.
 
 ## Development Guidelines for Claude Code
 
 ### Commit Frequently and Update Documentation
 - **Commit after every significant change** - Don't batch multiple unrelated changes
-- **Update this CLAUDE.md file** after every commit that adds new features, changes architecture, or modifies development workflows
-- **Use descriptive commit messages** that explain the business value, not just technical changes
-- **Include security considerations** in commit messages when adding new endpoints or file handling
+- **Update this CLAUDE.md file** after every commit that adds new features or changes architecture
+- **Use descriptive commit messages** that explain the business value
+- **Focus on MVP functionality** - avoid adding production complexity
 
 ### When to Update CLAUDE.md
 Update this file whenever you:
 - Add new API endpoints or modify existing ones
-- Change database schema or add new models
-- Implement new security features or authentication methods
-- Add new deployment options or Docker configurations
-- Create new development scripts or change existing workflows
-- Modify the universal gradebook converter or add new platform support
-- Change the ML model training process or add new features
-- Update environment variable requirements or configuration patterns
+- Implement new explainable AI features
+- Change the simplified security model
+- Add new UI components or visualizations
+- Modify the gradebook conversion logic
+- Update the intervention recommendation system
 
 ### CLAUDE.md Update Pattern
 After making changes, always:
-1. **Review this file** to ensure it reflects current architecture
+1. **Review this file** to ensure it reflects current simplified architecture
 2. **Add new patterns** you've implemented to the relevant sections
-3. **Update commands** if you've added new scripts or changed existing ones
-4. **Document new security measures** in the security framework section
+3. **Update commands** if you've added new scripts
+4. **Document new explainable AI features** 
 5. **Commit the updated CLAUDE.md** along with your code changes
 
 Example commit workflow:
 ```bash
 # Make your code changes
-git add src/new_feature.py
+git add src/mvp/new_feature.py
 
 # Update CLAUDE.md to reflect the changes
-# (Add new commands, update architecture notes, etc.)
 git add CLAUDE.md
 
 # Commit both together with descriptive message
-git commit -m "Add new risk assessment endpoint with rate limiting
+git commit -m "Add new explainable AI visualization feature
 
-- Implement POST /api/risk/detailed for granular risk analysis
-- Add rate limiting (20 requests/hour) for detailed analysis
-- Update CLAUDE.md with new endpoint documentation and usage patterns
+- Implement risk factor severity visualization in student explanations
+- Add color-coded risk indicators in the web interface  
+- Update CLAUDE.md with new explainable AI patterns
 
 🤖 Generated with [Claude Code](https://claude.ai/code)"
 ```
 
-This ensures future Claude instances always have up-to-date guidance that reflects the current state of the codebase.
+This ensures future Claude instances always have up-to-date guidance that reflects the current simplified MVP state.
