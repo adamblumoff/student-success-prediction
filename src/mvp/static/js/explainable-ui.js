@@ -18,18 +18,15 @@ class ExplainableUI {
 
     async loadGlobalInsights() {
         try {
-            const response = await fetch('/api/mvp/insights', {
-                headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
-                }
-            });
+            const response = await fetch('/api/mvp/insights');
 
             if (response.ok) {
                 const result = await response.json();
+                console.log('Global insights loaded:', result);
                 this.globalInsights = result.insights;
                 this.renderGlobalInsights();
             } else {
-                console.error('Failed to load global insights');
+                console.error('Failed to load global insights:', response.status);
             }
         } catch (error) {
             console.error('Error loading global insights:', error);
@@ -166,24 +163,22 @@ class ExplainableUI {
     }
 
     async showStudentExplanation(studentId) {
+        console.log(`Showing explanation for student ${studentId}`);
         try {
-            const response = await fetch(`/api/mvp/explain/${studentId}`, {
-                headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
-                }
-            });
+            const response = await fetch(`/api/mvp/explain/${studentId}`);
 
             if (response.ok) {
                 const result = await response.json();
+                console.log('Explanation result:', result);
                 this.currentExplanation = result.explanation;
                 this.renderStudentExplanation(studentId);
             } else {
-                console.error('Failed to load student explanation');
-                alert('Failed to load detailed explanation for this student');
+                console.error('Failed to load student explanation:', response.status, response.statusText);
+                alert(`Failed to load detailed explanation for this student (${response.status})`);
             }
         } catch (error) {
             console.error('Error loading student explanation:', error);
-            alert('Error loading student explanation');
+            alert('Error loading student explanation: ' + error.message);
         }
     }
 
@@ -340,58 +335,59 @@ class ExplainableUI {
         if (riskScore >= 0.4) return 'risk-medium';
         return 'risk-low';
     }
-}
 
-// Enhanced student list rendering with explanation buttons
-window.renderStudentsWithExplanations = function(students) {
-    const studentsList = document.getElementById('students-list');
-    
-    if (students.length === 0) {
-        studentsList.innerHTML = '<p>No students analyzed yet.</p>';
-        return;
-    }
-
-    const studentsHTML = students.map(student => {
-        const riskClass = student.risk_category.toLowerCase().replace(' ', '-');
+    // Method to enhance existing student display with explainable AI buttons
+    enhanceStudentCards() {
+        console.log('EnhanceStudentCards called');
+        const studentCards = document.querySelectorAll('.student-card');
+        console.log(`Found ${studentCards.length} student cards`);
         
-        return `
-            <div class="student-card ${riskClass}">
-                <div class="student-info">
-                    <div class="student-header">
-                        <h4>Student ${student.id_student}</h4>
-                        <span class="risk-badge ${riskClass}">${student.risk_category}</span>
-                    </div>
-                    <div class="student-metrics">
-                        <div class="metric">
-                            <span class="metric-label">Risk Score:</span>
-                            <span class="metric-value">${(student.risk_score * 100).toFixed(0)}%</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-label">Success Probability:</span>
-                            <span class="metric-value">${(student.success_probability * 100).toFixed(0)}%</span>
-                        </div>
-                        <div class="metric">
-                            <span class="metric-label">Avg Score:</span>
-                            <span class="metric-value">${student.early_avg_score?.toFixed(1) || 'N/A'}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="student-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="explainableUI.showStudentExplanation(${student.id_student})">
-                        🔍 Explain Prediction
-                    </button>
-                    ${student.needs_intervention ? `
-                        <button class="btn btn-warning btn-sm" onclick="showInterventionModal(${student.id_student})">
-                            💡 View Interventions
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    studentsList.innerHTML = studentsHTML;
+        studentCards.forEach((card, index) => {
+            console.log(`Processing card ${index + 1}`);
+            
+            // Check if we already added the explain button
+            if (card.querySelector('.explain-button')) {
+                console.log(`Card ${index + 1} already has explain button`);
+                return;
+            }
+            
+            // Extract student ID from the card
+            const studentNameElement = card.querySelector('.student-name');
+            if (!studentNameElement) {
+                console.log(`Card ${index + 1}: No student name element found`);
+                return;
+            }
+            
+            console.log(`Card ${index + 1}: Student name text = "${studentNameElement.textContent}"`);
+            const studentIdMatch = studentNameElement.textContent.match(/Student #(\d+)/);
+            if (!studentIdMatch) {
+                console.log(`Card ${index + 1}: No student ID match found`);
+                return;
+            }
+            
+            const studentId = studentIdMatch[1];
+            console.log(`Card ${index + 1}: Extracted student ID = ${studentId}`);
+            
+            // Add explain button to the existing interventions preview
+            const interventionsPreview = card.querySelector('.interventions-preview');
+            if (interventionsPreview) {
+                console.log(`Card ${index + 1}: Adding explain button`);
+                const explainButton = document.createElement('div');
+                explainButton.className = 'intervention-item explain-button';
+                explainButton.innerHTML = `
+                    <span class="intervention-text" onclick="explainableUI.showStudentExplanation(${studentId})" style="cursor: pointer; color: #2563eb; text-decoration: underline;">
+                        🔍 Explain AI Prediction
+                    </span>
+                    <span class="intervention-status available">Available</span>
+                `;
+                interventionsPreview.appendChild(explainButton);
+                console.log(`Card ${index + 1}: Explain button added successfully`);
+            } else {
+                console.log(`Card ${index + 1}: No interventions preview found`);
+            }
+        });
+    }
 }
 
-// Initialize explainable UI
-const explainableUI = new ExplainableUI();
+// Initialize explainable UI and make it globally available
+window.explainableUI = new ExplainableUI();
