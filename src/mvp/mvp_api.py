@@ -12,7 +12,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -44,37 +43,20 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv('DEVELOPMENT_MODE') == 'true' else None
 )
 
-# Security middleware
-allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
-
-# CORS middleware with secure defaults
-allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:8001').split(',')
+# Simplified CORS for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],  # Allow all origins for local testing
     allow_credentials=True,
     allow_methods=["GET", "POST"],
-    allow_headers=["Authorization", "Content-Type"],
-    max_age=3600
+    allow_headers=["*"],
 )
 
-# Security headers middleware
+# Simplified security headers middleware
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_basic_headers(request: Request, call_next):
     response = await call_next(request)
-    
-    # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'"
-    
-    # Remove server header
-    response.headers.pop("server", None)
-    
     return response
 
 # Global variables
@@ -530,6 +512,18 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """Simple authentication dependency"""
     return simple_auth(credentials)
 
+def ensure_system_initialized():
+    """Ensure the intervention system is initialized"""
+    global intervention_system
+    if intervention_system is None:
+        try:
+            from models.intervention_system import InterventionRecommendationSystem
+            intervention_system = InterventionRecommendationSystem()
+            logger.info("✅ Intervention system initialized on-demand")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize intervention system: {e}")
+            raise HTTPException(status_code=500, detail="System initialization failed")
+
 @app.get("/")
 async def root(request: Request):
     """Serve the main MVP page"""
@@ -545,6 +539,9 @@ async def analyze_student_data(
     try:
         # Simple rate limiting
         simple_rate_limit(request, 10)
+        
+        # Ensure system is initialized
+        ensure_system_initialized()
         
         # Simple file validation and processing
         contents = await file.read()
@@ -669,6 +666,10 @@ async def get_sample_data(
     """Return sample student data for demo purposes"""
     # Simple rate limiting
     simple_rate_limit(request, 50)
+    
+    # Ensure system is initialized
+    ensure_system_initialized()
+    
     try:
         global sample_data
         if sample_data is None:
