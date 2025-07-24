@@ -35,3 +35,7 @@ aiofiles>=23.2.1
 # Security dependencies
 python-magic>=0.4.27
 PyJWT>=2.8.0
+
+# LMS Integration dependencies
+aiohttp>=3.9.0
+httpx>=0.25.0

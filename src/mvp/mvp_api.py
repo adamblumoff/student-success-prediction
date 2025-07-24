@@ -30,6 +30,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
 from security import secure_validator, security_manager, rate_limiter
 from security.auth import require_read_permission, require_write_permission
+from api.canvas_endpoints import canvas_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -77,13 +78,16 @@ async def add_security_headers(request: Request, call_next):
     
     return response
 
-# Static files and templates
-app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
-templates = Jinja2Templates(directory="src/mvp/templates")
-
 # Global variables
 intervention_system = None
 sample_data = None
+
+# Include Canvas integration router
+app.include_router(canvas_router)
+
+# Static files and templates
+app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
+templates = Jinja2Templates(directory="src/mvp/templates")
 
 # Simple SQLite database for MVP
 def init_sqlite():
@@ -565,6 +569,11 @@ async def health_check():
 async def root(request: Request):
     """Serve the main MVP page"""
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/canvas")
+async def canvas_integration_page(request: Request):
+    """Serve the Canvas integration page"""
+    return templates.TemplateResponse("canvas_integration.html", {"request": request})
 
 @app.post("/api/mvp/analyze")
 async def analyze_student_data(
