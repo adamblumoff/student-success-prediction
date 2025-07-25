@@ -787,7 +787,7 @@ async def explain_prediction(
         # Simple rate limiting
         simple_rate_limit(request, 50)
         
-        # Get student data from SQLite
+        # Try to get student data from SQLite, but don't fail if not found
         conn = sqlite3.connect("mvp_data.db")
         cursor = conn.cursor()
         
@@ -801,22 +801,59 @@ async def explain_prediction(
         prediction = cursor.fetchone()
         conn.close()
         
-        if not prediction:
-            raise HTTPException(status_code=404, detail="Student prediction not found")
+        # For now, always use sample data for explanation (CSV uploads don't store full student data)
+        logger.info(f"Generating explanation for student {student_id} (DB found: {prediction is not None})")
         
-        # Create sample student data for explanation (in real app, this would come from database)
+        # Create complete sample student data with all 31 required features
         sample_data = pd.DataFrame([{
             'id_student': student_id,
-            'early_avg_score': 65,
-            'early_total_clicks': 120,
-            'early_active_days': 8,
-            'early_missing_submissions': 2,
-            'early_submission_rate': 0.6,
+            # Demographics (6 features)
+            'gender_encoded': 1,
+            'region_encoded': 1,
+            'age_band_encoded': 1,
+            'education_encoded': 2,
+            'is_male': 0,
+            'has_disability': 0,
+            # Academic History (4 features)
             'studied_credits': 120,
             'num_of_prev_attempts': 0,
             'registration_delay': 0,
-            'early_engagement_consistency': 1.5
+            'unregistered': 0,
+            # Early VLE Engagement (10 features)
+            'early_total_clicks': 120,
+            'early_avg_clicks': 4.0,
+            'early_clicks_std': 2.5,
+            'early_max_clicks': 15,
+            'early_active_days': 8,
+            'early_first_access': 1,
+            'early_last_access': 25,
+            'early_engagement_consistency': 1.5,
+            'early_clicks_per_active_day': 15.0,
+            'early_engagement_range': 14,
+            # Early Assessment Performance (11 features)
+            'early_assessments_count': 3,
+            'early_avg_score': 65,
+            'early_score_std': 10.5,
+            'early_min_score': 45,
+            'early_max_score': 85,
+            'early_missing_submissions': 2,
+            'early_submitted_count': 1,
+            'early_total_weight': 30.0,
+            'early_banked_count': 0,
+            'early_submission_rate': 0.6,
+            'early_score_range': 40
         }])
+        
+        # Ensure intervention system is loaded
+        global intervention_system
+        if intervention_system is None:
+            try:
+                from models.intervention_system import InterventionRecommendationSystem
+                intervention_system = InterventionRecommendationSystem()
+                logger.info("✅ Intervention system initialized on-demand")
+            except Exception as init_error:
+                logger.error(f"❌ Failed to initialize intervention system: {init_error}")
+                raise HTTPException(status_code=500, detail="AI system failed to initialize")
         
         # Get explainable predictions
         explanations = intervention_system.get_explainable_predictions(sample_data)
@@ -835,7 +872,9 @@ async def explain_prediction(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error explaining prediction: {e}")
+        logger.error(f"Error explaining prediction for student {student_id}: {e}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error generating explanation: {str(e)}")
 
 @app.get("/api/mvp/insights")
