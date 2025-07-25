@@ -3,6 +3,9 @@
 class StudentSuccessApp {
     constructor() {
         this.students = [];
+        this.filteredStudents = [];
+        this.selectedStudent = null;
+        this.currentFilter = 'all';
         this.interventions = new Map(); // Track interventions by student ID
         this.init();
     }
@@ -10,6 +13,7 @@ class StudentSuccessApp {
     init() {
         this.setupEventListeners();
         this.setupDragAndDrop();
+        this.setupTwoPanelLayout();
     }
 
     setupEventListeners() {
@@ -114,7 +118,27 @@ class StudentSuccessApp {
     }
 
     displayResults(data) {
-        this.students = data.students;
+        // Ensure students array is properly set and normalized
+        this.students = data.students || [];
+        
+        // Normalize student IDs for consistent access
+        this.students = this.students.map(student => {
+            // Ensure id_student exists for modal compatibility
+            if (!student.id_student && student.id) {
+                student.id_student = student.id;
+            }
+            if (!student.id_student && student.ID) {
+                student.id_student = student.ID;
+            }
+            // Ensure numeric ID for consistent comparison
+            if (student.id_student) {
+                student.id_student = parseInt(student.id_student);
+            }
+            return student;
+        });
+        
+        console.log('Processed students data:', this.students.length, 'students');
+        console.log('Sample student:', this.students[0]);
         
         // Hide upload section and show results
         document.getElementById('upload-section').style.display = 'none';
@@ -124,8 +148,8 @@ class StudentSuccessApp {
         // Update summary stats
         this.updateSummaryStats(data.summary);
 
-        // Display students
-        this.displayStudents();
+        // Display students using two-panel layout
+        this.displayStudentsTwoPanel();
 
         // Display intervention tracking
         this.displayInterventionTracking();
@@ -233,15 +257,15 @@ class StudentSuccessApp {
         
         if (student.risk_category === 'High Risk') {
             interventions.push(
-                { title: "Schedule immediate 1-on-1 meeting", priority: "Critical", type: "Meeting" },
-                { title: "Connect with academic advisor", priority: "Critical", type: "Support" },
-                { title: "Assess for learning difficulties", priority: "High", type: "Assessment" }
+                { title: "Schedule immediate 1-on-1 meeting", priority: "Critical", type: "Meeting", description: "Meet with student within 48 hours to assess current challenges and provide immediate support." },
+                { title: "Connect with academic advisor", priority: "Critical", type: "Support", description: "Refer to academic advisor for comprehensive support plan and resource coordination." },
+                { title: "Assess for learning difficulties", priority: "High", type: "Assessment", description: "Evaluate for potential learning challenges that may require additional accommodations." }
             );
         } else if (student.risk_category === 'Medium Risk') {
             interventions.push(
-                { title: "Send check-in email this week", priority: "High", type: "Communication" },
-                { title: "Recommend study group participation", priority: "Medium", type: "Peer Support" },
-                { title: "Share additional learning resources", priority: "Medium", type: "Resources" }
+                { title: "Send check-in email this week", priority: "High", type: "Communication", description: "Proactive outreach to understand current situation and offer assistance." },
+                { title: "Recommend study group participation", priority: "Medium", type: "Peer Support", description: "Connect with peer learning opportunities to improve engagement and understanding." },
+                { title: "Share additional learning resources", priority: "Medium", type: "Resources", description: "Provide targeted materials and tools to support academic improvement." }
             );
         }
 
@@ -250,7 +274,8 @@ class StudentSuccessApp {
             interventions.push({
                 title: "Address low online engagement",
                 priority: "High",
-                type: "Engagement"
+                type: "Engagement",
+                description: "Student shows low platform interaction. Schedule technology orientation and engagement strategies."
             });
         }
 
@@ -259,7 +284,8 @@ class StudentSuccessApp {
             interventions.push({
                 title: "Provide tutoring support",
                 priority: "High", 
-                type: "Academic"
+                type: "Academic",
+                description: "Low assessment scores indicate need for additional academic support and skill development."
             });
         }
 
@@ -267,8 +293,31 @@ class StudentSuccessApp {
     }
 
     showStudentDetail(studentId) {
-        const student = this.students.find(s => s.id_student === studentId);
-        if (!student) return;
+        // Try multiple ways to find the student (for CSV upload compatibility)
+        let student = this.students.find(s => s.id_student === studentId);
+        
+        // If not found, try different ID formats
+        if (!student) {
+            student = this.students.find(s => s.id === studentId);
+        }
+        if (!student) {
+            student = this.students.find(s => s.ID === studentId);
+        }
+        if (!student) {
+            // Try converting to string/number for comparison
+            student = this.students.find(s => String(s.id_student) === String(studentId));
+        }
+        if (!student) {
+            student = this.students.find(s => parseInt(s.id_student) === parseInt(studentId));
+        }
+        
+        if (!student) {
+            console.error('Student not found:', studentId, 'Available students:', this.students);
+            alert('Student details not available. This might be due to a data format issue with CSV uploads.');
+            return;
+        }
+        
+        console.log('Found student:', student);
 
         const interventions = this.getRecommendedInterventions(student);
         
@@ -461,6 +510,213 @@ class StudentSuccessApp {
 
     showLoading(show) {
         document.getElementById('loading-overlay').classList.toggle('hidden', !show);
+    }
+
+    // Two-Panel Layout Methods
+    setupTwoPanelLayout() {
+        // Setup search functionality
+        const searchInput = document.getElementById('student-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterStudents(e.target.value, this.currentFilter);
+            });
+        }
+
+        // Setup filter tabs
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // Update active tab
+                filterTabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update filter
+                this.currentFilter = e.target.dataset.filter;
+                const searchTerm = searchInput ? searchInput.value : '';
+                this.filterStudents(searchTerm, this.currentFilter);
+            });
+        });
+    }
+
+    displayStudentsTwoPanel() {
+        // Show all students (high, medium, low risk) for better navigation
+        this.filteredStudents = this.students.slice().sort((a, b) => b.risk_score - a.risk_score);
+        
+        // Apply current filter
+        const searchInput = document.getElementById('student-search');
+        const searchTerm = searchInput ? searchInput.value : '';
+        this.filterStudents(searchTerm, this.currentFilter);
+        
+        // Render compact list
+        this.renderCompactStudentList();
+        
+        // Clear detail panel
+        this.clearStudentDetail();
+    }
+
+    filterStudents(searchTerm, filter) {
+        let filtered = this.students.slice();
+        
+        // Apply risk filter
+        if (filter === 'high') {
+            filtered = filtered.filter(s => s.risk_category === 'High Risk');
+        } else if (filter === 'medium') {
+            filtered = filtered.filter(s => s.risk_category === 'Medium Risk');
+        } else if (filter === 'low') {
+            filtered = filtered.filter(s => s.risk_category === 'Low Risk');
+        }
+        
+        // Apply search filter
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(s => 
+                String(s.id_student).toLowerCase().includes(term) ||
+                String(s.id || '').toLowerCase().includes(term)
+            );
+        }
+        
+        // Sort by risk score
+        this.filteredStudents = filtered.sort((a, b) => b.risk_score - a.risk_score);
+        
+        // Re-render list
+        this.renderCompactStudentList();
+    }
+
+    renderCompactStudentList() {
+        const container = document.getElementById('student-list-compact');
+        if (!container) return;
+        
+        if (this.filteredStudents.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 40px 20px; text-align: center; color: #6b7280;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+                    <p>No students match your search criteria.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const studentsHTML = this.filteredStudents.map(student => `
+            <div class="compact-student-item" data-student-id="${student.id_student}" 
+                 onclick="app.selectStudent(${student.id_student})">
+                <div class="compact-student-header">
+                    <div class="student-compact-id">Student #${student.id_student}</div>
+                    <div class="risk-badge-compact risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
+                        ${student.risk_category.split(' ')[0]}
+                    </div>
+                </div>
+                <div class="compact-student-metrics">
+                    <span class="student-compact-score">Score: ${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</span>
+                    <span>Risk: ${Math.round(student.risk_score * 100)}%</span>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = studentsHTML;
+    }
+
+    selectStudent(studentId) {
+        // Update selected state in list
+        document.querySelectorAll('.compact-student-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        const selectedItem = document.querySelector(`[data-student-id="${studentId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+        }
+        
+        // Find student data
+        this.selectedStudent = this.students.find(s => 
+            s.id_student === studentId || 
+            String(s.id_student) === String(studentId) ||
+            parseInt(s.id_student) === parseInt(studentId)
+        );
+        
+        if (this.selectedStudent) {
+            this.renderStudentDetail(this.selectedStudent);
+        }
+    }
+
+    renderStudentDetail(student) {
+        const container = document.getElementById('student-detail-content');
+        if (!container) return;
+        
+        const interventions = this.getRecommendedInterventions(student);
+        
+        const detailHTML = `
+            <div class="student-detail-view">
+                <div class="detail-header">
+                    <h2>Student #${student.id_student}</h2>
+                    <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
+                        ${student.risk_category} • ${Math.round(student.risk_score * 100)}% Risk
+                    </div>
+                </div>
+                
+                <div class="detail-metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${student.success_probability ? Math.round(student.success_probability * 100) : Math.round((1 - student.risk_score) * 100)}%</div>
+                        <div class="metric-label">Success Probability</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</div>
+                        <div class="metric-label">Average Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_active_days || 0}</div>
+                        <div class="metric-label">Active Days</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_total_clicks || 0}</div>
+                        <div class="metric-label">Platform Clicks</div>
+                    </div>
+                </div>
+                
+                <div class="detail-actions">
+                    <button class="btn btn-primary" onclick="explainableUI.showStudentExplanation(${student.id_student})">
+                        🔍 Explain AI Prediction
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.showStudentDetail(${student.id_student})">
+                        📊 Full Details
+                    </button>
+                </div>
+                
+                <div class="interventions-detail">
+                    <h3>🎯 Recommended Interventions</h3>
+                    <div class="interventions-list">
+                        ${interventions.slice(0, 3).map(intervention => `
+                            <div class="intervention-detail-item">
+                                <div class="intervention-title">${intervention.title}</div>
+                                <div class="intervention-description">${intervention.description}</div>
+                                <div class="intervention-priority">Priority: ${intervention.priority}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = detailHTML;
+    }
+
+    clearStudentDetail() {
+        const container = document.getElementById('student-detail-content');
+        if (container) {
+            container.innerHTML = `
+                <div class="no-student-selected">
+                    <div class="placeholder-icon">👆</div>
+                    <h3>Select a Student</h3>
+                    <p>Click on any student from the list to view detailed analysis, risk factors, and AI-powered intervention recommendations.</p>
+                </div>
+            `;
+        }
+        
+        // Clear selections
+        document.querySelectorAll('.compact-student-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        this.selectedStudent = null;
     }
 }
 

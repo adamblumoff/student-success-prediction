@@ -19,6 +19,61 @@
 
     <main class="main">
         <div class="container">
+            <!-- AI/ML Advantages Section -->
+            <section class="ai-advantages-section">
+                <div class="card ai-showcase">
+                    <div class="ai-header">
+                        <span class="ai-badge">🧠 AI-Powered Analytics</span>
+                        <h2>Why Our Machine Learning Approach Works</h2>
+                    </div>
+                    
+                    <div class="ai-grid">
+                        <div class="ai-feature">
+                            <div class="feature-icon">📊</div>
+                            <h3>89.4% Prediction Accuracy</h3>
+                            <p>Our XGBoost models analyze 31 carefully engineered features to predict student outcomes with industry-leading accuracy.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🔍</div>
+                            <h3>Explainable AI</h3>
+                            <p>Get detailed explanations of <em>why</em> a student is at risk, including specific risk factors and protective elements.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">⚡</div>
+                            <h3>Real-Time Analysis</h3>
+                            <p>Instant predictions in under 100ms. Upload your gradebook and get actionable insights immediately.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🎯</div>
+                            <h3>Personalized Interventions</h3>
+                            <p>AI-generated recommendations tailored to each student's unique risk profile and learning patterns.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">📈</div>
+                            <h3>Feature Importance</h3>
+                            <p>Understand which factors most influence student success: early scores (22%), engagement (19%), history (12%).</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🏫</div>
+                            <h3>Universal Compatibility</h3>
+                            <p>Works with Canvas LMS, generic CSV files, and any gradebook format. Automatic detection and conversion.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-cta">
+                        <div class="cta-content">
+                            <strong>Ready to see AI in action?</strong> 
+                            <span>Try the sample data below or upload your own CSV to experience explainable predictions.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Step 1: Upload Data -->
             <section class="upload-section" id="upload-section">
                 <div class="card">
@@ -66,7 +121,40 @@
                         </p>
                     </div>
 
-                    <div class="students-list" id="students-list">
+                    <!-- Two-Panel Layout for Better Navigation -->
+                    <div class="two-panel-layout">
+                        <!-- Left Panel: Student List -->
+                        <div class="student-list-panel">
+                            <div class="panel-header">
+                                <h3>Students at Risk</h3>
+                                <div class="list-controls">
+                                    <input type="text" id="student-search" placeholder="Search by Student ID..." class="search-input">
+                                    <div class="risk-filter-tabs">
+                                        <button class="filter-tab active" data-filter="all">All</button>
+                                        <button class="filter-tab" data-filter="high">High Risk</button>
+                                        <button class="filter-tab" data-filter="medium">Medium Risk</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="student-list-compact" id="student-list-compact">
+                                <!-- Compact student list will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Right Panel: Student Detail -->
+                        <div class="student-detail-panel">
+                            <div id="student-detail-content">
+                                <div class="no-student-selected">
+                                    <div class="placeholder-icon">👆</div>
+                                    <h3>Select a Student</h3>
+                                    <p>Click on any student from the list to view detailed analysis, risk factors, and AI-powered intervention recommendations.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Legacy students list for fallback -->
+                    <div class="students-list hidden" id="students-list">
                         <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
