@@ -196,6 +196,24 @@ except Exception as e:
 - Set custom key via `MVP_API_KEY` environment variable
 - All endpoints require authentication
 
+### Explainable AI "Explain Prediction" Button Issues
+**Problem**: 500 errors when clicking "Explain AI Prediction" buttons
+
+**Root Cause**: The ML model requires all 31 engineered features, but the API endpoint was only providing 10 sample features, causing a pandas index error.
+
+**Solution**: Updated `/api/mvp/explain/{student_id}` endpoint to provide complete feature set:
+```python
+# All 31 required features must be provided:
+# Demographics (6): gender_encoded, region_encoded, age_band_encoded, education_encoded, is_male, has_disability
+# Academic History (4): studied_credits, num_of_prev_attempts, registration_delay, unregistered  
+# Early VLE Engagement (10): early_total_clicks, early_avg_clicks, early_clicks_std, etc.
+# Early Assessment Performance (11): early_assessments_count, early_avg_score, early_score_std, etc.
+```
+
+**Debugging Command**: `python3 test_endpoints.py` to verify explainable AI functionality
+
+**Note**: Currently uses sample data for explanations since CSV uploads don't store complete student feature profiles. Future enhancement could extract actual student features from uploaded data.
+
 The system is designed for educational demonstration with explainable AI features, focusing on simplicity while maintaining core ML functionality.
 
 ## Development Guidelines for Claude Code

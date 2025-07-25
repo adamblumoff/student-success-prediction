@@ -165,7 +165,15 @@ class ExplainableUI {
     async showStudentExplanation(studentId) {
         console.log(`Showing explanation for student ${studentId}`);
         try {
-            const response = await fetch(`/api/mvp/explain/${studentId}`);
+            // Ensure studentId is properly formatted (convert to integer if needed)
+            const normalizedId = parseInt(studentId) || studentId;
+            console.log(`Normalized student ID: ${normalizedId}`);
+            
+            const response = await fetch(`/api/mvp/explain/${normalizedId}`, {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
 
             if (response.ok) {
                 const result = await response.json();
@@ -174,7 +182,13 @@ class ExplainableUI {
                 this.renderStudentExplanation(studentId);
             } else {
                 console.error('Failed to load student explanation:', response.status, response.statusText);
-                alert(`Failed to load detailed explanation for this student (${response.status})`);
+                // Try to get the error message from the response
+                try {
+                    const errorData = await response.json();
+                    alert(`Failed to load explanation: ${errorData.detail || 'Unknown error'} (${response.status})`);
+                } catch {
+                    alert(`Failed to load detailed explanation for this student (${response.status})`);
+                }
             }
         } catch (error) {
             console.error('Error loading student explanation:', error);
