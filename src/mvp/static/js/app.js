@@ -7,6 +7,9 @@ class StudentSuccessApp {
         this.selectedStudent = null;
         this.currentFilter = 'all';
         this.interventions = new Map(); // Track interventions by student ID
+        this.demoMode = false;
+        this.demoInterval = null;
+        this.feedItems = [];
         this.init();
     }
 
@@ -28,6 +31,29 @@ class StudentSuccessApp {
         document.getElementById('load-sample').addEventListener('click', () => {
             this.loadSampleData();
         });
+
+        // Demo mode controls
+        const demoToggle = document.getElementById('demo-toggle');
+        const demoSimulate = document.getElementById('demo-simulate');
+        const startDemoFromUpload = document.getElementById('start-demo-from-upload');
+        
+        if (demoToggle) {
+            demoToggle.addEventListener('click', () => {
+                this.toggleDemoMode();
+            });
+        }
+        
+        if (demoSimulate) {
+            demoSimulate.addEventListener('click', () => {
+                this.simulateNewStudent();
+            });
+        }
+        
+        if (startDemoFromUpload) {
+            startDemoFromUpload.addEventListener('click', () => {
+                this.startDemoFromUpload();
+            });
+        }
     }
 
     setupDragAndDrop() {
@@ -717,6 +743,251 @@ class StudentSuccessApp {
         });
         
         this.selectedStudent = null;
+    }
+
+    // Demo Mode Methods
+    async toggleDemoMode() {
+        const demoToggle = document.getElementById('demo-toggle');
+        const demoSection = document.getElementById('demo-dashboard');
+        
+        if (!this.demoMode) {
+            // Start demo mode
+            this.demoMode = true;
+            demoToggle.textContent = '⏹️ Stop Demo';
+            demoToggle.classList.add('demo-pulse');
+            
+            // Show demo dashboard
+            if (demoSection) {
+                demoSection.classList.remove('hidden');
+            }
+            
+            // Start live updates
+            this.startDemoUpdates();
+            
+            // Load success stories
+            await this.loadSuccessStories();
+            
+            this.addFeedItem('Demo mode activated - showing live university metrics', 'system');
+            
+        } else {
+            // Stop demo mode
+            this.demoMode = false;
+            demoToggle.textContent = '🎬 Start Live Demo';
+            demoToggle.classList.remove('demo-pulse');
+            
+            // Stop updates
+            if (this.demoInterval) {
+                clearInterval(this.demoInterval);
+                this.demoInterval = null;
+            }
+            
+            this.addFeedItem('Demo mode stopped', 'system');
+        }
+    }
+
+    startDemoUpdates() {
+        // Update metrics every 3 seconds
+        this.demoInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/mvp/demo/stats', {
+                    headers: {
+                        'Authorization': 'Bearer dev-key-change-me'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.updateDemoMetrics(data);
+                }
+            } catch (error) {
+                console.error('Demo update error:', error);
+            }
+        }, 3000);
+        
+        // Initial load
+        this.updateDemoMetrics();
+    }
+
+    async updateDemoMetrics(data = null) {
+        if (!data) {
+            try {
+                const response = await fetch('/api/mvp/demo/stats', {
+                    headers: {
+                        'Authorization': 'Bearer dev-key-change-me'
+                    }
+                });
+                
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to fetch demo stats:', error);
+                return;
+            }
+        }
+
+        if (data) {
+            // Update institution info
+            this.updateElement('institution-name', data.semester_info?.institution);
+            this.updateElement('semester-name', data.semester_info?.name);
+            this.updateElement('semester-week', `Week ${data.semester_info?.week}`);
+            
+            // Update metrics with animation
+            this.animateNumber('total-students', data.student_metrics?.total_analyzed);
+            this.updateElement('new-students', `+${data.student_metrics?.new_this_week} this week`);
+            
+            this.animateNumber('interventions-triggered', data.intervention_metrics?.interventions_triggered);
+            this.updateElement('success-rate', `${Math.round(data.intervention_metrics?.success_rate * 100)}% success rate`);
+            
+            this.animateNumber('time-saved', data.time_savings?.hours_saved_per_week);
+            this.updateElement('prevented-dropouts', `${data.time_savings?.prevented_dropouts} dropouts prevented`);
+            
+            this.animateNumber('students-helped', data.intervention_metrics?.students_helped);
+            this.updateElement('avg-improvement', `+${data.intervention_metrics?.avg_improvement} avg improvement`);
+        }
+    }
+
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element && value !== undefined) {
+            element.textContent = value;
+        }
+    }
+
+    animateNumber(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element || targetValue === undefined) return;
+        
+        const currentValue = parseInt(element.textContent) || 0;
+        const increment = Math.ceil((targetValue - currentValue) / 10);
+        
+        if (increment !== 0) {
+            const timer = setInterval(() => {
+                const current = parseInt(element.textContent) || 0;
+                const newValue = current + increment;
+                
+                if ((increment > 0 && newValue >= targetValue) || (increment < 0 && newValue <= targetValue)) {
+                    element.textContent = targetValue;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = newValue;
+                }
+            }, 50);
+        }
+    }
+
+    async simulateNewStudent() {
+        try {
+            const response = await fetch('/api/mvp/demo/simulate-new-student', {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const student = data.new_student;
+                
+                // Add to feed
+                this.addFeedItem(
+                    `New student enrolled: #${student.id_student} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
+                    'new-student'
+                );
+                
+                // Simulate intervention if high risk
+                if (student.risk_category === 'High Risk') {
+                    setTimeout(() => {
+                        this.addFeedItem(
+                            `Intervention triggered for student #${student.id_student} - Academic advisor assigned`,
+                            'intervention'
+                        );
+                    }, 2000);
+                }
+                
+            }
+        } catch (error) {
+            console.error('Failed to simulate new student:', error);
+        }
+    }
+
+    addFeedItem(message, type = 'info') {
+        const feedContainer = document.getElementById('feed-container');
+        if (!feedContainer) return;
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { 
+            hour12: true, 
+            hour: 'numeric', 
+            minute: '2-digit' 
+        });
+        
+        const feedItem = document.createElement('div');
+        feedItem.className = `feed-item ${type}`;
+        feedItem.innerHTML = `
+            <span class="feed-time">${timeStr}</span>
+            <span class="feed-message">${message}</span>
+        `;
+        
+        // Add to top of feed
+        feedContainer.insertBefore(feedItem, feedContainer.firstChild);
+        
+        // Keep only last 10 items
+        while (feedContainer.children.length > 10) {
+            feedContainer.removeChild(feedContainer.lastChild);
+        }
+    }
+
+    async loadSuccessStories() {
+        try {
+            const response = await fetch('/api/mvp/demo/success-stories', {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.displaySuccessStories(data.success_stories);
+            }
+        } catch (error) {
+            console.error('Failed to load success stories:', error);
+        }
+    }
+
+    displaySuccessStories(stories) {
+        const container = document.getElementById('success-stories-grid');
+        const section = document.getElementById('success-stories-section');
+        
+        if (!container || !section) return;
+        
+        const storiesHTML = stories.map(story => `
+            <div class="success-story-card">
+                <div class="success-story-header">
+                    <div class="success-story-id">Student #${story.student_id}</div>
+                    <div class="success-improvement">+${story.improvement} points</div>
+                </div>
+                <div class="success-story-quote">${story.quote}</div>
+                <div class="success-story-details">
+                    ${story.intervention} • ${story.timeframe} • ${story.before_score}→${story.after_score}
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = storiesHTML;
+        section.style.display = 'block';
+    }
+
+    startDemoFromUpload() {
+        // Hide upload section and show demo dashboard
+        document.getElementById('upload-section').style.display = 'none';
+        
+        const demoSection = document.getElementById('demo-dashboard');
+        if (demoSection) {
+            demoSection.classList.remove('hidden');
+        }
+        
+        // Auto-start demo mode
+        this.toggleDemoMode();
     }
 }
 

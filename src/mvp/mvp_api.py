@@ -61,6 +61,7 @@ async def add_basic_headers(request: Request, call_next):
 
 # Global variables
 intervention_system = None
+uploaded_students_data = {}  # Store uploaded student data for explanations
 sample_data = None
 
 # Simple security setup
@@ -659,6 +660,13 @@ async def analyze_student_data(
         
         logger.info(f"Analysis complete: {summary}")
         
+        # Store uploaded student data for explainable AI
+        global uploaded_students_data
+        for student in students:
+            uploaded_students_data[student['id_student']] = student
+        
+        logger.info(f"Stored {len(students)} students for explainable AI")
+        
         return JSONResponse({
             'students': students,
             'summary': summary,
@@ -732,6 +740,13 @@ async def get_sample_data(
                 'low_risk': risk_counts.get('Low Risk', 0)
             }
             
+            # Store sample student data for explainable AI
+            global uploaded_students_data
+            for student in students:
+                uploaded_students_data[student['id_student']] = student
+            
+            logger.info(f"Stored {len(students)} sample students for explainable AI")
+            
             sample_data = {
                 'students': students,
                 'summary': summary,
@@ -801,48 +816,59 @@ async def explain_prediction(
         prediction = cursor.fetchone()
         conn.close()
         
-        # For now, always use sample data for explanation (CSV uploads don't store full student data)
-        logger.info(f"Generating explanation for student {student_id} (DB found: {prediction is not None})")
+        # Use real uploaded student data when available, otherwise fall back to sample data
+        global uploaded_students_data
         
-        # Create complete sample student data with all 31 required features
-        sample_data = pd.DataFrame([{
-            'id_student': student_id,
-            # Demographics (6 features)
-            'gender_encoded': 1,
-            'region_encoded': 1,
-            'age_band_encoded': 1,
-            'education_encoded': 2,
-            'is_male': 0,
-            'has_disability': 0,
-            # Academic History (4 features)
-            'studied_credits': 120,
-            'num_of_prev_attempts': 0,
-            'registration_delay': 0,
-            'unregistered': 0,
-            # Early VLE Engagement (10 features)
-            'early_total_clicks': 120,
-            'early_avg_clicks': 4.0,
-            'early_clicks_std': 2.5,
-            'early_max_clicks': 15,
-            'early_active_days': 8,
-            'early_first_access': 1,
-            'early_last_access': 25,
-            'early_engagement_consistency': 1.5,
-            'early_clicks_per_active_day': 15.0,
-            'early_engagement_range': 14,
-            # Early Assessment Performance (11 features)
-            'early_assessments_count': 3,
-            'early_avg_score': 65,
-            'early_score_std': 10.5,
-            'early_min_score': 45,
-            'early_max_score': 85,
-            'early_missing_submissions': 2,
-            'early_submitted_count': 1,
-            'early_total_weight': 30.0,
-            'early_banked_count': 0,
-            'early_submission_rate': 0.6,
-            'early_score_range': 40
-        }])
+        if student_id in uploaded_students_data:
+            # Use real uploaded student data
+            real_student = uploaded_students_data[student_id]
+            logger.info(f"Using real data for student {student_id} explanation")
+            
+            # Create DataFrame from real student data
+            sample_data = pd.DataFrame([real_student])
+            
+        else:
+            # Fall back to sample data for demo purposes
+            logger.info(f"Using sample data for student {student_id} explanation (not found in uploads)")
+            
+            sample_data = pd.DataFrame([{
+                'id_student': student_id,
+                # Demographics (6 features)
+                'gender_encoded': 1,
+                'region_encoded': 1,
+                'age_band_encoded': 1,
+                'education_encoded': 2,
+                'is_male': 0,
+                'has_disability': 0,
+                # Academic History (4 features)
+                'studied_credits': 120,
+                'num_of_prev_attempts': 0,
+                'registration_delay': 0,
+                'unregistered': 0,
+                # Early VLE Engagement (10 features)
+                'early_total_clicks': 120,
+                'early_avg_clicks': 4.0,
+                'early_clicks_std': 2.5,
+                'early_max_clicks': 15,
+                'early_active_days': 8,
+                'early_first_access': 1,
+                'early_last_access': 25,
+                'early_engagement_consistency': 1.5,
+                'early_clicks_per_active_day': 15.0,
+                'early_engagement_range': 14,
+                # Early Assessment Performance (11 features)
+                'early_assessments_count': 3,
+                'early_avg_score': 65,
+                'early_score_std': 10.5,
+                'early_min_score': 45,
+                'early_max_score': 85,
+                'early_missing_submissions': 2,
+                'early_submitted_count': 1,
+                'early_total_weight': 30.0,
+                'early_banked_count': 0,
+                'early_submission_rate': 0.6,
+                'early_score_range': 40
+            }])
         
         # Ensure intervention system is loaded
         global intervention_system
@@ -953,6 +979,178 @@ async def analyze_student_data_detailed(
     except Exception as e:
         logger.error(f"Error in detailed analysis: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+# Demo Mode Endpoints
+@app.get("/api/mvp/demo/stats")
+async def get_demo_stats(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get live demo statistics for pitch presentation"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 100)
+        
+        # Simulate realistic university stats
+        import time
+        import random
+        
+        # Base stats that change over time
+        current_time = int(time.time())
+        base_students = 1247 + (current_time % 100)  # Slowly increasing
+        
+        # Generate realistic metrics
+        demo_stats = {
+            'semester_info': {
+                'name': 'Fall 2024 Semester',
+                'week': 8,
+                'institution': 'State University Demo'
+            },
+            'student_metrics': {
+                'total_analyzed': base_students,
+                'new_this_week': random.randint(15, 25),
+                'high_risk': random.randint(80, 120),
+                'medium_risk': random.randint(200, 280),
+                'low_risk': base_students - random.randint(280, 400)
+            },
+            'intervention_metrics': {
+                'interventions_triggered': random.randint(45, 75),
+                'students_helped': random.randint(120, 180),
+                'success_rate': round(random.uniform(0.72, 0.78), 3),
+                'avg_improvement': round(random.uniform(12.5, 18.2), 1)
+            },
+            'time_savings': {
+                'hours_saved_per_week': round(random.uniform(15.5, 22.3), 1),
+                'early_interventions': random.randint(28, 45),
+                'prevented_dropouts': random.randint(8, 15)
+            },
+            'model_performance': {
+                'accuracy': 0.894,
+                'prediction_speed': '<100ms',
+                'confidence': round(random.uniform(0.92, 0.96), 3)
+            }
+        }
+        
+        return JSONResponse(demo_stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting demo stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving demo stats: {str(e)}")
+
+@app.get("/api/mvp/demo/simulate-new-student")
+async def simulate_new_student(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Simulate a new student enrollment for live demo"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 20)
+        
+        import random
+        import time
+        
+        # Generate realistic new student data
+        student_id = 10000 + random.randint(1, 9999)
+        risk_scenarios = [
+            {
+                'risk_score': random.uniform(0.75, 0.95),
+                'risk_category': 'High Risk',
+                'early_avg_score': random.uniform(35, 55),
+                'early_total_clicks': random.randint(10, 60),
+                'story': 'New student showing concerning early patterns'
+            },
+            {
+                'risk_score': random.uniform(0.45, 0.65),
+                'risk_category': 'Medium Risk', 
+                'early_avg_score': random.uniform(55, 75),
+                'early_total_clicks': random.randint(80, 150),
+                'story': 'Student needs proactive support'
+            },
+            {
+                'risk_score': random.uniform(0.15, 0.35),
+                'risk_category': 'Low Risk',
+                'early_avg_score': random.uniform(75, 95),
+                'early_total_clicks': random.randint(150, 300),
+                'story': 'Student on track for success'
+            }
+        ]
+        
+        scenario = random.choice(risk_scenarios)
+        
+        new_student = {
+            'id_student': student_id,
+            'risk_score': scenario['risk_score'],
+            'risk_category': scenario['risk_category'],
+            'early_avg_score': scenario['early_avg_score'],
+            'early_total_clicks': scenario['early_total_clicks'],
+            'early_active_days': random.randint(5, 20),
+            'success_probability': 1 - scenario['risk_score'],
+            'timestamp': int(time.time()),
+            'story': scenario['story']
+        }
+        
+        return JSONResponse({
+            'new_student': new_student,
+            'message': 'New student enrollment simulated'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error simulating new student: {e}")
+        raise HTTPException(status_code=500, detail=f"Error simulating student: {str(e)}")
+
+@app.get("/api/mvp/demo/success-stories")
+async def get_success_stories(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get mock success stories for demo presentation"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 50)
+        
+        success_stories = [
+            {
+                'student_id': 15234,
+                'intervention': 'Academic tutoring + check-in meetings',
+                'before_score': 45,
+                'after_score': 78,
+                'improvement': 33,
+                'outcome': 'Student moved from failing to B+ average',
+                'quote': '"The early intervention completely changed my academic trajectory. I went from considering dropping out to making the Dean\'s List."',
+                'timeframe': '6 weeks'
+            },
+            {
+                'student_id': 19876,
+                'intervention': 'Study group + learning resources',
+                'before_score': 58,
+                'after_score': 85,
+                'improvement': 27,
+                'outcome': 'Consistent improvement across all subjects',
+                'quote': '"Connecting with my study group made all the difference. I finally understood the material."',
+                'timeframe': '4 weeks'
+            },
+            {
+                'student_id': 12543,
+                'intervention': 'Technology orientation + engagement plan',
+                'before_score': 52,
+                'after_score': 76,
+                'improvement': 24,
+                'outcome': 'Increased platform engagement by 300%',
+                'quote': '"I didn\'t realize how much I was missing by not using the online resources. Now I\'m fully engaged."',
+                'timeframe': '3 weeks'
+            }
+        ]
+        
+        return JSONResponse({
+            'success_stories': success_stories,
+            'total_stories': len(success_stories),
+            'average_improvement': round(sum(s['improvement'] for s in success_stories) / len(success_stories), 1)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting success stories: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving success stories: {str(e)}")
 
 # Startup event
 @app.on_event("startup")

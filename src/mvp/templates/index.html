@@ -94,7 +94,90 @@
                     </div>
 
                     <div class="sample-data-section">
-                        <p>Don't have data ready? <button class="btn btn-link" id="load-sample">Try with sample data</button></p>
+                        <p>Don't have data ready?</p>
+                        <div class="sample-options">
+                            <button class="btn btn-link" id="load-sample">📊 Try with sample data</button>
+                            <button class="btn btn-primary" id="start-demo-from-upload">🎬 Start Live Demo Mode</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Demo Dashboard -->
+            <section class="demo-dashboard hidden" id="demo-dashboard">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">📊</span>
+                        <h2>Live University Dashboard</h2>
+                        <div class="demo-controls">
+                            <button class="btn btn-primary" id="demo-toggle">🎬 Start Live Demo</button>
+                            <button class="btn btn-secondary" id="demo-simulate">⚡ Simulate New Student</button>
+                        </div>
+                    </div>
+
+                    <div class="demo-institution-info">
+                        <div class="institution-header">
+                            <h3 id="institution-name">State University Demo</h3>
+                            <div class="semester-info">
+                                <span id="semester-name">Fall 2024 Semester</span> • 
+                                <span id="semester-week">Week 8</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-metrics-grid">
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">👥</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="total-students">1,247</div>
+                                <div class="metric-label">Students Analyzed</div>
+                                <div class="metric-change" id="new-students">+18 this week</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">🎯</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="interventions-triggered">52</div>
+                                <div class="metric-label">Interventions Triggered</div>
+                                <div class="metric-change" id="success-rate">73% success rate</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">⏰</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="time-saved">18.5</div>
+                                <div class="metric-label">Hours Saved/Week</div>
+                                <div class="metric-change" id="prevented-dropouts">12 dropouts prevented</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">📈</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="students-helped">156</div>
+                                <div class="metric-label">Students Helped</div>
+                                <div class="metric-change" id="avg-improvement">+15.2 avg improvement</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-live-feed" id="demo-feed">
+                        <h4>🔴 Live Activity Feed</h4>
+                        <div class="feed-container" id="feed-container">
+                            <div class="feed-item">
+                                <span class="feed-time">12:34 PM</span>
+                                <span class="feed-message">System ready for live demonstration</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-success-stories" id="success-stories-section" style="display: none;">
+                        <h4>📖 Recent Success Stories</h4>
+                        <div class="success-stories-grid" id="success-stories-grid">
+                            <!-- Success stories will be populated here -->
+                        </div>
                     </div>
                 </div>
             </section>
