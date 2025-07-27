@@ -10,6 +10,7 @@ class StudentSuccessApp {
         this.demoMode = false;
         this.demoInterval = null;
         this.feedItems = [];
+        this.charts = {};
         this.init();
     }
 
@@ -52,6 +53,14 @@ class StudentSuccessApp {
         if (startDemoFromUpload) {
             startDemoFromUpload.addEventListener('click', () => {
                 this.startDemoFromUpload();
+            });
+        }
+
+        // ROI Calculator
+        const calculateRoi = document.getElementById('calculate-roi');
+        if (calculateRoi) {
+            calculateRoi.addEventListener('click', () => {
+                this.calculateROI();
             });
         }
     }
@@ -767,6 +776,12 @@ class StudentSuccessApp {
             // Load success stories
             await this.loadSuccessStories();
             
+            // Initialize charts
+            setTimeout(() => this.initializeCharts(), 500);
+            
+            // Calculate initial ROI
+            setTimeout(() => this.calculateROI(), 1000);
+            
             this.addFeedItem('Demo mode activated - showing live university metrics', 'system');
             
         } else {
@@ -988,6 +1003,221 @@ class StudentSuccessApp {
         
         // Auto-start demo mode
         this.toggleDemoMode();
+    }
+
+    // Comprehensive Dashboard Methods
+    
+    async initializeCharts() {
+        // Wait for Chart.js to be available
+        if (typeof Chart === 'undefined') {
+            setTimeout(() => this.initializeCharts(), 100);
+            return;
+        }
+
+        this.createRiskTrendChart();
+        this.createInterventionChart();
+        this.createEngagementChart();
+        this.createPerformanceChart();
+    }
+
+    createRiskTrendChart() {
+        const ctx = document.getElementById('riskTrendChart');
+        if (!ctx) return;
+
+        this.charts.riskTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                datasets: [{
+                    label: 'High Risk',
+                    data: [85, 92, 88, 95, 89, 91, 87, 84],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Medium Risk',
+                    data: [220, 235, 245, 238, 252, 248, 241, 235],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Low Risk',
+                    data: [945, 920, 935, 912, 925, 918, 931, 928],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } }
+                }
+            }
+        });
+    }
+
+    createInterventionChart() {
+        const ctx = document.getElementById('interventionChart');
+        if (!ctx) return;
+
+        this.charts.intervention = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Successful', 'In Progress', 'Not Responded'],
+                datasets: [{
+                    data: [73, 18, 9],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    createEngagementChart() {
+        const ctx = document.getElementById('engagementChart');
+        if (!ctx) return;
+
+        this.charts.engagement = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Login Freq', 'Content Views', 'Assignment Sub', 'Forum Posts', 'Help Requests'],
+                datasets: [{
+                    label: 'High Risk Students',
+                    data: [2.1, 45, 0.6, 0.2, 3.4],
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                }, {
+                    label: 'Low Risk Students', 
+                    data: [4.8, 120, 0.95, 2.1, 0.8],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 10 } }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    createPerformanceChart() {
+        const ctx = document.getElementById('performanceChart');
+        if (!ctx) return;
+
+        this.charts.performance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Assignment 1', 'Assignment 2', 'Midterm', 'Assignment 3', 'Assignment 4', 'Final Project'],
+                datasets: [{
+                    label: 'Average Score',
+                    data: [78, 82, 75, 79, 85, 88],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'At-Risk Students',
+                    data: [52, 48, 45, 51, 58, 62],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    calculateROI() {
+        const classSize = parseInt(document.getElementById('class-size').value) || 150;
+        const tuitionCost = parseInt(document.getElementById('tuition-cost').value) || 45000;
+        const interventionCost = parseInt(document.getElementById('intervention-cost').value) || 200;
+
+        // Calculate metrics based on our 89.4% accuracy and 73% intervention success rate
+        const highRiskPercentage = 0.08; // 8% of students are high risk
+        const highRiskStudents = Math.round(classSize * highRiskPercentage);
+        const interventionsNeeded = highRiskStudents;
+        const successfulInterventions = Math.round(interventionsNeeded * 0.73); // 73% success rate
+        
+        // Calculate costs and savings
+        const totalInterventionCost = interventionsNeeded * interventionCost;
+        const dropoutsPrevented = successfulInterventions;
+        const retentionValue = dropoutsPrevented * tuitionCost;
+        const netSavings = retentionValue - totalInterventionCost;
+        const roiPercentage = ((netSavings / totalInterventionCost) * 100);
+
+        // Animate the values
+        this.animateROIValue('roi-savings', `$${netSavings.toLocaleString()}`);
+        this.animateROIValue('roi-percentage', `${Math.round(roiPercentage)}%`);
+        this.animateROIValue('roi-students', successfulInterventions);
+        this.animateROIValue('roi-dropouts', dropoutsPrevented);
+    }
+
+    animateROIValue(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        // Add animation class
+        element.classList.add('demo-pulse');
+        
+        setTimeout(() => {
+            element.textContent = targetValue;
+            element.classList.remove('demo-pulse');
+        }, 300);
     }
 }
 
