@@ -6,8 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Quick Start
 ```bash
-# MVP (Simple educator interface)
-python3 run_mvp.py                    # Port 8001, SQLite, web UI
+# MVP (Simple educator interface) - Auto-detects PostgreSQL or falls back to SQLite
+python3 run_mvp.py                    # Port 8001, PostgreSQL/SQLite, web UI
+
+# With PostgreSQL (Neon.tech)
+export DATABASE_URL="postgresql://user:pass@host/database"
+python3 run_mvp.py                    # Uses PostgreSQL with full production schema
 ```
 
 ### Model Operations
@@ -21,30 +25,35 @@ python3 scripts/security_test.py
 
 ## Architecture Overview
 
-### Simplified MVP Architecture
-The system implements a **single, focused architecture** for educational demonstrations:
+### Production-Ready MVP Architecture
+The system implements a **hybrid architecture** supporting both development and production deployments:
 
 **MVP Architecture** (`src/mvp/`):
-- **Purpose**: Simple educator interface for quick demos and explainable AI
-- **Database**: SQLite for zero-configuration setup  
-- **Security**: Simple API key authentication with basic rate limiting
-- **Deployment**: Single Python process (`python3 run_mvp.py`)
+- **Purpose**: Full-featured educator interface with explainable AI
+- **Database**: PostgreSQL (production) with SQLite fallback (development)
+- **Security**: API key authentication with rate limiting and audit logging
+- **Deployment**: Single Python process with auto-scaling database support
 - **Gradebook Support**: Canvas LMS and generic CSV formats
 - **Explainable AI**: Feature importance, prediction explanations, risk factor analysis
+- **Multi-Tenant**: Institution-based data isolation for K-12 districts
 
 ### Database Architecture
 
-**Simple SQLite Schema**:
+**Production PostgreSQL Schema** (6 tables):
 ```sql
-predictions (
-    id INTEGER PRIMARY KEY,
-    student_id INTEGER,
-    risk_score REAL,
-    risk_category TEXT,
-    timestamp TEXT,
-    session_id TEXT
-)
+-- Core Tables
+institutions (id, name, code, type, timezone, active, timestamps)
+students (id, institution_id, student_id, grade_level, demographics, special_populations)
+predictions (id, student_id, risk_score, risk_category, model_metadata, explanation_data)
+interventions (id, student_id, type, status, outcome, roi_tracking)
+audit_logs (id, user_id, action, resource, compliance_data)
+model_metadata (id, version, performance_metrics, deployment_info)
 ```
+
+**Development SQLite Fallback**:
+- Automatic fallback when PostgreSQL unavailable
+- Compatible schema subset for local development
+- Zero-configuration setup for quick demos
 
 ### Machine Learning Pipeline
 
@@ -214,7 +223,68 @@ except Exception as e:
 
 **Note**: Currently uses sample data for explanations since CSV uploads don't store complete student feature profiles. Future enhancement could extract actual student features from uploaded data.
 
-The system is designed for educational demonstration with explainable AI features, focusing on simplicity while maintaining core ML functionality.
+## PostgreSQL Migration & Deployment
+
+### Database Setup Options
+
+**Option 1: Neon.tech (Recommended - IPv4 Compatible)**
+```bash
+# 1. Create account at https://neon.tech
+# 2. Create database named 'student_success'
+# 3. Copy connection string
+export DATABASE_URL="postgresql://user:pass@ep-xyz.us-east-2.aws.neon.tech/student_success?sslmode=require"
+
+# Run migration
+alembic upgrade head
+
+# Start server
+python3 run_mvp.py
+```
+
+**Option 2: Supabase (IPv6 Required)**
+```bash
+# Note: Requires IPv6 connectivity (cloud environments)
+export DATABASE_URL="postgresql://postgres:pass@db.project.supabase.co:5432/postgres"
+alembic upgrade head
+python3 run_mvp.py
+```
+
+**Option 3: Development with Auto-Fallback**
+```bash
+# No DATABASE_URL set - automatically uses SQLite
+python3 run_mvp.py  # Uses mvp_data.db
+```
+
+### Migration System
+
+**Alembic Configuration**:
+- **Location**: `alembic/` directory with complete K-12 schema
+- **Migration**: `alembic upgrade head` creates all 6 production tables
+- **Rollback**: `alembic downgrade base` removes all tables
+- **Status**: `alembic current` shows current migration version
+
+**Database Health Check**:
+```python
+from mvp.database import check_database_health
+print("Health:", "✅ PASSED" if check_database_health() else "❌ FAILED")
+```
+
+### Environment Configuration
+
+**Environment Variables**:
+```bash
+DATABASE_URL=postgresql://user:pass@host/database  # PostgreSQL connection
+MVP_API_KEY=your-secure-api-key                   # API authentication
+SQL_DEBUG=true                                     # Enable SQL logging
+PORT=8001                                          # Server port
+```
+
+**Configuration Files**:
+- `.env` - Local environment variables (not committed)
+- `.env.example` - Template for environment setup
+- `CLAUDE.md` - This development guide (always keep updated)
+
+The system is designed for educational demonstration with explainable AI features, now supporting both development simplicity and production scalability.
 
 ## Development Guidelines for Claude Code
 
