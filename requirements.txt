@@ -16,3 +16,8 @@ python-magic>=0.4.27
 
 # Security
 PyJWT>=2.8.0
+
+# Database
+psycopg2-binary>=2.9.7
+sqlalchemy>=2.0.0
+alembic>=1.12.0

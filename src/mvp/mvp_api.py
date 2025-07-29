@@ -28,7 +28,10 @@ from datetime import datetime
 sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
 from mvp.simple_auth import simple_auth, simple_rate_limit, simple_file_validation
+from mvp.database import get_db_session, init_database, check_database_health
+from mvp.models import Institution, Student, Prediction, Intervention, AuditLog
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy import desc
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,9 +74,34 @@ security = HTTPBearer()
 app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
 templates = Jinja2Templates(directory="src/mvp/templates")
 
-# Simple SQLite database for MVP
-def init_sqlite():
-    """Initialize simple SQLite database for MVP"""
+# Database initialization - supports both SQLite and PostgreSQL
+def init_db():
+    """Initialize database with proper schema"""
+    try:
+        # Use new SQLAlchemy-based initialization
+        init_database()
+        
+        # Ensure default institution exists for MVP mode
+        with get_db_session() as session:
+            default_institution = session.query(Institution).filter_by(code="MVP_DEMO").first()
+            if not default_institution:
+                default_institution = Institution(
+                    name="MVP Demo Institution",
+                    code="MVP_DEMO",
+                    type="demo"
+                )
+                session.add(default_institution)
+                session.commit()
+                logger.info("Created default MVP institution")
+            
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize new database: {e}")
+        # Fallback to SQLite for backward compatibility
+        return init_sqlite_fallback()
+
+def init_sqlite_fallback():
+    """Fallback SQLite initialization for MVP compatibility"""
     db_path = "mvp_data.db"
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -92,10 +120,56 @@ def init_sqlite():
     
     conn.commit()
     conn.close()
+    logger.info("Initialized SQLite fallback database")
     return db_path
 
+def save_prediction(student_id: int, risk_score: float, risk_category: str, session_id: str, 
+                   features_data: dict = None, explanation_data: dict = None):
+    """Save prediction to database (SQLAlchemy or SQLite fallback)"""
+    try:
+        # Try new database first
+        with get_db_session() as session:
+            # Get default institution
+            institution = session.query(Institution).filter_by(code="MVP_DEMO").first()
+            if not institution:
+                raise Exception("Default institution not found")
+            
+            # Create or get student record
+            student = session.query(Student).filter_by(
+                institution_id=institution.id,
+                student_id=str(student_id)
+            ).first()
+            
+            if not student:
+                student = Student(
+                    institution_id=institution.id,
+                    student_id=str(student_id),
+                    enrollment_status="active"
+                )
+                session.add(student)
+                session.flush()  # Get the ID
+            
+            # Create prediction record
+            prediction = Prediction(
+                institution_id=institution.id,
+                student_id=student.id,
+                risk_score=risk_score,
+                risk_category=risk_category,
+                session_id=session_id,
+                data_source="csv_upload",
+                features_used=json.dumps(features_data) if features_data else None,
+                explanation=json.dumps(explanation_data) if explanation_data else None
+            )
+            session.add(prediction)
+            session.commit()
+            
+    except Exception as e:
+        logger.warning(f"Failed to save with new database, falling back to SQLite: {e}")
+        # Fallback to SQLite
+        save_prediction_to_sqlite(student_id, risk_score, risk_category, session_id)
+
 def save_prediction_to_sqlite(student_id: int, risk_score: float, risk_category: str, session_id: str):
-    """Save prediction to SQLite"""
+    """SQLite fallback for prediction storage"""
     try:
         conn = sqlite3.connect("mvp_data.db")
         cursor = conn.cursor()
@@ -106,7 +180,7 @@ def save_prediction_to_sqlite(student_id: int, risk_score: float, risk_category:
         conn.commit()
         conn.close()
     except Exception as e:
-        logger.warning(f"Failed to save prediction: {e}")
+        logger.warning(f"Failed to save prediction to SQLite: {e}")
 
 def detect_gradebook_format(df):
     """Detect Canvas or generic CSV format"""
@@ -641,12 +715,14 @@ async def analyze_student_data(
             })
             students.append(student_data)
             
-            # Save to SQLite
-            save_prediction_to_sqlite(
+            # Save to database
+            save_prediction(
                 student_data['id_student'],
                 student_data['risk_score'],
                 student_data['risk_category'],
-                f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                features_data=student_data,
+                explanation_data=None
             )
         
         # Calculate summary statistics
@@ -723,12 +799,14 @@ async def get_sample_data(
                 })
                 students.append(student_data)
                 
-                # Save to SQLite
-                save_prediction_to_sqlite(
+                # Save to database
+                save_prediction(
                     student_data['id_student'],
                     student_data['risk_score'],
                     student_data['risk_category'],
-                    "sample_data"
+                    "sample_data",
+                    features_data=student_data,
+                    explanation_data=None
                 )
             
             # Calculate summary
@@ -1159,9 +1237,15 @@ async def startup_event():
     global intervention_system
     
     try:
-        # Initialize SQLite database
-        init_sqlite()
-        logger.info("✅ SQLite database initialized")
+        # Initialize database (PostgreSQL or SQLite fallback)
+        if init_db():
+            logger.info("✅ Database initialized")
+            if check_database_health():
+                logger.info("✅ Database health check passed")
+            else:
+                logger.warning("⚠️ Database health check failed")
+        else:
+            logger.error("❌ Database initialization failed")
         
         # Load intervention system
         intervention_system = InterventionRecommendationSystem()
