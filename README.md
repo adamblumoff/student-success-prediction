@@ -1,23 +1,38 @@
-# Student Success Prediction MVP
+# 🎓 Student Success Prediction System
 
-An AI-powered system for identifying at-risk students and providing intervention recommendations using machine learning.
+An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes.
 
 ## 🚀 Quick Start
 
+### Development (SQLite)
 ```bash
-# Start the MVP application
+# Start with automatic SQLite fallback
 python3 run_mvp.py
 
 # Open your browser to http://localhost:8001
 ```
 
+### Production (PostgreSQL)
+```bash
+# Set up PostgreSQL database (Neon.tech recommended)
+export DATABASE_URL="postgresql://user:pass@host/database"
+
+# Run database migration
+alembic upgrade head
+
+# Start the application
+python3 run_mvp.py
+```
+
 ## ✨ Features
 
-- **Early Risk Detection**: Identifies at-risk students using ML models with 89.4% accuracy
-- **Interactive Web Interface**: Upload CSV files or try with sample data
-- **Explainable AI**: Detailed explanations of predictions and risk factors
-- **Feature Importance**: Understand which factors most influence student success
-- **Real-time Analysis**: Get instant risk assessments and intervention recommendations
+- **🤖 AI-Powered Risk Prediction**: Identifies students at risk of academic failure using 31 engineered features
+- **📊 Explainable AI**: Provides detailed explanations for each prediction with risk factors and protective factors
+- **📈 Real-Time Analytics**: Comprehensive dashboard with advanced analytics and ROI calculations
+- **🏫 Multi-Tenant Architecture**: Supports multiple school districts with data isolation
+- **📚 Gradebook Integration**: Compatible with Canvas LMS and generic CSV formats
+- **🎯 Intervention Tracking**: Workflow management for student interventions with outcome tracking
+- **🔒 FERPA Compliant**: Audit logging and security features for educational data privacy
 
 ## 📊 How It Works
 
@@ -68,19 +83,23 @@ pip install -r requirements.txt
 ```
 
 ### Architecture
-- **Frontend**: Simple HTML/CSS/JavaScript web interface
-- **Backend**: FastAPI with SQLite database
-- **ML Models**: XGBoost with scikit-learn preprocessing
-- **Security**: API key authentication with rate limiting
+- **Frontend**: HTML/CSS/JavaScript web interface with explainable AI components
+- **Backend**: FastAPI with PostgreSQL/SQLite hybrid database layer
+- **ML Models**: XGBoost with comprehensive feature engineering
+- **Database**: Production PostgreSQL with development SQLite fallback
+- **Security**: API key authentication, rate limiting, and audit logging
 
 ### Project Structure
 ```
-├── src/mvp/           # MVP web application
-├── src/models/        # ML models and training
-├── data/             # Datasets (OULAD)
-├── results/models/   # Trained model files
-└── run_mvp.py        # Main application launcher
+├── src/mvp/              # Core application
+├── alembic/              # Database migrations
+├── deployment/           # Deployment tools
+├── docs/                 # Documentation
+├── results/models/       # Trained ML models
+└── run_mvp.py           # Application entry point
 ```
+
+See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed folder organization.
 
 ## 📈 Usage Examples
 
