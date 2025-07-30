@@ -27,6 +27,7 @@ from datetime import datetime
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 from models.intervention_system import InterventionRecommendationSystem
+from models.k12_ultra_predictor import K12UltraPredictor
 from mvp.simple_auth import simple_auth, simple_rate_limit, simple_file_validation
 from mvp.database import get_db_session, init_database, check_database_health
 from mvp.models import Institution, Student, Prediction, Intervention, AuditLog
@@ -64,6 +65,7 @@ async def add_basic_headers(request: Request, call_next):
 
 # Global variables
 intervention_system = None
+k12_ultra_predictor = None
 uploaded_students_data = {}  # Store uploaded student data for explanations
 sample_data = None
 
@@ -1058,6 +1060,73 @@ async def analyze_student_data_detailed(
         logger.error(f"Error in detailed analysis: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
+@app.post("/api/mvp/analyze-k12")
+async def analyze_k12_gradebook(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Analyze gradebook CSV using enhanced K-12 model"""
+    try:
+        # Simple rate limiting
+        simple_rate_limit(request, 5)
+        
+        # Simple file validation and processing
+        contents = await file.read()
+        simple_file_validation(contents, file.filename or "gradebook.csv")
+        
+        # Process CSV
+        df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+        
+        logger.info(f"Processing K-12 gradebook: {file.filename} with {len(df)} students")
+        
+        # Use ultra-advanced K-12 predictor directly on gradebook data
+        global k12_ultra_predictor
+        if k12_ultra_predictor is None:
+            k12_ultra_predictor = K12UltraPredictor()
+        
+        # Get ultra-advanced K-12 predictions
+        predictions = k12_ultra_predictor.predict_from_gradebook(df)
+        
+        # Generate enhanced recommendations for each student
+        for prediction in predictions:
+            prediction['recommendations'] = k12_ultra_predictor.generate_recommendations(prediction)
+        
+        # Create summary statistics
+        total_students = len(predictions)
+        high_risk = sum(1 for p in predictions if p['risk_level'] == 'danger')
+        moderate_risk = sum(1 for p in predictions if p['risk_level'] == 'warning')
+        low_risk = sum(1 for p in predictions if p['risk_level'] == 'success')
+        
+        avg_gpa = sum(p['current_gpa'] for p in predictions) / total_students if total_students > 0 else 0
+        avg_attendance = sum(p['attendance_rate'] for p in predictions) / total_students if total_students > 0 else 0
+        
+        summary = {
+            'total_students': total_students,
+            'risk_distribution': {
+                'high_risk': high_risk,
+                'moderate_risk': moderate_risk,
+                'low_risk': low_risk
+            },
+            'class_averages': {
+                'gpa': round(avg_gpa, 2),
+                'attendance': round(avg_attendance * 100, 1)
+            },
+            'model_info': k12_ultra_predictor.get_model_info()
+        }
+        
+        logger.info(f"K-12 analysis complete: {total_students} students, {high_risk} high-risk")
+        
+        return JSONResponse({
+            'predictions': predictions,
+            'summary': summary,
+            'message': f'Successfully analyzed {len(predictions)} students with Ultra-Advanced K-12 model (81.5% AUC)'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in K-12 analysis: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing K-12 gradebook: {str(e)}")
+
 # Demo Mode Endpoints
 @app.get("/api/mvp/demo/stats")
 async def get_demo_stats(
@@ -1247,10 +1316,12 @@ async def startup_event():
         else:
             logger.error("❌ Database initialization failed")
         
-        # Load intervention system
+        # Load intervention systems
         intervention_system = InterventionRecommendationSystem()
+        k12_ultra_predictor = K12UltraPredictor()
         logger.info("✅ MVP Student Success Prediction API started")
-        logger.info(f"✅ Model loaded with {len(intervention_system.feature_columns)} features")
+        logger.info(f"✅ Original model loaded with {len(intervention_system.feature_columns)} features")
+        logger.info(f"🚀 Ultra-Advanced K-12 model loaded with AUC: {k12_ultra_predictor.get_model_info()['auc_score']:.3f}")
         
     except Exception as e:
         logger.error(f"❌ Failed to start MVP API: {e}")
