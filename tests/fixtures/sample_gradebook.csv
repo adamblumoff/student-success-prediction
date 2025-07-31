@@ -1,0 +1,11 @@
+student_id,name,grade_level,current_gpa,attendance_rate,discipline_incidents,assignment_completion,Assignment 1,Assignment 2,Quiz 1,midterm_grade
+S001,Alice Johnson,9,3.5,0.98,0,0.95,85/100,92/100,88%,A-
+S002,Bob Smith,10,2.1,0.87,1,0.70,65/100,58/100,72%,D+
+S003,Carol Davis,11,1.8,0.75,3,0.45,45/100,38/100,55%,F
+S004,David Wilson,9,3.8,0.96,0,0.98,95/100,94/100,96%,A
+S005,Emma Brown,10,2.8,0.92,0,0.85,78/100,82/100,80%,B-
+S006,Frank Miller,11,1.5,0.68,5,0.35,35/100,28/100,42%,F
+S007,Grace Lee,9,3.2,0.94,0,0.88,82/100,85/100,79%,B
+S008,Henry Taylor,10,2.4,0.89,2,0.75,68/100,71/100,69%,C
+S009,Ivy Chen,11,3.9,0.99,0,0.97,97/100,95/100,98%,A+
+S010,Jack Davis,9,2.0,0.82,1,0.65,62/100,59/100,63%,D

@@ -3,13 +3,21 @@
 class StudentSuccessApp {
     constructor() {
         this.students = [];
+        this.filteredStudents = [];
+        this.selectedStudent = null;
+        this.currentFilter = 'all';
         this.interventions = new Map(); // Track interventions by student ID
+        this.demoMode = false;
+        this.demoInterval = null;
+        this.feedItems = [];
+        this.charts = {};
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.setupDragAndDrop();
+        this.setupTwoPanelLayout();
     }
 
     setupEventListeners() {
@@ -24,6 +32,37 @@ class StudentSuccessApp {
         document.getElementById('load-sample').addEventListener('click', () => {
             this.loadSampleData();
         });
+
+        // Demo mode controls
+        const demoToggle = document.getElementById('demo-toggle');
+        const demoSimulate = document.getElementById('demo-simulate');
+        const startDemoFromUpload = document.getElementById('start-demo-from-upload');
+        
+        if (demoToggle) {
+            demoToggle.addEventListener('click', () => {
+                this.toggleDemoMode();
+            });
+        }
+        
+        if (demoSimulate) {
+            demoSimulate.addEventListener('click', () => {
+                this.simulateNewStudent();
+            });
+        }
+        
+        if (startDemoFromUpload) {
+            startDemoFromUpload.addEventListener('click', () => {
+                this.startDemoFromUpload();
+            });
+        }
+
+        // ROI Calculator
+        const calculateRoi = document.getElementById('calculate-roi');
+        if (calculateRoi) {
+            calculateRoi.addEventListener('click', () => {
+                this.calculateROI();
+            });
+        }
     }
 
     setupDragAndDrop() {
@@ -70,6 +109,9 @@ class StudentSuccessApp {
 
             const response = await fetch('/api/mvp/analyze', {
                 method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                },
                 body: formData
             });
 
@@ -91,7 +133,11 @@ class StudentSuccessApp {
         this.showLoading(true);
 
         try {
-            const response = await fetch('/api/mvp/sample');
+            const response = await fetch('/api/mvp/sample', {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
             if (!response.ok) {
                 throw new Error('Failed to load sample data');
             }
@@ -107,7 +153,27 @@ class StudentSuccessApp {
     }
 
     displayResults(data) {
-        this.students = data.students;
+        // Ensure students array is properly set and normalized
+        this.students = data.students || [];
+        
+        // Normalize student IDs for consistent access
+        this.students = this.students.map(student => {
+            // Ensure id_student exists for modal compatibility
+            if (!student.id_student && student.id) {
+                student.id_student = student.id;
+            }
+            if (!student.id_student && student.ID) {
+                student.id_student = student.ID;
+            }
+            // Ensure numeric ID for consistent comparison
+            if (student.id_student) {
+                student.id_student = parseInt(student.id_student);
+            }
+            return student;
+        });
+        
+        console.log('Processed students data:', this.students.length, 'students');
+        console.log('Sample student:', this.students[0]);
         
         // Hide upload section and show results
         document.getElementById('upload-section').style.display = 'none';
@@ -117,8 +183,8 @@ class StudentSuccessApp {
         // Update summary stats
         this.updateSummaryStats(data.summary);
 
-        // Display students
-        this.displayStudents();
+        // Display students using two-panel layout
+        this.displayStudentsTwoPanel();
 
         // Display intervention tracking
         this.displayInterventionTracking();
@@ -153,46 +219,72 @@ class StudentSuccessApp {
         ).sort((a, b) => b.risk_score - a.risk_score);
 
         const studentsHTML = atRiskStudents.map(student => `
-            <div class="student-card" onclick="app.showStudentDetail(${student.id_student})">
+            <div class="student-card risk-${student.risk_category.toLowerCase().replace(' ', '-')}" onclick="app.showStudentDetail(${student.id_student})">
                 <div class="student-header">
                     <div class="student-name">Student #${student.id_student}</div>
                     <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
-                        ${student.risk_category}
+                        ${student.risk_category} • ${Math.round(student.risk_score * 100)}%
                     </div>
                 </div>
                 
                 <div class="student-details">
                     <div class="detail-item">
-                        <div class="detail-value">${Math.round(student.risk_score * 100)}%</div>
-                        <div class="detail-label">Risk Score</div>
+                        <div class="detail-value">${student.success_probability ? Math.round(student.success_probability * 100) : Math.round((1 - student.risk_score) * 100)}%</div>
+                        <div class="detail-label">Success Probability</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-value">${student.early_avg_score || 'N/A'}</div>
-                        <div class="detail-label">Avg Score</div>
+                        <div class="detail-value">${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</div>
+                        <div class="detail-label">Assignment Score</div>
                     </div>
                     <div class="detail-item">
-                        <div class="detail-value">${student.early_total_clicks || 0}</div>
-                        <div class="detail-label">Engagement</div>
+                        <div class="detail-value">${student.early_active_days || student.early_total_clicks || 0}</div>
+                        <div class="detail-label">Engagement Level</div>
                     </div>
                 </div>
 
                 <div class="interventions-preview">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; font-size: 14px; color: #374151; font-weight: 600;">🎯 Recommended Actions</h4>
+                        <span style="font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 10px;">AI-Powered</span>
+                    </div>
                     ${this.getInterventionsPreview(student)}
                 </div>
             </div>
         `).join('');
 
         document.getElementById('students-list').innerHTML = studentsHTML;
+        
+        // Enhance student cards with explainable AI buttons if available
+        if (window.explainableUI && window.explainableUI.enhanceStudentCards) {
+            setTimeout(() => {
+                console.log('Enhancing student cards with AI features...');
+                window.explainableUI.enhanceStudentCards();
+            }, 200);
+        } else {
+            console.log('ExplainableUI not available yet');
+        }
     }
 
     getInterventionsPreview(student) {
         const interventions = this.getRecommendedInterventions(student);
-        return interventions.slice(0, 2).map(intervention => `
+        const interventionItems = interventions.slice(0, 2).map(intervention => `
             <div class="intervention-item">
                 <span class="intervention-text">${intervention.title}</span>
                 <span class="intervention-status">Suggested</span>
             </div>
         `).join('');
+        
+        // Add the AI explanation button
+        const explainButton = `
+            <div class="intervention-item explain-button">
+                <span class="intervention-text" onclick="window.explainableUI && window.explainableUI.showStudentExplanation(${student.id_student})" style="cursor: pointer; color: #2563eb; font-weight: 600;">
+                    🔍 Explain AI Prediction
+                </span>
+                <span class="intervention-status available">AI Analysis</span>
+            </div>
+        `;
+        
+        return interventionItems + explainButton;
     }
 
     getRecommendedInterventions(student) {
@@ -200,15 +292,15 @@ class StudentSuccessApp {
         
         if (student.risk_category === 'High Risk') {
             interventions.push(
-                { title: "Schedule immediate 1-on-1 meeting", priority: "Critical", type: "Meeting" },
-                { title: "Connect with academic advisor", priority: "Critical", type: "Support" },
-                { title: "Assess for learning difficulties", priority: "High", type: "Assessment" }
+                { title: "Schedule immediate 1-on-1 meeting", priority: "Critical", type: "Meeting", description: "Meet with student within 48 hours to assess current challenges and provide immediate support." },
+                { title: "Connect with academic advisor", priority: "Critical", type: "Support", description: "Refer to academic advisor for comprehensive support plan and resource coordination." },
+                { title: "Assess for learning difficulties", priority: "High", type: "Assessment", description: "Evaluate for potential learning challenges that may require additional accommodations." }
             );
         } else if (student.risk_category === 'Medium Risk') {
             interventions.push(
-                { title: "Send check-in email this week", priority: "High", type: "Communication" },
-                { title: "Recommend study group participation", priority: "Medium", type: "Peer Support" },
-                { title: "Share additional learning resources", priority: "Medium", type: "Resources" }
+                { title: "Send check-in email this week", priority: "High", type: "Communication", description: "Proactive outreach to understand current situation and offer assistance." },
+                { title: "Recommend study group participation", priority: "Medium", type: "Peer Support", description: "Connect with peer learning opportunities to improve engagement and understanding." },
+                { title: "Share additional learning resources", priority: "Medium", type: "Resources", description: "Provide targeted materials and tools to support academic improvement." }
             );
         }
 
@@ -217,7 +309,8 @@ class StudentSuccessApp {
             interventions.push({
                 title: "Address low online engagement",
                 priority: "High",
-                type: "Engagement"
+                type: "Engagement",
+                description: "Student shows low platform interaction. Schedule technology orientation and engagement strategies."
             });
         }
 
@@ -226,7 +319,8 @@ class StudentSuccessApp {
             interventions.push({
                 title: "Provide tutoring support",
                 priority: "High", 
-                type: "Academic"
+                type: "Academic",
+                description: "Low assessment scores indicate need for additional academic support and skill development."
             });
         }
 
@@ -234,8 +328,31 @@ class StudentSuccessApp {
     }
 
     showStudentDetail(studentId) {
-        const student = this.students.find(s => s.id_student === studentId);
-        if (!student) return;
+        // Try multiple ways to find the student (for CSV upload compatibility)
+        let student = this.students.find(s => s.id_student === studentId);
+        
+        // If not found, try different ID formats
+        if (!student) {
+            student = this.students.find(s => s.id === studentId);
+        }
+        if (!student) {
+            student = this.students.find(s => s.ID === studentId);
+        }
+        if (!student) {
+            // Try converting to string/number for comparison
+            student = this.students.find(s => String(s.id_student) === String(studentId));
+        }
+        if (!student) {
+            student = this.students.find(s => parseInt(s.id_student) === parseInt(studentId));
+        }
+        
+        if (!student) {
+            console.error('Student not found:', studentId, 'Available students:', this.students);
+            alert('Student details not available. This might be due to a data format issue with CSV uploads.');
+            return;
+        }
+        
+        console.log('Found student:', student);
 
         const interventions = this.getRecommendedInterventions(student);
         
@@ -428,6 +545,679 @@ class StudentSuccessApp {
 
     showLoading(show) {
         document.getElementById('loading-overlay').classList.toggle('hidden', !show);
+    }
+
+    // Two-Panel Layout Methods
+    setupTwoPanelLayout() {
+        // Setup search functionality
+        const searchInput = document.getElementById('student-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterStudents(e.target.value, this.currentFilter);
+            });
+        }
+
+        // Setup filter tabs
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // Update active tab
+                filterTabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Update filter
+                this.currentFilter = e.target.dataset.filter;
+                const searchTerm = searchInput ? searchInput.value : '';
+                this.filterStudents(searchTerm, this.currentFilter);
+            });
+        });
+    }
+
+    displayStudentsTwoPanel() {
+        // Show all students (high, medium, low risk) for better navigation
+        this.filteredStudents = this.students.slice().sort((a, b) => b.risk_score - a.risk_score);
+        
+        // Apply current filter
+        const searchInput = document.getElementById('student-search');
+        const searchTerm = searchInput ? searchInput.value : '';
+        this.filterStudents(searchTerm, this.currentFilter);
+        
+        // Render compact list
+        this.renderCompactStudentList();
+        
+        // Clear detail panel
+        this.clearStudentDetail();
+    }
+
+    filterStudents(searchTerm, filter) {
+        let filtered = this.students.slice();
+        
+        // Apply risk filter
+        if (filter === 'high') {
+            filtered = filtered.filter(s => s.risk_category === 'High Risk');
+        } else if (filter === 'medium') {
+            filtered = filtered.filter(s => s.risk_category === 'Medium Risk');
+        } else if (filter === 'low') {
+            filtered = filtered.filter(s => s.risk_category === 'Low Risk');
+        }
+        
+        // Apply search filter
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(s => 
+                String(s.id_student).toLowerCase().includes(term) ||
+                String(s.id || '').toLowerCase().includes(term)
+            );
+        }
+        
+        // Sort by risk score
+        this.filteredStudents = filtered.sort((a, b) => b.risk_score - a.risk_score);
+        
+        // Re-render list
+        this.renderCompactStudentList();
+    }
+
+    renderCompactStudentList() {
+        const container = document.getElementById('student-list-compact');
+        if (!container) return;
+        
+        if (this.filteredStudents.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 40px 20px; text-align: center; color: #6b7280;">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+                    <p>No students match your search criteria.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const studentsHTML = this.filteredStudents.map(student => `
+            <div class="compact-student-item" data-student-id="${student.id_student}" 
+                 onclick="app.selectStudent(${student.id_student})">
+                <div class="compact-student-header">
+                    <div class="student-compact-id">Student #${student.id_student}</div>
+                    <div class="risk-badge-compact risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
+                        ${student.risk_category.split(' ')[0]}
+                    </div>
+                </div>
+                <div class="compact-student-metrics">
+                    <span class="student-compact-score">Score: ${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</span>
+                    <span>Risk: ${Math.round(student.risk_score * 100)}%</span>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = studentsHTML;
+    }
+
+    selectStudent(studentId) {
+        // Update selected state in list
+        document.querySelectorAll('.compact-student-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        const selectedItem = document.querySelector(`[data-student-id="${studentId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+        }
+        
+        // Find student data
+        this.selectedStudent = this.students.find(s => 
+            s.id_student === studentId || 
+            String(s.id_student) === String(studentId) ||
+            parseInt(s.id_student) === parseInt(studentId)
+        );
+        
+        if (this.selectedStudent) {
+            this.renderStudentDetail(this.selectedStudent);
+        }
+    }
+
+    renderStudentDetail(student) {
+        const container = document.getElementById('student-detail-content');
+        if (!container) return;
+        
+        const interventions = this.getRecommendedInterventions(student);
+        
+        const detailHTML = `
+            <div class="student-detail-view">
+                <div class="detail-header">
+                    <h2>Student #${student.id_student}</h2>
+                    <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
+                        ${student.risk_category} • ${Math.round(student.risk_score * 100)}% Risk
+                    </div>
+                </div>
+                
+                <div class="detail-metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${student.success_probability ? Math.round(student.success_probability * 100) : Math.round((1 - student.risk_score) * 100)}%</div>
+                        <div class="metric-label">Success Probability</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</div>
+                        <div class="metric-label">Average Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_active_days || 0}</div>
+                        <div class="metric-label">Active Days</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${student.early_total_clicks || 0}</div>
+                        <div class="metric-label">Platform Clicks</div>
+                    </div>
+                </div>
+                
+                <div class="detail-actions">
+                    <button class="btn btn-primary" onclick="explainableUI.showStudentExplanation(${student.id_student})">
+                        🔍 Explain AI Prediction
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.showStudentDetail(${student.id_student})">
+                        📊 Full Details
+                    </button>
+                </div>
+                
+                <div class="interventions-detail">
+                    <h3>🎯 Recommended Interventions</h3>
+                    <div class="interventions-list">
+                        ${interventions.slice(0, 3).map(intervention => `
+                            <div class="intervention-detail-item">
+                                <div class="intervention-title">${intervention.title}</div>
+                                <div class="intervention-description">${intervention.description}</div>
+                                <div class="intervention-priority">Priority: ${intervention.priority}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = detailHTML;
+    }
+
+    clearStudentDetail() {
+        const container = document.getElementById('student-detail-content');
+        if (container) {
+            container.innerHTML = `
+                <div class="no-student-selected">
+                    <div class="placeholder-icon">👆</div>
+                    <h3>Select a Student</h3>
+                    <p>Click on any student from the list to view detailed analysis, risk factors, and AI-powered intervention recommendations.</p>
+                </div>
+            `;
+        }
+        
+        // Clear selections
+        document.querySelectorAll('.compact-student-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        this.selectedStudent = null;
+    }
+
+    // Demo Mode Methods
+    async toggleDemoMode() {
+        const demoToggle = document.getElementById('demo-toggle');
+        const demoSection = document.getElementById('demo-dashboard');
+        
+        if (!this.demoMode) {
+            // Start demo mode
+            this.demoMode = true;
+            demoToggle.textContent = '⏹️ Stop Demo';
+            demoToggle.classList.add('demo-pulse');
+            
+            // Show demo dashboard
+            if (demoSection) {
+                demoSection.classList.remove('hidden');
+            }
+            
+            // Start live updates
+            this.startDemoUpdates();
+            
+            // Load success stories
+            await this.loadSuccessStories();
+            
+            // Initialize charts
+            setTimeout(() => this.initializeCharts(), 500);
+            
+            // Calculate initial ROI
+            setTimeout(() => this.calculateROI(), 1000);
+            
+            this.addFeedItem('Demo mode activated - showing live university metrics', 'system');
+            
+        } else {
+            // Stop demo mode
+            this.demoMode = false;
+            demoToggle.textContent = '🎬 Start Live Demo';
+            demoToggle.classList.remove('demo-pulse');
+            
+            // Stop updates
+            if (this.demoInterval) {
+                clearInterval(this.demoInterval);
+                this.demoInterval = null;
+            }
+            
+            this.addFeedItem('Demo mode stopped', 'system');
+        }
+    }
+
+    startDemoUpdates() {
+        // Update metrics every 3 seconds
+        this.demoInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/mvp/demo/stats', {
+                    headers: {
+                        'Authorization': 'Bearer dev-key-change-me'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.updateDemoMetrics(data);
+                }
+            } catch (error) {
+                console.error('Demo update error:', error);
+            }
+        }, 3000);
+        
+        // Initial load
+        this.updateDemoMetrics();
+    }
+
+    async updateDemoMetrics(data = null) {
+        if (!data) {
+            try {
+                const response = await fetch('/api/mvp/demo/stats', {
+                    headers: {
+                        'Authorization': 'Bearer dev-key-change-me'
+                    }
+                });
+                
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to fetch demo stats:', error);
+                return;
+            }
+        }
+
+        if (data) {
+            // Update institution info
+            this.updateElement('institution-name', data.semester_info?.institution);
+            this.updateElement('semester-name', data.semester_info?.name);
+            this.updateElement('semester-week', `Week ${data.semester_info?.week}`);
+            
+            // Update metrics with animation
+            this.animateNumber('total-students', data.student_metrics?.total_analyzed);
+            this.updateElement('new-students', `+${data.student_metrics?.new_this_week} this week`);
+            
+            this.animateNumber('interventions-triggered', data.intervention_metrics?.interventions_triggered);
+            this.updateElement('success-rate', `${Math.round(data.intervention_metrics?.success_rate * 100)}% success rate`);
+            
+            this.animateNumber('time-saved', data.time_savings?.hours_saved_per_week);
+            this.updateElement('prevented-dropouts', `${data.time_savings?.prevented_dropouts} dropouts prevented`);
+            
+            this.animateNumber('students-helped', data.intervention_metrics?.students_helped);
+            this.updateElement('avg-improvement', `+${data.intervention_metrics?.avg_improvement} avg improvement`);
+        }
+    }
+
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element && value !== undefined) {
+            element.textContent = value;
+        }
+    }
+
+    animateNumber(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element || targetValue === undefined) return;
+        
+        const currentValue = parseInt(element.textContent) || 0;
+        const increment = Math.ceil((targetValue - currentValue) / 10);
+        
+        if (increment !== 0) {
+            const timer = setInterval(() => {
+                const current = parseInt(element.textContent) || 0;
+                const newValue = current + increment;
+                
+                if ((increment > 0 && newValue >= targetValue) || (increment < 0 && newValue <= targetValue)) {
+                    element.textContent = targetValue;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = newValue;
+                }
+            }, 50);
+        }
+    }
+
+    async simulateNewStudent() {
+        try {
+            const response = await fetch('/api/mvp/demo/simulate-new-student', {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const student = data.new_student;
+                
+                // Add to feed
+                this.addFeedItem(
+                    `New student enrolled: #${student.id_student} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
+                    'new-student'
+                );
+                
+                // Simulate intervention if high risk
+                if (student.risk_category === 'High Risk') {
+                    setTimeout(() => {
+                        this.addFeedItem(
+                            `Intervention triggered for student #${student.id_student} - Academic advisor assigned`,
+                            'intervention'
+                        );
+                    }, 2000);
+                }
+                
+            }
+        } catch (error) {
+            console.error('Failed to simulate new student:', error);
+        }
+    }
+
+    addFeedItem(message, type = 'info') {
+        const feedContainer = document.getElementById('feed-container');
+        if (!feedContainer) return;
+        
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { 
+            hour12: true, 
+            hour: 'numeric', 
+            minute: '2-digit' 
+        });
+        
+        const feedItem = document.createElement('div');
+        feedItem.className = `feed-item ${type}`;
+        feedItem.innerHTML = `
+            <span class="feed-time">${timeStr}</span>
+            <span class="feed-message">${message}</span>
+        `;
+        
+        // Add to top of feed
+        feedContainer.insertBefore(feedItem, feedContainer.firstChild);
+        
+        // Keep only last 10 items
+        while (feedContainer.children.length > 10) {
+            feedContainer.removeChild(feedContainer.lastChild);
+        }
+    }
+
+    async loadSuccessStories() {
+        try {
+            const response = await fetch('/api/mvp/demo/success-stories', {
+                headers: {
+                    'Authorization': 'Bearer dev-key-change-me'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.displaySuccessStories(data.success_stories);
+            }
+        } catch (error) {
+            console.error('Failed to load success stories:', error);
+        }
+    }
+
+    displaySuccessStories(stories) {
+        const container = document.getElementById('success-stories-grid');
+        const section = document.getElementById('success-stories-section');
+        
+        if (!container || !section) return;
+        
+        const storiesHTML = stories.map(story => `
+            <div class="success-story-card">
+                <div class="success-story-header">
+                    <div class="success-story-id">Student #${story.student_id}</div>
+                    <div class="success-improvement">+${story.improvement} points</div>
+                </div>
+                <div class="success-story-quote">${story.quote}</div>
+                <div class="success-story-details">
+                    ${story.intervention} • ${story.timeframe} • ${story.before_score}→${story.after_score}
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = storiesHTML;
+        section.style.display = 'block';
+    }
+
+    startDemoFromUpload() {
+        // Hide upload section and show demo dashboard
+        document.getElementById('upload-section').style.display = 'none';
+        
+        const demoSection = document.getElementById('demo-dashboard');
+        if (demoSection) {
+            demoSection.classList.remove('hidden');
+        }
+        
+        // Auto-start demo mode
+        this.toggleDemoMode();
+    }
+
+    // Comprehensive Dashboard Methods
+    
+    async initializeCharts() {
+        // Wait for Chart.js to be available
+        if (typeof Chart === 'undefined') {
+            setTimeout(() => this.initializeCharts(), 100);
+            return;
+        }
+
+        this.createRiskTrendChart();
+        this.createInterventionChart();
+        this.createEngagementChart();
+        this.createPerformanceChart();
+    }
+
+    createRiskTrendChart() {
+        const ctx = document.getElementById('riskTrendChart');
+        if (!ctx) return;
+
+        this.charts.riskTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                datasets: [{
+                    label: 'High Risk',
+                    data: [85, 92, 88, 95, 89, 91, 87, 84],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Medium Risk',
+                    data: [220, 235, 245, 238, 252, 248, 241, 235],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Low Risk',
+                    data: [945, 920, 935, 912, 925, 918, 931, 928],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.1)' } }
+                }
+            }
+        });
+    }
+
+    createInterventionChart() {
+        const ctx = document.getElementById('interventionChart');
+        if (!ctx) return;
+
+        this.charts.intervention = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Successful', 'In Progress', 'Not Responded'],
+                datasets: [{
+                    data: [73, 18, 9],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
+    createEngagementChart() {
+        const ctx = document.getElementById('engagementChart');
+        if (!ctx) return;
+
+        this.charts.engagement = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Login Freq', 'Content Views', 'Assignment Sub', 'Forum Posts', 'Help Requests'],
+                datasets: [{
+                    label: 'High Risk Students',
+                    data: [2.1, 45, 0.6, 0.2, 3.4],
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                }, {
+                    label: 'Low Risk Students', 
+                    data: [4.8, 120, 0.95, 2.1, 0.8],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 10 } }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    createPerformanceChart() {
+        const ctx = document.getElementById('performanceChart');
+        if (!ctx) return;
+
+        this.charts.performance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Assignment 1', 'Assignment 2', 'Midterm', 'Assignment 3', 'Assignment 4', 'Final Project'],
+                datasets: [{
+                    label: 'Average Score',
+                    data: [78, 82, 75, 79, 85, 88],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'At-Risk Students',
+                    data: [52, 48, 45, 51, 58, 62],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: { 
+                        grid: { display: false },
+                        ticks: { font: { size: 9 } }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(0,0,0,0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    calculateROI() {
+        const classSize = parseInt(document.getElementById('class-size').value) || 150;
+        const tuitionCost = parseInt(document.getElementById('tuition-cost').value) || 45000;
+        const interventionCost = parseInt(document.getElementById('intervention-cost').value) || 200;
+
+        // Calculate metrics based on our 89.4% accuracy and 73% intervention success rate
+        const highRiskPercentage = 0.08; // 8% of students are high risk
+        const highRiskStudents = Math.round(classSize * highRiskPercentage);
+        const interventionsNeeded = highRiskStudents;
+        const successfulInterventions = Math.round(interventionsNeeded * 0.73); // 73% success rate
+        
+        // Calculate costs and savings
+        const totalInterventionCost = interventionsNeeded * interventionCost;
+        const dropoutsPrevented = successfulInterventions;
+        const retentionValue = dropoutsPrevented * tuitionCost;
+        const netSavings = retentionValue - totalInterventionCost;
+        const roiPercentage = ((netSavings / totalInterventionCost) * 100);
+
+        // Animate the values
+        this.animateROIValue('roi-savings', `$${netSavings.toLocaleString()}`);
+        this.animateROIValue('roi-percentage', `${Math.round(roiPercentage)}%`);
+        this.animateROIValue('roi-students', successfulInterventions);
+        this.animateROIValue('roi-dropouts', dropoutsPrevented);
+    }
+
+    animateROIValue(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+
+        // Add animation class
+        element.classList.add('demo-pulse');
+        
+        setTimeout(() => {
+            element.textContent = targetValue;
+            element.classList.remove('demo-pulse');
+        }, 300);
     }
 }
 

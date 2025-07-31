@@ -59,9 +59,12 @@ results/figures/*.jpg
 # Data files (keep structure but not content)
 data/raw/*.csv
 
-# Environment variables
+# Environment variables (all env files except examples)
 .env
-.env.local
+.env.*
+!.env.example
+!.env.security
+!.env.*.template
 
 # Temporary files
 tmp/
@@ -76,3 +79,15 @@ config/production.yaml
 *.crt
 *.p12
 secrets/
+
+# Security-sensitive files
+mvp_data.db
+secure_mvp_data.db
+auth_tokens.json
+session_data/
+
+# Deployment artifacts
+docker-compose.override.yml
+k8s/production/
+terraform/*.tfstate
+terraform/*.tfvars

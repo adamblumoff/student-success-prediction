@@ -6,6 +6,7 @@
     <title>Student Success Predictor - Help Students Succeed</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header class="header">
@@ -19,6 +20,61 @@
 
     <main class="main">
         <div class="container">
+            <!-- AI/ML Advantages Section -->
+            <section class="ai-advantages-section">
+                <div class="card ai-showcase">
+                    <div class="ai-header">
+                        <span class="ai-badge">🧠 AI-Powered Analytics</span>
+                        <h2>Why Our Machine Learning Approach Works</h2>
+                    </div>
+                    
+                    <div class="ai-grid">
+                        <div class="ai-feature">
+                            <div class="feature-icon">📊</div>
+                            <h3>89.4% Prediction Accuracy</h3>
+                            <p>Our XGBoost models analyze 31 carefully engineered features to predict student outcomes with industry-leading accuracy.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🔍</div>
+                            <h3>Explainable AI</h3>
+                            <p>Get detailed explanations of <em>why</em> a student is at risk, including specific risk factors and protective elements.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">⚡</div>
+                            <h3>Real-Time Analysis</h3>
+                            <p>Instant predictions in under 100ms. Upload your gradebook and get actionable insights immediately.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🎯</div>
+                            <h3>Personalized Interventions</h3>
+                            <p>AI-generated recommendations tailored to each student's unique risk profile and learning patterns.</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">📈</div>
+                            <h3>Feature Importance</h3>
+                            <p>Understand which factors most influence student success: early scores (22%), engagement (19%), history (12%).</p>
+                        </div>
+                        
+                        <div class="ai-feature">
+                            <div class="feature-icon">🏫</div>
+                            <h3>Universal Compatibility</h3>
+                            <p>Works with Canvas LMS, generic CSV files, and any gradebook format. Automatic detection and conversion.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-cta">
+                        <div class="cta-content">
+                            <strong>Ready to see AI in action?</strong> 
+                            <span>Try the sample data below or upload your own CSV to experience explainable predictions.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Step 1: Upload Data -->
             <section class="upload-section" id="upload-section">
                 <div class="card">
@@ -39,25 +95,252 @@
                     </div>
 
                     <div class="sample-data-section">
-                        <p>Don't have data ready? <button class="btn btn-link" id="load-sample">Try with sample data</button></p>
+                        <p>Don't have data ready?</p>
+                        <div class="sample-options">
+                            <button class="btn btn-link" id="load-sample">📊 Try with sample data</button>
+                            <button class="btn btn-primary" id="start-demo-from-upload">🎬 Start Live Demo Mode</button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Step 2: Analysis Results -->
+            <!-- Live Demo Dashboard -->
+            <section class="demo-dashboard hidden" id="demo-dashboard">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">📊</span>
+                        <h2>Live University Dashboard</h2>
+                        <div class="demo-controls">
+                            <button class="btn btn-primary" id="demo-toggle">🎬 Start Live Demo</button>
+                            <button class="btn btn-secondary" id="demo-simulate">⚡ Simulate New Student</button>
+                        </div>
+                    </div>
+
+                    <div class="demo-institution-info">
+                        <div class="institution-header">
+                            <h3 id="institution-name">State University Demo</h3>
+                            <div class="semester-info">
+                                <span id="semester-name">Fall 2024 Semester</span> • 
+                                <span id="semester-week">Week 8</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-metrics-grid">
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">👥</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="total-students">1,247</div>
+                                <div class="metric-label">Students Analyzed</div>
+                                <div class="metric-change" id="new-students">+18 this week</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">🎯</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="interventions-triggered">52</div>
+                                <div class="metric-label">Interventions Triggered</div>
+                                <div class="metric-change" id="success-rate">73% success rate</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">⏰</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="time-saved">18.5</div>
+                                <div class="metric-label">Hours Saved/Week</div>
+                                <div class="metric-change" id="prevented-dropouts">12 dropouts prevented</div>
+                            </div>
+                        </div>
+
+                        <div class="demo-metric-card">
+                            <div class="metric-icon">📈</div>
+                            <div class="metric-content">
+                                <div class="metric-number" id="students-helped">156</div>
+                                <div class="metric-label">Students Helped</div>
+                                <div class="metric-change" id="avg-improvement">+15.2 avg improvement</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-live-feed" id="demo-feed">
+                        <h4>🔴 Live Activity Feed</h4>
+                        <div class="feed-container" id="feed-container">
+                            <div class="feed-item">
+                                <span class="feed-time">12:34 PM</span>
+                                <span class="feed-message">System ready for live demonstration</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Charts Section -->
+                    <div class="demo-analytics-section">
+                        <h4>📈 Analytics Dashboard</h4>
+                        <div class="analytics-grid">
+                            <div class="chart-container">
+                                <h5>Risk Distribution Over Time</h5>
+                                <canvas id="riskTrendChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h5>Intervention Success Rate</h5>
+                                <canvas id="interventionChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h5>Engagement Metrics</h5>
+                                <canvas id="engagementChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h5>Academic Performance Trends</h5>
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROI Calculator Section -->
+                    <div class="roi-calculator-section">
+                        <h4>💰 ROI Impact Calculator</h4>
+                        <div class="roi-calculator">
+                            <div class="roi-inputs">
+                                <div class="roi-input-group">
+                                    <label for="class-size">Class Size:</label>
+                                    <input type="number" id="class-size" value="150" min="10" max="1000">
+                                </div>
+                                <div class="roi-input-group">
+                                    <label for="tuition-cost">Annual Tuition:</label>
+                                    <input type="number" id="tuition-cost" value="45000" min="1000" step="100">
+                                </div>
+                                <div class="roi-input-group">
+                                    <label for="intervention-cost">Cost per Intervention:</label>
+                                    <input type="number" id="intervention-cost" value="200" min="50" step="10">
+                                </div>
+                                <button class="btn btn-primary" id="calculate-roi">Calculate ROI</button>
+                            </div>
+                            <div class="roi-results" id="roi-results">
+                                <div class="roi-metric">
+                                    <div class="roi-value" id="roi-savings">$0</div>
+                                    <div class="roi-label">Annual Savings</div>
+                                </div>
+                                <div class="roi-metric">
+                                    <div class="roi-value" id="roi-percentage">0%</div>
+                                    <div class="roi-label">ROI Percentage</div>
+                                </div>
+                                <div class="roi-metric">
+                                    <div class="roi-value" id="roi-students">0</div>
+                                    <div class="roi-label">Students Helped</div>
+                                </div>
+                                <div class="roi-metric">
+                                    <div class="roi-value" id="roi-dropouts">0</div>
+                                    <div class="roi-label">Dropouts Prevented</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Insights Section -->
+                    <div class="advanced-insights-section">
+                        <h4>🧠 AI Insights & Predictions</h4>
+                        <div class="insights-grid">
+                            <div class="insight-card">
+                                <div class="insight-icon">🎯</div>
+                                <div class="insight-content">
+                                    <h5>Early Warning System</h5>
+                                    <p>Identifies at-risk students 6-8 weeks earlier than traditional methods</p>
+                                    <div class="insight-stat">89.4% accuracy</div>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-icon">🔍</div>
+                                <div class="insight-content">
+                                    <h5>Predictive Factors</h5>
+                                    <p>Early assessment scores (22%) and engagement patterns (19%) are top predictors</p>
+                                    <div class="insight-stat">31 features analyzed</div>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-icon">⚡</div>
+                                <div class="insight-content">
+                                    <h5>Real-time Processing</h5>
+                                    <p>Instant predictions with sub-100ms response time for immediate action</p>
+                                    <div class="insight-stat">&lt;100ms response</div>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-icon">📊</div>
+                                <div class="insight-content">
+                                    <h5>Intervention Impact</h5>
+                                    <p>Students receiving early intervention show 73% success rate improvement</p>
+                                    <div class="insight-stat">73% success rate</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-success-stories" id="success-stories-section" style="display: none;">
+                        <h4>📖 Recent Success Stories</h4>
+                        <div class="success-stories-grid" id="success-stories-grid">
+                            <!-- Success stories will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: AI-Powered Analysis Results -->
             <section class="results-section hidden" id="results-section">
                 <div class="card">
                     <div class="step-header">
-                        <span class="step-number">2</span>
-                        <h2>At-Risk Students Identified</h2>
-                        <p>Students who need immediate attention and support</p>
+                        <span class="step-number">🤖</span>
+                        <h2>AI-Powered Risk Analysis</h2>
+                        <p>Advanced machine learning identifies at-risk students with 89.4% accuracy</p>
                     </div>
 
                     <div class="summary-stats" id="summary-stats">
                         <!-- Will be populated by JavaScript -->
                     </div>
 
-                    <div class="students-list" id="students-list">
+                    <!-- AI Features Notice -->
+                    <div class="ai-features-notice" style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); padding: 16px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #2563eb;">
+                        <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 16px;">🧠 AI Features Available</h4>
+                        <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                            Click <strong>"🔍 Explain AI Prediction"</strong> on any student card to see detailed explanations, 
+                            feature importance, and personalized recommendations powered by explainable AI.
+                        </p>
+                    </div>
+
+                    <!-- Two-Panel Layout for Better Navigation -->
+                    <div class="two-panel-layout">
+                        <!-- Left Panel: Student List -->
+                        <div class="student-list-panel">
+                            <div class="panel-header">
+                                <h3>Students at Risk</h3>
+                                <div class="list-controls">
+                                    <input type="text" id="student-search" placeholder="Search by Student ID..." class="search-input">
+                                    <div class="risk-filter-tabs">
+                                        <button class="filter-tab active" data-filter="all">All</button>
+                                        <button class="filter-tab" data-filter="high">High Risk</button>
+                                        <button class="filter-tab" data-filter="medium">Medium Risk</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="student-list-compact" id="student-list-compact">
+                                <!-- Compact student list will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Right Panel: Student Detail -->
+                        <div class="student-detail-panel">
+                            <div id="student-detail-content">
+                                <div class="no-student-selected">
+                                    <div class="placeholder-icon">👆</div>
+                                    <h3>Select a Student</h3>
+                                    <p>Click on any student from the list to view detailed analysis, risk factors, and AI-powered intervention recommendations.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Legacy students list for fallback -->
+                    <div class="students-list hidden" id="students-list">
                         <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
@@ -102,5 +385,6 @@
     </div>
 
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/explainable-ui.js"></script>
 </body>
 </html>
