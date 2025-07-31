@@ -352,8 +352,9 @@ class K12UltraPredictor:
                     if self.scaler:
                         X = self.scaler.transform(X)
                     
-                    # Get prediction
-                    risk_prob = float(self.model.predict_proba(X)[0, 1])
+                    # Get prediction (model predicts SUCCESS probability, so invert for RISK)
+                    success_prob = float(self.model.predict_proba(X)[0, 1])
+                    risk_prob = 1.0 - success_prob  # Convert success probability to risk probability
                     
                 else:  # Fallback model
                     # Use basic features for fallback
@@ -366,7 +367,8 @@ class K12UltraPredictor:
                     ] * 2  # Duplicate to get 10 features
                     
                     X = np.array(basic_features).reshape(1, -1)
-                    risk_prob = float(self.model.predict_proba(X)[0, 1])
+                    success_prob = float(self.model.predict_proba(X)[0, 1])
+                    risk_prob = 1.0 - success_prob  # Convert success probability to risk probability
                 
                 # Categorize risk
                 if risk_prob < 0.3:
