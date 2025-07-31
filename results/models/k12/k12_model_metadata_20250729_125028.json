@@ -1,0 +1,96 @@
+{
+  "timestamp": "20250729_125028",
+  "best_model": "Logistic Regression",
+  "model_file": "results/models/k12/k12_best_model_20250729_125028.pkl",
+  "scaler_file": "results/models/k12/k12_scaler_20250729_125028.pkl",
+  "use_scaling": true,
+  "performance_metrics": {
+    "XGBoost": {
+      "overall_auc": 0.69572861819585,
+      "overall_f1": 0.9308921199066594,
+      "grade_band_performance": {
+        "elementary": {
+          "accuracy": 0.912015758371635,
+          "f1_score": 0.9537292817679558,
+          "roc_auc": 0.6628221737710789
+        },
+        "middle": {
+          "accuracy": 0.8446153846153847,
+          "f1_score": 0.9150546677880572,
+          "roc_auc": 0.7040088826554465
+        },
+        "high": {
+          "accuracy": 0.8186215235792019,
+          "f1_score": 0.8990578734858681,
+          "roc_auc": 0.6735110546916323
+        }
+      }
+    },
+    "Random Forest": {
+      "overall_auc": 0.7297965653019987,
+      "overall_f1": 0.881409621857058,
+      "grade_band_performance": {
+        "elementary": {
+          "accuracy": 0.8791858174655286,
+          "f1_score": 0.9340974212034384,
+          "roc_auc": 0.6908132419081324
+        },
+        "middle": {
+          "accuracy": 0.7569230769230769,
+          "f1_score": 0.8477842003853564,
+          "roc_auc": 0.7422081969767804
+        },
+        "high": {
+          "accuracy": 0.6892382103990327,
+          "f1_score": 0.7895167895167895,
+          "roc_auc": 0.7182481751824819
+        }
+      }
+    },
+    "Gradient Boosting": {
+      "overall_auc": 0.7187317176394439,
+      "overall_f1": 0.9313743056799857,
+      "grade_band_performance": {
+        "elementary": {
+          "accuracy": 0.9093893630991464,
+          "f1_score": 0.9524465885596141,
+          "roc_auc": 0.6851254989941121
+        },
+        "middle": {
+          "accuracy": 0.8461538461538461,
+          "f1_score": 0.9159663865546218,
+          "roc_auc": 0.7094436652641422
+        },
+        "high": {
+          "accuracy": 0.8246674727932285,
+          "f1_score": 0.9026192075218268,
+          "roc_auc": 0.7204591135089389
+        }
+      }
+    },
+    "Logistic Regression": {
+      "overall_auc": 0.7426009601221522,
+      "overall_f1": 0.8010505581089954,
+      "grade_band_performance": {
+        "elementary": {
+          "accuracy": 0.7800393959290873,
+          "f1_score": 0.8694974678613168,
+          "roc_auc": 0.6986812862725272
+        },
+        "middle": {
+          "accuracy": 0.6569230769230769,
+          "f1_score": 0.7589189189189189,
+          "roc_auc": 0.7628175159731962
+        },
+        "high": {
+          "accuracy": 0.5755743651753326,
+          "f1_score": 0.6740947075208914,
+          "roc_auc": 0.729503861208082
+        }
+      }
+    }
+  },
+  "feature_importance": {},
+  "model_type": "K-12 Student Success Prediction",
+  "data_source": "K-12 Synthetic Dataset"
+}
