@@ -104,6 +104,272 @@
                 </div>
             </section>
 
+            <!-- Canvas LMS Integration Section -->
+            <section class="lms-section" id="lms-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">🎨</span>
+                        <h2>Canvas LMS Integration</h2>
+                        <p>Connect directly to your Canvas courses for real-time gradebook analysis</p>
+                    </div>
+                    
+                    <div class="lms-connection" id="lms-connection">
+                        <div class="lms-form">
+                            <div class="form-group">
+                                <label for="canvas-url">Canvas Instance URL</label>
+                                <input type="url" id="canvas-url" placeholder="https://yourschool.instructure.com" 
+                                       class="form-control">
+                                <small class="form-help">Your Canvas base URL (e.g., yourschool.instructure.com)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="canvas-token">Canvas Access Token</label>
+                                <input type="password" id="canvas-token" placeholder="Your Canvas API token" 
+                                       class="form-control">
+                                <small class="form-help">
+                                    Generate at: Canvas → Account → Settings → Approved Integrations → New Access Token
+                                </small>
+                            </div>
+                            
+                            <div class="lms-actions">
+                                <button class="btn btn-primary" id="connect-canvas">
+                                    🔗 Connect to Canvas
+                                </button>
+                                <button class="btn btn-link" id="show-token-help">
+                                    ❓ How to get Canvas token
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Token Help Modal -->
+                        <div class="token-help hidden" id="token-help">
+                            <div class="help-content">
+                                <h4>How to get your Canvas Access Token:</h4>
+                                <ol>
+                                    <li>Log in to your Canvas account</li>
+                                    <li>Go to <strong>Account → Settings</strong></li>
+                                    <li>Scroll to <strong>Approved Integrations</strong></li>
+                                    <li>Click <strong>+ New Access Token</strong></li>
+                                    <li>Enter purpose: "Student Success Prediction"</li>
+                                    <li>Set expiry date (optional)</li>
+                                    <li>Click <strong>Generate Token</strong></li>
+                                    <li>Copy the token and paste it above</li>
+                                </ol>
+                                <p><strong>Note:</strong> Keep your token secure - treat it like a password!</p>
+                                <button class="btn btn-secondary" id="close-token-help">Close</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Connection Status -->
+                        <div class="connection-status hidden" id="connection-status">
+                            <div class="status-header">
+                                <span class="status-icon">✅</span>
+                                <h4>Connected to Canvas</h4>
+                            </div>
+                            <div class="connection-info">
+                                <p><strong>Account:</strong> <span id="account-name">-</span></p>
+                                <p><strong>Accessible Courses:</strong> <span id="course-count">-</span></p>
+                                <p><strong>Rate Limit:</strong> <span id="rate-limit">-</span> requests remaining</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Course Selection -->
+                    <div class="course-selection hidden" id="course-selection">
+                        <h4>Select Course to Analyze</h4>
+                        <div class="course-list" id="course-list">
+                            <!-- Courses will be populated dynamically -->
+                        </div>
+                        <button class="btn btn-secondary" id="refresh-courses">🔄 Refresh Courses</button>
+                    </div>
+                    
+                    <!-- Course Analysis -->
+                    <div class="course-analysis hidden" id="course-analysis">
+                        <div class="analysis-header">
+                            <h4>Course Analysis</h4>
+                            <div class="course-info">
+                                <span id="selected-course-name">-</span> • 
+                                <span id="selected-course-students">-</span> students
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-actions">
+                            <button class="btn btn-primary" id="sync-course">
+                                📊 Sync & Analyze Course
+                            </button>
+                            <button class="btn btn-link" id="select-different-course">
+                                ← Choose Different Course
+                            </button>
+                        </div>
+                        
+                        <div class="sync-progress hidden" id="sync-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <p class="progress-text" id="progress-text">Connecting to Canvas...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PowerSchool SIS Integration Section -->
+            <section class="sis-section" id="sis-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">🏫</span>
+                        <h2>PowerSchool SIS Integration</h2>
+                        <p>Connect to your district's PowerSchool system for comprehensive student data analysis</p>
+                    </div>
+                    
+                    <div class="sis-connection" id="sis-connection">
+                        <div class="sis-form">
+                            <div class="form-group">
+                                <label for="powerschool-url">PowerSchool Instance URL</label>
+                                <input type="url" id="powerschool-url" placeholder="https://district.powerschool.com" 
+                                       class="form-control">
+                                <small class="form-help">Your district's PowerSchool URL</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="powerschool-client-id">Client ID</label>
+                                <input type="text" id="powerschool-client-id" placeholder="PowerSchool API Client ID" 
+                                       class="form-control">
+                                <small class="form-help">API Client ID from PowerSchool Admin Portal</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="powerschool-client-secret">Client Secret</label>
+                                <input type="password" id="powerschool-client-secret" placeholder="PowerSchool API Client Secret" 
+                                       class="form-control">
+                                <small class="form-help">API Client Secret from PowerSchool Admin Portal</small>
+                            </div>
+                            
+                            <div class="sis-actions">
+                                <button class="btn btn-primary" id="connect-powerschool">
+                                    🔗 Connect to PowerSchool
+                                </button>
+                                <button class="btn btn-link" id="show-powerschool-help">
+                                    ❓ How to get API credentials
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- PowerSchool Help Modal -->
+                        <div class="sis-help hidden" id="powerschool-help">
+                            <div class="help-content">
+                                <h4>How to get PowerSchool API Credentials:</h4>
+                                <ol>
+                                    <li>Log in to <strong>PowerSchool Admin Portal</strong></li>
+                                    <li>Go to <strong>System → System Settings → Plugin Management Configuration</strong></li>
+                                    <li>Click <strong>Enable API</strong> if not already enabled</li>
+                                    <li>Create a new <strong>API Client</strong>:</li>
+                                    <ul>
+                                        <li>Name: "Student Success Prediction"</li>
+                                        <li>Description: "K-12 student risk analysis"</li>
+                                        <li>Grant Type: Client Credentials</li>
+                                    </ul>
+                                    <li>Set required <strong>API Scopes</strong>:</li>
+                                    <ul>
+                                        <li>Students: Read</li>
+                                        <li>Schools: Read</li>
+                                        <li>Grades: Read</li>
+                                        <li>Attendance: Read</li>
+                                        <li>Discipline: Read</li>
+                                    </ul>
+                                    <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong></li>
+                                </ol>
+                                <p><strong>Note:</strong> You need PowerSchool Administrator access to create API clients.</p>
+                                <button class="btn btn-secondary" id="close-powerschool-help">Close</button>
+                            </div>
+                        </div>
+                        
+                        <!-- SIS Connection Status -->
+                        <div class="connection-status hidden" id="sis-connection-status">
+                            <div class="status-header">
+                                <span class="status-icon">✅</span>
+                                <h4>Connected to PowerSchool SIS</h4>
+                            </div>
+                            <div class="connection-info">
+                                <p><strong>District:</strong> <span id="district-name">-</span></p>
+                                <p><strong>Students Accessible:</strong> <span id="students-accessible">-</span></p>
+                                <p><strong>Rate Limit:</strong> <span id="sis-rate-limit">-</span> requests remaining</p>
+                                <p><strong>Token Expires:</strong> <span id="token-expires">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- School Selection -->
+                    <div class="school-selection hidden" id="school-selection">
+                        <h4>Select School to Analyze</h4>
+                        <div class="grade-filter">
+                            <label>Grade Levels (optional):</label>
+                            <div class="grade-checkboxes">
+                                <label><input type="checkbox" value="0"> K</label>
+                                <label><input type="checkbox" value="1"> 1</label>
+                                <label><input type="checkbox" value="2"> 2</label>
+                                <label><input type="checkbox" value="3"> 3</label>
+                                <label><input type="checkbox" value="4"> 4</label>
+                                <label><input type="checkbox" value="5"> 5</label>
+                                <label><input type="checkbox" value="6"> 6</label>
+                                <label><input type="checkbox" value="7"> 7</label>
+                                <label><input type="checkbox" value="8"> 8</label>
+                                <label><input type="checkbox" value="9" checked> 9</label>
+                                <label><input type="checkbox" value="10" checked> 10</label>
+                                <label><input type="checkbox" value="11" checked> 11</label>
+                                <label><input type="checkbox" value="12" checked> 12</label>
+                            </div>
+                            <small class="form-help">Select specific grades or leave blank for all grades</small>
+                        </div>
+                        
+                        <div class="school-list" id="school-list">
+                            <!-- Schools will be populated dynamically -->
+                        </div>
+                        <button class="btn btn-secondary" id="refresh-schools">🔄 Refresh Schools</button>
+                    </div>
+                    
+                    <!-- School Analysis -->
+                    <div class="school-analysis hidden" id="school-analysis">
+                        <div class="analysis-header">
+                            <h4>School Analysis</h4>
+                            <div class="school-info">
+                                <span id="selected-school-name">-</span> • 
+                                Grades <span id="selected-school-grades">-</span> • 
+                                <span id="selected-school-students">-</span> students
+                            </div>
+                        </div>
+                        
+                        <div class="data-enhancement-info">
+                            <h5>📊 Enhanced Data Analysis</h5>
+                            <p>PowerSchool integration provides comprehensive student data including:</p>
+                            <div class="enhancement-features">
+                                <span class="feature-tag">📈 Multi-year GPA trends</span>
+                                <span class="feature-tag">📅 Actual attendance data</span>
+                                <span class="feature-tag">⚠️ Discipline incidents</span>
+                                <span class="feature-tag">👥 Demographics</span>
+                                <span class="feature-tag">🎯 Special programs (IEP, 504, ELL)</span>
+                                <span class="feature-tag">📋 Credit accumulation</span>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-actions">
+                            <button class="btn btn-primary" id="sync-school">
+                                📊 Sync & Analyze School
+                            </button>
+                            <button class="btn btn-link" id="select-different-school">
+                                ← Choose Different School
+                            </button>
+                        </div>
+                        
+                        <div class="sync-progress hidden" id="sis-sync-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="sis-progress-fill"></div>
+                            </div>
+                            <p class="progress-text" id="sis-progress-text">Connecting to PowerSchool...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Live Demo Dashboard -->
             <section class="demo-dashboard hidden" id="demo-dashboard">
                 <div class="card">
@@ -386,5 +652,7 @@
 
     <script src="/static/js/app.js"></script>
     <script src="/static/js/explainable-ui.js"></script>
+    <script src="/static/js/canvas-integration.js"></script>
+    <script src="/static/js/powerschool-integration.js"></script>
 </body>
 </html>
