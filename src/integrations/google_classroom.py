@@ -19,6 +19,7 @@ with strong teacher adoption due to simplicity and Google ecosystem integration.
 
 import logging
 import json
+import os
 import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
@@ -31,7 +32,23 @@ try:
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
     from googleapiclient.errors import HttpError
+    GOOGLE_LIBRARIES_AVAILABLE = True
 except ImportError:
+    # Create stub classes when Google libraries aren't available
+    class Request: pass
+    class Credentials: 
+        def __init__(self): 
+            self.valid = False
+            self.expired = False
+    class InstalledAppFlow: 
+        @classmethod
+        def from_client_secrets_file(cls, *args, **kwargs): 
+            return cls()
+        def run_local_server(self, *args, **kwargs): 
+            return Credentials()
+    class HttpError(Exception): pass
+    def build(*args, **kwargs): return None
+    GOOGLE_LIBRARIES_AVAILABLE = False
     logging.warning("Google API client libraries not installed. Install with: pip install google-api-python-client google-auth-oauthlib")
 
 # Configure logging
@@ -156,6 +173,22 @@ class GoogleClassroomIntegration:
         Returns:
             bool: True if authentication successful
         """
+        # In demo mode (no Google libraries), simulate successful authentication
+        if not GOOGLE_LIBRARIES_AVAILABLE:
+            logger.info("🎓 Google Classroom authentication simulated (demo mode)")
+            self.credentials = Credentials()
+            self.service = None  # Demo mode service
+            return True
+        
+        # Check if credentials file exists
+        if not os.path.exists(self.credentials_file):
+            logger.error(f"❌ Google credentials file not found: {self.credentials_file}")
+            logger.info("📋 To set up Google Classroom integration:")
+            logger.info("   1. Follow the setup guide: docs/Google_Classroom_Setup.md")
+            logger.info("   2. Place your google_credentials.json in the config/ directory")
+            logger.info("   3. Restart the application")
+            return False
+            
         try:
             creds = None
             
@@ -574,6 +607,21 @@ class GoogleClassroomIntegration:
             'api_access': False,
             'features': []
         }
+        
+        # Check if Google libraries are available
+        if not GOOGLE_LIBRARIES_AVAILABLE:
+            health_status['status'] = 'limited'
+            health_status['warning'] = 'Google API libraries not installed'
+            health_status['features'].append('Demo mode only')
+            return health_status
+        
+        # Check if credentials file exists
+        if not os.path.exists(self.credentials_file):
+            health_status['status'] = 'setup_required'
+            health_status['warning'] = 'Google credentials not configured'
+            health_status['setup_guide'] = 'docs/Google_Classroom_Setup.md'
+            health_status['features'].append('Credentials setup required')
+            return health_status
         
         try:
             # Check authentication
