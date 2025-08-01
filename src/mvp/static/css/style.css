@@ -2757,3 +2757,492 @@ body {
         flex-direction: column;
     }
 }
+/* Google Classroom Integration Styles */
+.google-classroom-section {
+    margin: 2rem 0;
+}
+
+.google-classroom-section .step-number {
+    background: linear-gradient(135deg, #4285f4, #34a853);
+    color: white;
+    font-size: 1.5rem;
+}
+
+.google-auth-section {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9ff, #fff);
+    border-radius: 12px;
+    border: 2px solid #e8f0fe;
+}
+
+.auth-status {
+    margin-bottom: 1.5rem;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.status-indicator.connected {
+    background: linear-gradient(135deg, #34a853, #0f9d58);
+    color: white;
+}
+
+.status-indicator.disconnected {
+    background: linear-gradient(135deg, #ea4335, #d33b2c);
+    color: white;
+}
+
+.google-auth-form {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+}
+
+.auth-description h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.auth-description ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.auth-description li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #5f6368;
+}
+
+.auth-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 200px;
+}
+
+.google-help {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #4285f4;
+}
+
+.google-help h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.google-help ol {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    color: #5f6368;
+}
+
+.help-note {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #e8f0fe;
+    border-radius: 6px;
+    color: #1a73e8;
+    font-size: 0.9rem;
+}
+
+.google-main-section {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9ff, #fff);
+    border-radius: 12px;
+    border: 2px solid #e8f0fe;
+    margin-top: 2rem;
+}
+
+.google-dashboard {
+    display: grid;
+    gap: 2rem;
+}
+
+.google-stats-section h4 {
+    color: #4285f4;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.google-course-stats {
+    margin-bottom: 1.5rem;
+}
+
+.google-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.course-selection-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.course-selection-section h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.google-course-details {
+    margin-top: 1.5rem;
+}
+
+.course-info-card {
+    background: linear-gradient(135deg, #f8f9ff, #fff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e8f0fe;
+}
+
+.course-info-card h4 {
+    color: #4285f4;
+    margin-bottom: 0.5rem;
+}
+
+.course-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.course-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.analysis-actions-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.analysis-actions-section h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.google-features-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.google-features-section h4 {
+    color: #4285f4;
+    margin-bottom: 1.5rem;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.feature-card {
+    background: linear-gradient(135deg, #f8f9ff, #fff);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e8f0fe;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.feature-card h5 {
+    color: #4285f4;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+    color: #5f6368;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.google-disconnect-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e8eaed;
+    text-align: center;
+}
+
+/* Google Auth Modal */
+.google-auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.google-auth-modal .modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.google-auth-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.google-auth-modal h3 {
+    color: #4285f4;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #5f6368;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.close-btn:hover {
+    background: #f1f3f4;
+}
+
+.auth-instructions h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.auth-instructions ol {
+    padding-left: 1.5rem;
+    color: #5f6368;
+}
+
+.auth-instructions li {
+    margin: 0.5rem 0;
+}
+
+.auth-scopes {
+    margin: 2rem 0;
+}
+
+.auth-scopes h4 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.auth-scopes ul {
+    list-style: none;
+    padding: 0;
+}
+
+.auth-scopes li {
+    padding: 0.5rem 0;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.auth-scopes li::before {
+    content: "✓";
+    color: #34a853;
+    font-weight: bold;
+}
+
+/* Cross-platform modal styles */
+.cross-platform-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.large-modal {
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.platforms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.platform-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e8eaed;
+}
+
+.platform-card h5 {
+    color: #4285f4;
+    margin-bottom: 1rem;
+}
+
+.platform-metrics {
+    margin-bottom: 1rem;
+}
+
+.platform-metric {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.platform-strengths strong {
+    color: #5f6368;
+}
+
+.platform-strengths ul {
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+}
+
+.platform-strengths li {
+    color: #5f6368;
+    font-size: 0.9rem;
+}
+
+.recommendations-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.platform-recommendations {
+    margin: 1rem 0;
+}
+
+.platform-recommendations h6 {
+    color: #4285f4;
+    margin-bottom: 0.5rem;
+}
+
+.platform-recommendations ul {
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.platform-recommendations li {
+    color: #5f6368;
+    font-size: 0.9rem;
+    margin: 0.25rem 0;
+}
+
+.improvement {
+    color: #4caf50 \!important;
+    font-weight: 700;
+}
+
+/* Responsive design for Google Classroom */
+@media (max-width: 768px) {
+    .google-auth-form {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .auth-actions {
+        min-width: auto;
+    }
+    
+    .course-metrics {
+        grid-template-columns: 1fr;
+    }
+    
+    .google-actions {
+        flex-direction: column;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .platforms-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .large-modal {
+        max-width: 95vw;
+        padding: 1rem;
+    }
+    
+    .google-auth-modal .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+    }
+}
+EOF < /dev/null

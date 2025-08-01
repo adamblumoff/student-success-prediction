@@ -12,6 +12,7 @@ src/
 │   │   ├── core.py         # Core MVP endpoints (/api/mvp/*)
 │   │   ├── canvas_endpoints.py     # Canvas LMS (/api/lms/*)
 │   │   ├── powerschool_endpoints.py # PowerSchool SIS (/api/sis/*)
+│   │   ├── google_classroom_endpoints.py # Google Classroom (/api/google/*)
 │   │   └── combined_endpoints.py   # Combined integration (/api/integration/*)
 │   ├── database.py         # Database connection & ORM
 │   ├── models.py           # SQLAlchemy models
@@ -25,6 +26,7 @@ src/
 ├── integrations/          # External System Integrations
 │   ├── canvas_lms.py      # Canvas LMS integration
 │   ├── powerschool_sis.py # PowerSchool SIS integration
+│   ├── google_classroom.py # Google Classroom integration
 │   └── combined_integration.py # Combined system integration
 └── data/
     └── download.py        # Data acquisition utilities
