@@ -21,3 +21,8 @@ PyJWT>=2.8.0
 psycopg2-binary>=2.9.7
 sqlalchemy>=2.0.0
 alembic>=1.12.0
+
+# LMS Integration
+requests>=2.31.0
+aiohttp>=3.9.0
+python-dotenv>=1.0.0

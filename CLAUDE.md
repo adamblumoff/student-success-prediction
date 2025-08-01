@@ -359,6 +359,78 @@ The system is designed for educational demonstration with explainable AI feature
 
 ## Development Guidelines for Claude Code
 
+### Modular API Architecture (2024 Update)
+
+**Why Split APIs?**: To improve debugging, maintainability, and development velocity.
+
+**Current Modular Structure**:
+```
+src/mvp/mvp_api.py          # Main entry point - imports all routers
+src/mvp/api/
+├── core.py                 # Core MVP endpoints (/api/mvp/*)
+├── canvas_endpoints.py     # Canvas LMS endpoints (/api/lms/*)
+├── powerschool_endpoints.py # PowerSchool SIS endpoints (/api/sis/*)
+└── combined_endpoints.py   # Combined integration endpoints (/api/integration/*)
+```
+
+**Benefits Achieved**:
+- **Easier Debugging**: Each integration system isolated in separate files
+- **Faster Development**: Can work on specific integrations without navigating large monolithic files
+- **Better Testing**: Each router can be tested independently
+- **Cleaner Organization**: Related endpoints grouped logically
+- **Reduced Merge Conflicts**: Multiple developers can work on different integrations simultaneously
+
+**Development Pattern**:
+```python
+# When adding new endpoints, create focused routers:
+from fastapi import APIRouter
+router = APIRouter()
+
+@router.post("/new-endpoint")
+async def new_endpoint():
+    return {"status": "success"}
+
+# Then include in main API:
+app.include_router(router, prefix="/api/category", tags=["Category"])
+```
+
+**Future Considerations**:
+- Consider splitting routers further if they exceed 300-400 lines
+- Keep related endpoints together (don't over-split)
+- Always include proper error handling and logging in each router
+- Maintain consistent authentication patterns across all routers
+
+### Key Debugging Improvements Made
+
+**1. Fixed Sample Endpoint**: The original `/api/mvp/sample` endpoint only provided 7 features but the ML model requires all 31 engineered features. Fixed by providing complete feature set:
+
+```python
+# All 31 required features must be provided:
+# Demographics (6): gender_encoded, region_encoded, age_band_encoded, education_encoded, is_male, has_disability
+# Academic History (4): studied_credits, num_of_prev_attempts, registration_delay, unregistered  
+# Early VLE Engagement (10): early_total_clicks, early_avg_clicks, early_clicks_std, etc.
+# Early Assessment Performance (11): early_assessments_count, early_avg_score, early_score_std, etc.
+```
+
+**2. Fixed Database Function Imports**: Added missing `save_predictions_batch` and `save_prediction` functions to `src/mvp/database.py` with proper ORM model integration.
+
+**3. Import Path Consistency**: Standardized all imports to use `src.` prefix for consistency across the modular structure.
+
+**4. DataFrame to Dict Conversion**: Fixed API endpoints to properly convert intervention system DataFrame outputs to JSON-serializable dictionaries:
+
+```python
+# Convert DataFrame results to API format
+results = []
+for _, row in results_df.iterrows():
+    results.append({
+        'student_id': int(row['student_id']),
+        'risk_score': float(row['risk_score']),
+        'risk_category': str(row['risk_category']),
+        'success_probability': float(row['success_probability']),
+        'needs_intervention': bool(row['needs_intervention'])
+    })
+```
+
 ### Commit Frequently and Update Documentation
 - **Commit after every significant change** - Don't batch multiple unrelated changes
 - **Update this CLAUDE.md file** after every commit that adds new features or changes architecture
@@ -373,6 +445,8 @@ Update this file whenever you:
 - Add new UI components or visualizations
 - Modify the gradebook conversion logic
 - Update the intervention recommendation system
+- **Make architectural changes like API modularization**
+- **Fix debugging issues that future developers might encounter**
 
 ### CLAUDE.md Update Pattern
 After making changes, always:
@@ -380,24 +454,114 @@ After making changes, always:
 2. **Add new patterns** you've implemented to the relevant sections
 3. **Update commands** if you've added new scripts
 4. **Document new explainable AI features** 
-5. **Commit the updated CLAUDE.md** along with your code changes
+5. **Document debugging fixes and architectural decisions**
+6. **Commit the updated CLAUDE.md** along with your code changes
 
 Example commit workflow:
 ```bash
 # Make your code changes
-git add src/mvp/new_feature.py
+git add src/mvp/api/
 
 # Update CLAUDE.md to reflect the changes
 git add CLAUDE.md
 
 # Commit both together with descriptive message
-git commit -m "Add new explainable AI visualization feature
+git commit -m "Refactor monolithic API into modular structure for easier debugging
 
-- Implement risk factor severity visualization in student explanations
-- Add color-coded risk indicators in the web interface  
-- Update CLAUDE.md with new explainable AI patterns
+- Split MVP API into 4 focused routers (core, canvas, powerschool, combined)
+- Fix sample endpoint to provide all 31 required ML features
+- Add missing database functions with proper ORM integration
+- Standardize import paths for consistency
+- Update CLAUDE.md with modular architecture patterns
+
+Benefits: Easier debugging, faster development, better testing isolation
 
 🤖 Generated with [Claude Code](https://claude.ai/code)"
 ```
 
-This ensures future Claude instances always have up-to-date guidance that reflects the current simplified MVP state.
+This ensures future Claude instances always have up-to-date guidance that reflects the current modular architecture and debugging improvements.
+
+## Repository Cleanup and Organization
+
+### Regular Cleanup Process
+
+**When to Clean Up**: Perform repository cleanup regularly, especially:
+- After major feature development
+- Before important commits/releases
+- When repository becomes cluttered
+- After refactoring or modularization
+- When onboarding new developers
+
+**Cleanup Checklist**:
+```bash
+# 1. Remove unnecessary files
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.pyc" -delete 2>/dev/null || true
+rm -f *_old.py *_backup.py *.tmp
+
+# 2. Remove duplicate test files from root
+rm -f test_*.py  # (if they exist in tests/ directory)
+
+# 3. Check for empty directories
+find . -type d -empty | grep -v ".git" | grep -v "venv"
+
+# 4. Verify .gitignore is up to date
+git status  # Check for untracked files that should be ignored
+
+# 5. Update documentation
+# - Update DIRECTORY_STRUCTURE.md if structure changed
+# - Update CLAUDE.md with new patterns
+# - Update README.md if major changes made
+```
+
+### Repository Organization Principles
+
+**Directory Structure Goals**:
+- **Logical Grouping**: Related functionality in same directories
+- **Modular Design**: Each module can be developed/tested independently  
+- **Clear Navigation**: Developers can quickly find what they need
+- **Scalability**: Structure supports growth without reorganization
+
+**Current Organization**:
+```
+📁 Core Application (src/mvp/) - Web app and API
+📁 ML Models (src/models/) - All machine learning components
+📁 Integrations (src/integrations/) - External system connections
+📁 Testing (tests/) - Comprehensive test suite
+📁 Documentation (docs/ + *.md) - All project documentation
+📁 Data & Results (data/, results/) - Datasets and model outputs
+📁 Deployment (deployment/, alembic/) - Infrastructure and migrations
+```
+
+**Navigation Helper**: Use `DIRECTORY_STRUCTURE.md` for quick reference to file locations and purposes.
+
+### Automated Cleanup Integration
+
+**Pre-commit Cleanup** (Recommended):
+```bash
+# Create a cleanup script that runs before commits
+cat > scripts/cleanup.sh << 'EOF'
+#!/bin/bash
+echo "🧹 Running repository cleanup..."
+
+# Remove Python cache files
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.pyc" -delete 2>/dev/null || true
+
+# Remove temporary files
+find . -name "*.tmp" -delete 2>/dev/null || true
+find . -name "*~" -delete 2>/dev/null || true
+
+echo "✅ Cleanup complete"
+EOF
+
+chmod +x scripts/cleanup.sh
+```
+
+**Integration with Development Workflow**:
+1. **Before Major Commits**: Run cleanup to ensure repository is organized
+2. **After Refactoring**: Remove old files and update structure documentation
+3. **Weekly Maintenance**: Quick cleanup check during development
+4. **Before Deployment**: Ensure no development artifacts in production code
+
+This systematic approach maintains a clean, navigable repository that scales with the project's growth.
