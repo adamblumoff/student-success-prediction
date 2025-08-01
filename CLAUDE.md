@@ -357,6 +357,55 @@ family_comm = intervention_system.generate_family_communication(intervention_pla
 
 The system is designed for educational demonstration with explainable AI features, now supporting both development simplicity and production scalability with specialized K-12 capabilities.
 
+## Repository Cleanup Guidelines
+
+### Regular Cleanup Process
+**When to perform cleanup**: After completing major features or integrations
+
+**Cleanup checklist**:
+1. **Remove old model files**: Keep only the latest/best performing models in `results/models/`
+2. **Delete backup files**: Remove any `*.bak`, `*_old*`, `*~`, `.DS_Store` files
+3. **Consolidate documentation**: Remove duplicate documentation files
+4. **Organize test files**: Ensure all tests are in the `tests/` directory
+5. **Clean empty directories**: Remove empty directories in `results/figures/` etc.
+6. **Update structure docs**: Update `DIRECTORY_STRUCTURE.md` to reflect new integrations
+7. **Commit and push**: Always commit cleanup changes with descriptive messages
+
+**Cleanup command pattern**:
+```bash
+# Remove old model versions (keep latest/best performing)
+rm -f results/models/k12/k12_*_old_date_*.pkl
+
+# Update documentation to reflect current structure
+# Update CLAUDE.md with new features/patterns
+
+# Commit the cleanup
+git add -A
+git commit -m "Clean up repository structure and remove outdated files
+
+- Remove outdated model files (keep ultra-advanced 81.5% AUC model)
+- Consolidate duplicate documentation
+- Update directory structure to reflect Google Classroom integration
+- Organize repository for better navigation
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push origin dev
+```
+
+**Files to always keep**:
+- Latest K-12 ultra-advanced model (`k12_ultra_advanced_*.pkl`)
+- Production-ready trained models
+- Current integration code
+- Active documentation and guides
+
+**Files safe to remove**:
+- Older model versions with lower performance
+- Duplicate structure documentation
+- Empty result directories
+- Backup/temporary files
+
 ## Development Guidelines for Claude Code
 
 ### Modular API Architecture (2024 Update)
@@ -370,6 +419,7 @@ src/mvp/api/
 ├── core.py                 # Core MVP endpoints (/api/mvp/*)
 ├── canvas_endpoints.py     # Canvas LMS endpoints (/api/lms/*)
 ├── powerschool_endpoints.py # PowerSchool SIS endpoints (/api/sis/*)
+├── google_classroom_endpoints.py # Google Classroom endpoints (/api/google/*)
 └── combined_endpoints.py   # Combined integration endpoints (/api/integration/*)
 ```
 

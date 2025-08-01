@@ -370,6 +370,172 @@
                 </div>
             </section>
 
+            <!-- Google Classroom Integration Section -->
+            <section class="google-classroom-section" id="google-classroom-section">
+                <div class="card">
+                    <div class="step-header">
+                        <span class="step-number">🎓</span>
+                        <h2>Google Classroom Integration</h2>
+                        <p>Connect to Google Classroom for enhanced engagement analytics and real-time collaboration insights</p>
+                    </div>
+                    
+                    <!-- Authentication Section -->
+                    <div class="google-auth-section" id="google-auth-section">
+                        <div class="auth-status" id="google-auth-status">
+                            <div class="status-indicator disconnected">❌ Not connected to Google Classroom</div>
+                        </div>
+                        
+                        <div class="google-auth-form">
+                            <div class="auth-description">
+                                <h4>🔐 Google Classroom OAuth2 Authentication</h4>
+                                <p>Secure authentication with Google Classroom provides access to:</p>
+                                <ul>
+                                    <li>📚 Course rosters and enrollment data</li>
+                                    <li>📝 Assignment submissions and grades</li>
+                                    <li>📊 Student engagement metrics</li>
+                                    <li>💻 Google Drive collaboration activity</li>
+                                    <li>🎥 Google Meet attendance tracking</li>
+                                    <li>📱 Cross-device learning patterns</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="auth-actions">
+                                <button class="btn btn-primary" id="google-auth-btn">
+                                    🔗 Connect to Google Classroom
+                                </button>
+                                <button class="btn btn-link" id="google-help-btn">
+                                    ❓ How to get API access
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Google API Help -->
+                        <div class="google-help hidden" id="google-help">
+                            <div class="help-content">
+                                <h4>How to enable Google Classroom API access:</h4>
+                                <ol>
+                                    <li>Go to <strong>Google Cloud Console</strong></li>
+                                    <li>Create or select a project</li>
+                                    <li>Enable the <strong>Google Classroom API</strong></li>
+                                    <li>Create OAuth2 credentials</li>
+                                    <li>Configure authorized redirect URIs</li>
+                                    <li>Download credentials JSON file</li>
+                                </ol>
+                                <div class="help-note">
+                                    <strong>Note:</strong> Google Workspace for Education accounts have enhanced API access for educational institutions.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Google Classroom Interface -->
+                    <div class="google-main-section hidden" id="google-main-section">
+                        <div class="google-dashboard">
+                            <!-- Course Statistics -->
+                            <div class="google-stats-section">
+                                <h4>📊 Google Classroom Overview</h4>
+                                <div class="google-course-stats" id="google-course-stats">
+                                    <!-- Will be populated by JavaScript -->
+                                </div>
+                                <div class="google-actions">
+                                    <button class="btn btn-primary" id="google-sync-courses-btn">
+                                        🔄 Sync Courses
+                                    </button>
+                                    <button class="btn btn-secondary" id="google-cross-platform-btn">
+                                        📊 Cross-Platform Analytics
+                                    </button>
+                                    <button class="btn btn-link google-refresh-btn">
+                                        🔄 Refresh Data
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Course Selection -->
+                            <div class="course-selection-section">
+                                <h4>🎯 Select Course for Analysis</h4>
+                                <div class="form-group">
+                                    <label for="google-course-select">Choose Google Classroom Course:</label>
+                                    <select id="google-course-select" class="form-control">
+                                        <option value="">Select a course...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="google-course-details" id="google-course-details">
+                                    <!-- Course details will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Analysis Actions -->
+                            <div class="analysis-actions-section">
+                                <h4>🤖 AI-Powered Analysis</h4>
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary" id="google-analyze-students-btn">
+                                        📊 Analyze Students
+                                    </button>
+                                    <button class="btn btn-success" id="google-enhanced-predictions-btn">
+                                        🎯 Enhanced Predictions
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Sync Progress -->
+                            <div class="google-sync-progress hidden" id="google-sync-progress">
+                                <!-- Sync progress will be populated here -->
+                            </div>
+                            
+                            <!-- Student Analysis Results -->
+                            <div class="google-student-analysis hidden" id="google-student-analysis">
+                                <!-- Student analysis will be populated here -->
+                            </div>
+                            
+                            <!-- Enhanced Predictions -->
+                            <div class="google-enhanced-predictions hidden" id="google-enhanced-predictions">
+                                <!-- Enhanced predictions will be populated here -->
+                            </div>
+                            
+                            <!-- Google Classroom Specific Features -->
+                            <div class="google-features-section">
+                                <h4>🎓 Google Classroom Unique Insights</h4>
+                                <div class="feature-grid">
+                                    <div class="feature-card">
+                                        <div class="feature-icon">📁</div>
+                                        <h5>Google Drive Activity</h5>
+                                        <p>Track collaborative document usage and file sharing patterns</p>
+                                    </div>
+                                    <div class="feature-card">
+                                        <div class="feature-icon">🎥</div>
+                                        <h5>Google Meet Attendance</h5>
+                                        <p>Monitor virtual classroom attendance and participation</p>
+                                    </div>
+                                    <div class="feature-card">
+                                        <div class="feature-icon">📱</div>
+                                        <h5>Cross-Device Learning</h5>
+                                        <p>Analyze mobile vs desktop usage patterns for engagement insights</p>
+                                    </div>
+                                    <div class="feature-card">
+                                        <div class="feature-icon">⏰</div>
+                                        <h5>Real-Time Collaboration</h5>
+                                        <p>Track simultaneous editing and peer interaction in shared documents</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Disconnect Option -->
+                        <div class="google-disconnect-section">
+                            <button class="btn btn-link" id="google-disconnect-btn">
+                                🔌 Disconnect from Google Classroom
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Messages -->
+                    <div class="status-message hidden" id="google-status">
+                        <!-- Status messages will appear here -->
+                    </div>
+                </div>
+            </section>
+
             <!-- Live Demo Dashboard -->
             <section class="demo-dashboard hidden" id="demo-dashboard">
                 <div class="card">
@@ -654,5 +820,6 @@
     <script src="/static/js/explainable-ui.js"></script>
     <script src="/static/js/canvas-integration.js"></script>
     <script src="/static/js/powerschool-integration.js"></script>
+    <script src="/static/js/google-classroom-integration.js"></script>
 </body>
 </html>
