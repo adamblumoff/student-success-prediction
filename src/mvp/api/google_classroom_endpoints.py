@@ -42,9 +42,18 @@ router = APIRouter()
 # Global Google Classroom integration instance
 google_classroom = None
 
-def get_current_user(credentials: str = Depends(simple_auth)):
+def get_current_user(request: Request):
     """Simple authentication dependency"""
-    return credentials
+    # Check for Authorization header
+    auth_header = request.headers.get('authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        from fastapi.security import HTTPAuthorizationCredentials
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        return simple_auth(credentials)
+    
+    # No credentials - require auth
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 def ensure_google_classroom_initialized():
     """Ensure Google Classroom integration is initialized"""
@@ -91,7 +100,8 @@ async def google_classroom_health_check():
 
 @router.post("/auth/start")
 async def start_google_auth(
-    request: GoogleAuthRequest,
+    auth_request: GoogleAuthRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -116,7 +126,7 @@ async def start_google_auth(
                 '4. Integration is ready for API calls'
             ],
             'next_step': 'Complete OAuth2 flow in browser',
-            'redirect_uri': request.redirect_uri,
+            'redirect_uri': auth_request.redirect_uri,
             'scopes': [
                 'classroom.courses',
                 'classroom.rosters', 
@@ -129,9 +139,13 @@ async def start_google_auth(
         logger.error(f"❌ Failed to start Google auth: {e}")
         raise HTTPException(status_code=500, detail=f"Authentication initiation failed: {str(e)}")
 
+class AuthCompleteRequest(BaseModel):
+    authorization_code: str = Field(..., description="OAuth2 authorization code")
+
 @router.post("/auth/complete")
 async def complete_google_auth(
-    authorization_code: str,
+    auth_data: AuthCompleteRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -143,6 +157,7 @@ async def complete_google_auth(
         ensure_google_classroom_initialized()
         
         # In a real implementation, this would complete the OAuth2 flow
+        # For demo mode, we'll simulate successful authentication
         success = google_classroom.authenticate()
         
         if success:
@@ -166,6 +181,7 @@ async def complete_google_auth(
 
 @router.get("/courses")
 async def get_google_classroom_courses(
+    request: Request,
     teacher_only: bool = True,
     current_user: dict = Depends(get_current_user)
 ):
@@ -744,18 +760,4 @@ async def comprehensive_google_classroom_sync(
         logger.error(f"❌ Comprehensive sync initiation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Comprehensive sync failed: {str(e)}")
 
-# Error handlers and utility functions
-@router.exception_handler(Exception)
-async def google_classroom_exception_handler(request: Request, exc: Exception):
-    """Handle Google Classroom-specific exceptions"""
-    logger.error(f"❌ Google Classroom API error: {exc}")
-    
-    return JSONResponse(
-        status_code=500,
-        content={
-            'error': 'Google Classroom Integration Error',
-            'message': str(exc),
-            'timestamp': datetime.now().isoformat(),
-            'support': 'Check Google Classroom API credentials and permissions'
-        }
-    )
+# Error handlers are managed at app level in mvp_api.py
