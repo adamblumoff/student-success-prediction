@@ -37,12 +37,46 @@ if not os.getenv("DEVELOPMENT_MODE"):
 try:
     from mvp.mvp_api import app
     
-    # Add a startup event to validate configuration
+    # Add a startup event to validate configuration and initialize database
     @app.on_event("startup")
     async def startup_event():
         print("✅ Student Success Prediction System started successfully")
         print(f"🔒 Environment: {os.getenv('ENVIRONMENT', 'unknown')}")
         print(f"🌐 Port: {os.getenv('PORT', '8001')}")
+        
+        # Initialize database tables if they don't exist
+        try:
+            print("🗄️  Initializing database...")
+            
+            # Try the production database initialization script
+            try:
+                import subprocess
+                result = subprocess.run(
+                    [sys.executable, "scripts/init_production_db.py"],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                if result.returncode == 0:
+                    print("✅ Database initialized via production script")
+                    print(result.stdout)
+                else:
+                    print("⚠️  Production script failed, trying fallback")
+                    print(result.stderr)
+                    raise Exception("Production script failed")
+            except Exception:
+                # Fallback to direct initialization
+                from mvp.database import init_database, check_database_health
+                init_database()
+                
+                if check_database_health():
+                    print("✅ Database connection verified")
+                else:
+                    print("⚠️  Database health check failed")
+                    
+        except Exception as e:
+            print(f"⚠️  Database initialization warning: {e}")
+            print("📊 System will continue with SQLite fallback")
     
 except ImportError as e:
     print(f"❌ Failed to import app: {e}")
