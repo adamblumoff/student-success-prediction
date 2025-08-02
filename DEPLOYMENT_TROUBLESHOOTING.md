@@ -123,7 +123,7 @@ CMD ["python", "app.py"]
 
 ### **Test 1: Basic Startup**
 ```bash
-python app.py
+python3 app.py
 # Should show: "✅ Student Success Prediction System started successfully"
 ```
 
@@ -199,7 +199,7 @@ echo "PORT: $PORT"
 1. **Use app.py instead of run_mvp.py**
    ```bash
    # In Procfile or start command
-   python app.py
+   python3 app.py
    ```
 
 2. **Set Python version**
