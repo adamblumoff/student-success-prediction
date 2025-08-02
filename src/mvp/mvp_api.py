@@ -18,6 +18,7 @@ from src.mvp.api.canvas_endpoints import router as canvas_router
 from src.mvp.api.powerschool_endpoints import router as powerschool_router
 from src.mvp.api.google_classroom_endpoints import router as google_classroom_router
 from src.mvp.api.combined_endpoints import router as combined_router
+from src.mvp.api.notifications_endpoints import router as notifications_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -36,6 +37,7 @@ app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])
 app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
+app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):

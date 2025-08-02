@@ -1,0 +1,29 @@
+[Unit]
+Description=Student Success Prediction System
+After=network.target postgresql.service
+Requires=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/student-success-prediction
+Environment=PATH=/path/to/student-success-prediction/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/path/to/student-success-prediction
+ExecStart=/path/to/student-success-prediction/venv/bin/python run_mvp.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=student-success
+
+[Install]
+WantedBy=multi-user.target
+
+# To install this service:
+# 1. Copy this file to /etc/systemd/system/student-success.service
+# 2. Update paths and user as needed
+# 3. Run: sudo systemctl daemon-reload
+# 4. Run: sudo systemctl enable student-success
+# 5. Run: sudo systemctl start student-success

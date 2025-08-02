@@ -15,6 +15,7 @@
                 <h1>📊 Student Success Predictor</h1>
                 <p>Identify at-risk students early and provide targeted support</p>
             </div>
+            <!-- Real-time notification bell will be added here by JavaScript -->
         </div>
     </header>
 
@@ -443,7 +444,9 @@
                         <!-- Status messages will appear here -->
                     </div>
                 </div>
-            </section>            <!-- Live Demo Dashboard -->
+            </section>
+
+            <!-- Live Demo Dashboard -->
             <section class="demo-dashboard hidden" id="demo-dashboard">
                 <div class="card">
                     <div class="step-header">
@@ -624,6 +627,69 @@
                 </div>
             </section>
 
+            <!-- Real-time Notifications Panel -->
+            <section class="notifications-panel" id="notifications-panel">
+                <div class="notifications-header">
+                    <div class="notifications-title">
+                        <span class="notification-icon">🔔</span>
+                        <h3>Real-time Alerts</h3>
+                        <span class="alert-count" id="alert-count">0</span>
+                    </div>
+                    <div class="notifications-controls">
+                        <button class="btn btn-link" id="clear-alerts">Clear All</button>
+                        <button class="btn btn-link" id="toggle-notifications">⚙️ Settings</button>
+                    </div>
+                </div>
+                
+                <div class="notifications-content">
+                    <div class="connection-status" id="notification-connection-status">
+                        <div class="status-indicator disconnected" id="ws-status-indicator">
+                            <span id="ws-status-text">Connecting...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="alerts-list" id="alerts-list">
+                        <div class="no-alerts" id="no-alerts">
+                            <div class="no-alerts-icon">🔕</div>
+                            <p>No active alerts</p>
+                            <span class="no-alerts-subtitle">Student risk monitoring is active</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Notification Settings Modal -->
+                <div class="notification-settings-modal hidden" id="notification-settings-modal">
+                    <div class="settings-content">
+                        <div class="settings-header">
+                            <h4>🔔 Notification Settings</h4>
+                            <button class="close-settings" id="close-notification-settings">&times;</button>
+                        </div>
+                        <div class="settings-body">
+                            <div class="setting-group">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="enable-sound" checked>
+                                    <span>Enable sound alerts</span>
+                                </label>
+                            </div>
+                            <div class="setting-group">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="enable-desktop" checked>
+                                    <span>Enable desktop notifications</span>
+                                </label>
+                            </div>
+                            <div class="setting-group">
+                                <label for="risk-threshold">Alert Risk Threshold:</label>
+                                <select id="risk-threshold" class="form-control">
+                                    <option value="0.5">50% (Medium Risk)</option>
+                                    <option value="0.7" selected>70% (High Risk)</option>
+                                    <option value="0.85">85% (Critical Risk)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Step 2: AI-Powered Analysis Results -->
             <section class="results-section hidden" id="results-section">
                 <div class="card">
@@ -729,5 +795,6 @@
     <script src="/static/js/powerschool-integration.js"></script>
     <script src="/static/js/google-classroom-integration.js"></script>
     <script src="/static/js/unified-integration.js"></script>
+    <script src="/static/js/notifications.js"></script>
 </body>
 </html>

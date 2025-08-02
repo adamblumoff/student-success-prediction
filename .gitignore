@@ -91,3 +91,29 @@ docker-compose.override.yml
 k8s/production/
 terraform/*.tfstate
 terraform/*.tfvars
+
+# Test artifacts
+test_reports/*.html
+test_reports/*.json
+test_reports/*.txt
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Backup and old files
+*_old.py
+*_backup.py
+*.bak
+backups/*.sql
+backups/*.tar.gz
+
+# Temporary development files
+*_test.py
+scratch_*
+temp_*
+local_*
+
+# Google API credentials (keep examples)
+config/google_credentials.json
+config/google_token.json
+!config/google_credentials_example.json

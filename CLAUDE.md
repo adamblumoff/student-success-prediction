@@ -224,11 +224,70 @@ except Exception as e:
 
 ## Development Workflow
 
+### Local Development
 1. **Start MVP** for testing: `python3 run_mvp.py`
 2. **Use web interface** at http://localhost:8001
 3. **Upload CSV** or try sample data
 4. **View explanations** by clicking "Explain Prediction" on any student
 5. **Check insights** in the Model Insights panel
+6. **Test notifications** via browser console: `notificationSystem.testAlert()`
+
+### Production Deployment
+1. **Validate deployment readiness**: `python3 scripts/validate_deployment.py`
+2. **Configure environment**: Copy `.env.production` to `.env` and update values
+3. **Deploy with Docker**: `./deploy.sh --environment production`
+4. **Verify deployment**: `curl http://localhost:8001/health`
+5. **Monitor system**: Check logs with `docker compose -f docker-compose.prod.yml logs -f`
+
+### Docker Deployment Options
+
+**Quick Development Setup**:
+```bash
+# Copy environment file
+cp .env.development .env
+
+# Deploy development environment
+./deploy.sh --environment development
+
+# Access application
+open http://localhost:8001
+```
+
+**Production Deployment**:
+```bash
+# Validate deployment readiness
+python3 scripts/validate_deployment.py
+
+# Configure production environment
+cp .env.production .env
+nano .env  # Update DATABASE_URL, MVP_API_KEY, etc.
+
+# Deploy with full testing
+./deploy.sh --environment production
+
+# Or skip tests for faster deployment
+./deploy.sh --environment production --skip-tests
+
+# Verify deployment
+curl http://localhost:8001/health
+curl http://localhost:8001/docs
+```
+
+**Manual Docker Commands**:
+```bash
+# Build production image
+docker build --target production -t student-success-prediction:latest .
+
+# Run production stack
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Check status
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f app
+
+# Stop and cleanup
+docker compose -f docker-compose.prod.yml down
+```
 
 ## Common Issues and Solutions
 
@@ -405,6 +464,106 @@ git push origin dev
 - Duplicate structure documentation
 - Empty result directories
 - Backup/temporary files
+
+
+## System Maintenance and Reliability
+
+### Automated Testing and Health Monitoring
+
+The system includes comprehensive testing and monitoring infrastructure to ensure reliability:
+
+**Health Monitoring:**
+```bash
+# Run system health check
+python3 scripts/system_health_monitor.py
+
+# Continuous monitoring (every 15 minutes)
+python3 scripts/system_health_monitor.py --continuous 15
+
+# Email alerts on issues
+python3 scripts/system_health_monitor.py --email
+```
+
+**Automated Testing:**
+```bash
+# Run full test suite
+python3 scripts/run_automated_tests.py
+
+# Run specific test categories
+python3 scripts/run_automated_tests.py --suites unit_tests api_tests notification_tests
+
+# Performance benchmarking
+python3 scripts/run_automated_tests.py --performance-only
+```
+
+**Maintenance Scripts:**
+```bash
+# Daily maintenance
+./scripts/daily_maintenance.sh
+
+# Weekly maintenance
+./scripts/weekly_maintenance.sh
+
+# Emergency restart
+./scripts/emergency_restart.sh
+
+# System status check
+./scripts/system_status.sh
+```
+
+### Test Coverage
+
+The system includes comprehensive tests:
+- **Unit Tests**: Individual component testing
+- **API Tests**: All endpoint testing with authentication
+- **Notification Tests**: Real-time notification system testing
+- **Integration Tests**: LMS/SIS integration testing
+- **Performance Tests**: Response time and throughput testing
+
+### Monitoring and Alerting
+
+**Health Checks Monitor:**
+- API endpoint responsiveness
+- Database connectivity
+- Model loading and performance
+- Notification system functionality
+- Integration system health
+- File system and resource usage
+
+**Alerting Thresholds:**
+- Response time > 5 seconds (warning)
+- Disk usage > 85% (warning)
+- Memory usage > 80% (warning)
+- API errors > 50% (critical)
+- Database connection failures (critical)
+
+### Maintenance Schedule
+
+**Daily (Automated):**
+- Health monitoring every 15 minutes
+- Error log analysis
+- Basic connectivity checks
+
+**Weekly (Automated):**
+- Full test suite execution
+- Database maintenance and optimization
+- Log rotation and cleanup
+- Dependency updates
+
+**Monthly (Manual Review):**
+- Model performance evaluation
+- Security audit
+- Full system backup
+- Documentation updates
+
+### Configuration Files
+
+**Health Monitor**: `config/health_monitor.json`
+**Test Runner**: `config/test_runner.json`
+**Cron Jobs**: `config/cron_examples.txt`
+**Systemd Service**: `config/student-success.service`
+
+See `docs/SYSTEM_MAINTENANCE.md` for comprehensive maintenance procedures.
 
 ## Development Guidelines for Claude Code
 

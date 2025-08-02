@@ -12,16 +12,17 @@ python3 run_mvp.py
 # Open your browser to http://localhost:8001
 ```
 
-### Production (PostgreSQL)
+### Production (Docker)
 ```bash
-# Set up PostgreSQL database (Neon.tech recommended)
-export DATABASE_URL="postgresql://user:pass@host/database"
+# Copy and configure environment
+cp .env.production .env
+nano .env  # Update DATABASE_URL and API keys
 
-# Run database migration
-alembic upgrade head
+# Deploy with Docker
+./deploy.sh --environment production
 
-# Start the application
-python3 run_mvp.py
+# Verify deployment
+curl http://localhost:8001/health
 ```
 
 ## ✨ Features
@@ -30,7 +31,8 @@ python3 run_mvp.py
 - **📊 Explainable AI**: Provides detailed explanations for each prediction with risk factors and protective factors
 - **📈 Real-Time Analytics**: Comprehensive dashboard with advanced analytics and ROI calculations
 - **🏫 Multi-Tenant Architecture**: Supports multiple school districts with data isolation
-- **📚 Gradebook Integration**: Compatible with Canvas LMS and generic CSV formats
+- **📚 Universal Integration**: Canvas LMS, PowerSchool SIS, Google Classroom, and generic CSV formats
+- **🔔 Real-Time Notifications**: WebSocket-based alert system for at-risk students
 - **🎯 Intervention Tracking**: Workflow management for student interventions with outcome tracking
 - **🔒 FERPA Compliant**: Audit logging and security features for educational data privacy
 
