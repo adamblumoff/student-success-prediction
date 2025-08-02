@@ -18,6 +18,36 @@ class StudentSuccessApp {
         this.setupEventListeners();
         this.setupDragAndDrop();
         this.setupTwoPanelLayout();
+        this.initializeAuthentication();
+    }
+
+    async initializeAuthentication() {
+        try {
+            // Check if already authenticated
+            const statusResponse = await fetch('/api/mvp/auth/status');
+            if (statusResponse.ok) {
+                console.log('✅ Already authenticated');
+                return;
+            }
+        } catch (error) {
+            // Not authenticated, proceed with login
+        }
+
+        try {
+            // Perform web login to get session cookie
+            const loginResponse = await fetch('/api/mvp/auth/web-login', {
+                method: 'POST',
+                credentials: 'include' // Important: include cookies
+            });
+            
+            if (loginResponse.ok) {
+                console.log('✅ Web authentication successful');
+            } else {
+                console.error('❌ Authentication failed');
+            }
+        } catch (error) {
+            console.error('❌ Authentication error:', error);
+        }
     }
 
     setupEventListeners() {
@@ -109,6 +139,7 @@ class StudentSuccessApp {
 
             const response = await fetch('/api/mvp/analyze', {
                 method: 'POST',
+                credentials: 'include', // Include session cookies
                 body: formData
             });
 
@@ -132,7 +163,9 @@ class StudentSuccessApp {
         this.showLoading(true);
 
         try {
-            const response = await fetch('/api/mvp/sample');
+            const response = await fetch('/api/mvp/sample', {
+                credentials: 'include' // Include session cookies
+            });
             if (!response.ok) {
                 const errorData = await response.text();
                 console.error('Sample Data Error:', response.status, errorData);
