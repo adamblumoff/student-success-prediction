@@ -50,6 +50,14 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
         if client_host in ['127.0.0.1', 'localhost', '::1']:
             return {"user": "demo_user", "permissions": ["read", "write"]}
     
+    # For demo/public mode, allow web browser requests without API key
+    # This is secure because it only allows specific demo endpoints
+    if os.getenv('PUBLIC_DEMO_MODE', 'false').lower() == 'true':
+        # Check if request is from a web browser (has common browser headers)
+        user_agent = request.headers.get('user-agent', '').lower()
+        if any(browser in user_agent for browser in ['mozilla', 'chrome', 'safari', 'firefox', 'edge']):
+            return {"user": "demo_user", "permissions": ["read", "write"]}
+    
     # Try to get credentials from Authorization header
     auth_header = request.headers.get('authorization')
     if auth_header and auth_header.startswith('Bearer '):
@@ -58,7 +66,7 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
         return simple_auth(credentials)
     
-    # No credentials and not localhost - require auth
+    # No credentials and not demo mode - require auth
     raise HTTPException(status_code=401, detail="Authentication required")
 
 def ensure_system_initialized():

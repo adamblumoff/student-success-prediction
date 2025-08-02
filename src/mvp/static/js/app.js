@@ -109,9 +109,6 @@ class StudentSuccessApp {
 
             const response = await fetch('/api/mvp/analyze', {
                 method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
-                },
                 body: formData
             });
 
@@ -135,11 +132,7 @@ class StudentSuccessApp {
         this.showLoading(true);
 
         try {
-            const response = await fetch('/api/mvp/sample', {
-                headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
-                }
-            });
+            const response = await fetch('/api/mvp/sample');
             if (!response.ok) {
                 const errorData = await response.text();
                 console.error('Sample Data Error:', response.status, errorData);
