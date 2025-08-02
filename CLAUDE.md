@@ -746,25 +746,22 @@ git status  # Check for untracked files that should be ignored
 
 ### Automated Cleanup Integration
 
-**Pre-commit Cleanup** (Recommended):
+**Repository Cleanup Commands** (Available in scripts/cleanup.sh):
 ```bash
-# Create a cleanup script that runs before commits
-cat > scripts/cleanup.sh << 'EOF'
-#!/bin/bash
-echo "🧹 Running repository cleanup..."
+# Quick cleanup (run before commits)
+./scripts/cleanup.sh
 
-# Remove Python cache files
-find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-find . -name "*.pyc" -delete 2>/dev/null || true
+# Manual cleanup steps:
+find . -name "*.pyc" -delete && find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.tmp" -delete && find . -name "*~" -delete 2>/dev/null || true
+rm -f *_old.py *_backup.py *.bak 2>/dev/null || true
 
-# Remove temporary files
-find . -name "*.tmp" -delete 2>/dev/null || true
-find . -name "*~" -delete 2>/dev/null || true
+# Clean old logs and reports
+find logs/ -name "*.log" -mtime +30 -delete 2>/dev/null || true  
+find test_reports/ -name "*" -mtime +7 -delete 2>/dev/null || true
 
-echo "✅ Cleanup complete"
-EOF
-
-chmod +x scripts/cleanup.sh
+# Validate repository structure
+python3 scripts/validate_deployment.py
 ```
 
 **Integration with Development Workflow**:
