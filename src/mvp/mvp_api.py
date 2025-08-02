@@ -95,12 +95,19 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # Add trusted host middleware for production
 if os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']:
-    allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    # Allow common deployment platforms
+    default_hosts = 'localhost,127.0.0.1,*.onrender.com,*.railway.app,*.vercel.app,*.herokuapp.com'
+    allowed_hosts = os.getenv('ALLOWED_HOSTS', default_hosts).split(',')
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
-# Static files and templates
-app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")
-templates = Jinja2Templates(directory="src/mvp/templates")
+# Static files and templates with absolute paths
+import pathlib
+base_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
+static_dir = base_dir / "src" / "mvp" / "static" 
+templates_dir = base_dir / "src" / "mvp" / "templates"
+
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+templates = Jinja2Templates(directory=str(templates_dir))
 
 # Include all routers
 app.include_router(core_router, prefix="/api/mvp", tags=["Core MVP"])
@@ -113,7 +120,42 @@ app.include_router(notifications_router, prefix="/api", tags=["Real-time Notific
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     """Main web interface"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        # Fallback HTML if template fails
+        return HTMLResponse(f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Student Success Predictor</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; text-align: center; }}
+                .container {{ max-width: 800px; margin: 0 auto; }}
+                .error {{ background: #f8f9fa; padding: 20px; border-radius: 8px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 Student Success Predictor</h1>
+                <div class="error">
+                    <h3>System Initializing...</h3>
+                    <p>Web interface is loading. Please check:</p>
+                    <ul style="text-align: left;">
+                        <li><a href="/health">Health Check</a></li>
+                        <li><a href="/docs">API Documentation</a></li>
+                    </ul>
+                    <p><small>Template error: {str(e)}</small></p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Favicon to prevent 404 errors"""
+    return Response(content="", media_type="image/x-icon")
 
 @app.get("/health")
 async def health_check():
