@@ -1,0 +1,30 @@
+# Student Success Prediction System - Maintenance Cron Jobs
+# Add these entries to your crontab with: crontab -e
+
+# Health check every 15 minutes
+*/15 * * * * cd /path/to/student-success-prediction && python3 scripts/system_health_monitor.py --output file >> logs/cron.log 2>&1
+
+# Daily maintenance at 6 AM
+0 6 * * * cd /path/to/student-success-prediction && ./scripts/daily_maintenance.sh >> logs/cron.log 2>&1
+
+# Weekly maintenance on Sundays at 2 AM
+0 2 * * 0 cd /path/to/student-success-prediction && ./scripts/weekly_maintenance.sh >> logs/cron.log 2>&1
+
+# Monthly full backup on 1st of month at 1 AM
+0 1 1 * * cd /path/to/student-success-prediction && python3 scripts/backup_system.py --full >> logs/cron.log 2>&1
+
+# Log rotation daily at midnight
+0 0 * * * cd /path/to/student-success-prediction && find logs/ -name "*.log" -size +100M -exec gzip {} \;
+
+# Clean old test databases daily
+0 3 * * * cd /path/to/student-success-prediction && find . -name "test_*.db" -mtime +1 -delete
+
+# Update system dependencies weekly (Sunday at 3 AM)
+0 3 * * 0 cd /path/to/student-success-prediction && pip install --upgrade -r requirements.txt >> logs/cron.log 2>&1
+
+# NOTE: Replace /path/to/student-success-prediction with your actual path
+# To install these cron jobs:
+# 1. Copy this file content
+# 2. Run: crontab -e
+# 3. Paste the content
+# 4. Save and exit

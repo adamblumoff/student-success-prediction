@@ -1,0 +1,27 @@
+{
+  "base_url": "http://localhost:8001",
+  "api_key": null,
+  "checks": {
+    "api_endpoints": true,
+    "database": true,
+    "models": true,
+    "notifications": true,
+    "integrations": true,
+    "file_system": true
+  },
+  "thresholds": {
+    "response_time_ms": 5000,
+    "memory_usage_mb": 1000,
+    "disk_usage_percent": 85
+  },
+  "email_alerts": {
+    "enabled": false,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "username": null,
+    "password": null,
+    "recipients": []
+  },
+  "log_level": "INFO",
+  "log_file": "logs/health_monitor.log"
+}

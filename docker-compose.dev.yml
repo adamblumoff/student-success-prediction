@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Local PostgreSQL for development
+  postgres:
+    image: postgres:15-alpine
+    container_name: student_success_db_dev
+    environment:
+      POSTGRES_DB: student_success
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./deployment/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d student_success"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Application in development mode
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: student_success_app_dev
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      # Local database configuration
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/student_success
+      
+      # Development API configuration
+      - MVP_API_KEY=dev-key-change-me
+      
+      # Application settings
+      - PORT=8001
+      - SQL_DEBUG=true
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      
+    volumes:
+      # Mount source code for hot reloading (development only)
+      - .:/app
+      - /app/venv  # Exclude venv directory
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Database management interface
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: student_success_pgadmin_dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@localhost.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+
+  # Test runner service
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: student_success_test_dev
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/student_success
+      - MVP_API_KEY=test-key-12345
+      - ENVIRONMENT=testing
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - test_reports_dev:/app/test_reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - testing
+    command: ["python3", "scripts/run_automated_tests.py", "--output", "both"]
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  pgadmin_data_dev:
+    driver: local
+  test_reports_dev:
+    driver: local
+
+networks:
+  default:
+    name: student_success_dev_network
