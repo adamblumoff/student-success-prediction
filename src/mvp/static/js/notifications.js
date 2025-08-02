@@ -11,7 +11,7 @@ class NotificationSystem {
         this.settings = {
             enableSound: true,
             enableDesktop: true,
-            enableNotifications: true,  // New setting to completely disable notifications
+            enableNotifications: false,  // Disabled by default for better UX
             riskThreshold: 0.7
         };
         this.reconnectInterval = null;
@@ -27,9 +27,18 @@ class NotificationSystem {
         this.requestNotificationPermission();
         this.connectWebSocket();
         this.showNotificationsPanel();
+        this.updateMainToggleDisplay();
     }
 
     bindEvents() {
+        // Main notification toggle in header
+        document.getElementById('main-notification-toggle')?.addEventListener('click', () => {
+            this.settings.enableNotifications = !this.settings.enableNotifications;
+            this.saveSettings();
+            this.toggleNotificationsPanel();
+            this.updateMainToggleDisplay();
+        });
+
         // Settings modal
         document.getElementById('toggle-notifications')?.addEventListener('click', () => this.showSettings());
         document.getElementById('close-notification-settings')?.addEventListener('click', () => this.hideSettings());
@@ -505,6 +514,23 @@ class NotificationSystem {
 
     getApiKey() {
         return localStorage.getItem('api-key') || 'dev-key-change-me';
+    }
+
+    updateMainToggleDisplay() {
+        const statusElement = document.getElementById('notification-status');
+        const toggleButton = document.getElementById('main-notification-toggle');
+        
+        if (statusElement && toggleButton) {
+            if (this.settings.enableNotifications) {
+                statusElement.textContent = 'ON';
+                toggleButton.style.color = '#28a745'; // Green
+                toggleButton.title = 'Notifications Enabled - Click to disable';
+            } else {
+                statusElement.textContent = 'OFF';
+                toggleButton.style.color = '#6c757d'; // Gray
+                toggleButton.title = 'Notifications Disabled - Click to enable';
+            }
+        }
     }
 
     showToast(message, type = 'info') {
