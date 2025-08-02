@@ -47,8 +47,8 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
     session_token = request.cookies.get('session_token')
     if session_token:
         try:
-            # Validate session token (simple implementation)
-            expected_token = os.getenv('SESSION_SECRET', 'default-session-secret')
+            # Validate session token
+            expected_token = get_session_secret()
             if session_token == expected_token:
                 return {"user": "web_user", "permissions": ["read", "write"]}
         except Exception:
@@ -565,13 +565,22 @@ async def get_success_stories(current_user: dict = Depends(get_current_user)):
         logger.error(f"Error getting success stories: {e}")
         raise HTTPException(status_code=500, detail=f"Error retrieving success stories: {str(e)}")
 
+def get_session_secret():
+    """Get or generate a secure session secret"""
+    session_secret = os.getenv('SESSION_SECRET')
+    if not session_secret:
+        # Auto-generate a secure session secret for this instance
+        import secrets
+        session_secret = secrets.token_urlsafe(32)
+        logger.info("🔒 Auto-generated session secret for this instance")
+    return session_secret
+
 @router.post("/auth/web-login")
 async def web_login(request: Request):
     """Secure web authentication endpoint for browser-based access"""
     try:
-        # Generate session token
-        import secrets
-        session_token = os.getenv('SESSION_SECRET', 'default-session-secret')
+        # Get secure session token
+        session_token = get_session_secret()
         
         # Create response with session cookie
         response = JSONResponse({
