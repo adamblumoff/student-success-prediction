@@ -6,11 +6,74 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 import os
 import sys
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add comprehensive security headers to all responses"""
+    
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        
+        # Comprehensive security headers
+        security_headers = {
+            # Prevent clickjacking attacks
+            "X-Frame-Options": "DENY",
+            
+            # Prevent MIME type sniffing
+            "X-Content-Type-Options": "nosniff",
+            
+            # Enable XSS protection
+            "X-XSS-Protection": "1; mode=block",
+            
+            # Referrer policy for privacy
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            
+            # Content Security Policy (restrictive for security)
+            "Content-Security-Policy": (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' cdnjs.cloudflare.com cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' cdnjs.cloudflare.com cdn.jsdelivr.net fonts.googleapis.com; "
+                "font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com; "
+                "img-src 'self' data: blob:; "
+                "connect-src 'self'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            ),
+            
+            # Permissions policy (restrict sensitive APIs)
+            "Permissions-Policy": (
+                "geolocation=(), "
+                "microphone=(), "
+                "camera=(), "
+                "payment=(), "
+                "usb=(), "
+                "magnetometer=(), "
+                "gyroscope=(), "
+                "accelerometer=()"
+            ),
+            
+            # HSTS for HTTPS enforcement (only in production)
+            **({"Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"} 
+               if os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod'] 
+               else {}),
+            
+            # Server identification (minimal)
+            "Server": "StudentSuccessAPI/2.0"
+        }
+        
+        # Apply all security headers
+        for header, value in security_headers.items():
+            response.headers[header] = value
+            
+        return response
 
 # Import all modular routers
 from src.mvp.api.core import router as core_router
@@ -26,6 +89,14 @@ app = FastAPI(
     description="Modular API for student success prediction with Canvas LMS, PowerSchool SIS, and Google Classroom integration",
     version="2.0.0"
 )
+
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add trusted host middleware for production
+if os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']:
+    allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
 # Static files and templates
 app.mount("/static", StaticFiles(directory="src/mvp/static"), name="static")

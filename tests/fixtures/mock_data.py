@@ -215,6 +215,7 @@ mock_data = MockDataGenerator()
 SAMPLE_PREDICTION_RESULTS = mock_data.generate_prediction_results(10)
 SAMPLE_K12_RESULTS = mock_data.generate_k12_prediction_results(5)
 SAMPLE_EXPLAINABLE_AI_RESULT = mock_data.generate_explainable_ai_result()
+SAMPLE_STUDENT_FEATURES = mock_data.generate_student_features(5)
 
 # Database sample records
 SAMPLE_DATABASE_RECORDS = {

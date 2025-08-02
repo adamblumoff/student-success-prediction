@@ -4228,3 +4228,334 @@ body {
     50% { box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3); }
     100% { box-shadow: var(--notification-shadow); }
 }
+
+/* ========================================
+   ENHANCED MOBILE RESPONSIVENESS
+   ======================================== */
+
+/* Mobile-first approach with enhanced touch interactions */
+@media (max-width: 480px) {
+    /* Typography adjustments for small screens */
+    .header h1 {
+        font-size: 1.5rem !important;
+        line-height: 1.3;
+    }
+    
+    .header p {
+        font-size: 0.875rem !important;
+        margin-top: 0.25rem;
+    }
+    
+    /* Container padding for very small screens */
+    .container {
+        padding: 0 12px !important;
+        max-width: 100%;
+    }
+    
+    /* Card spacing and sizing */
+    .card {
+        padding: 16px !important;
+        margin: 12px 0 !important;
+        border-radius: 6px;
+    }
+    
+    /* Button improvements for touch */
+    .btn, .btn-primary, .btn-secondary, .btn-danger {
+        min-height: 44px !important; /* Apple's recommended touch target size */
+        padding: 12px 16px !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        border-radius: 6px;
+        margin: 4px 0;
+        width: auto;
+        display: block;
+    }
+    
+    /* Form improvements */
+    input[type="file"], input[type="text"], input[type="email"], 
+    textarea, select {
+        min-height: 44px !important;
+        padding: 12px !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        border-radius: 6px;
+        width: 100%;
+    }
+    
+    /* Upload area for better mobile interaction */
+    .upload-area {
+        padding: 24px 16px !important;
+        min-height: 120px !important;
+        border-width: 2px;
+        border-style: dashed;
+        text-align: center;
+    }
+    
+    /* Table responsiveness */
+    .results-table, .comprehensive-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        font-size: 0.875rem;
+    }
+    
+    /* Mobile-friendly card layout for results */
+    .student-result-card {
+        display: block;
+        margin: 12px 0 !important;
+        padding: 16px !important;
+        background: white;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+    }
+    
+    /* Stack form elements vertically */
+    .form-row, .form-group {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+    
+    /* Modal and popup improvements */
+    .modal, .popup, .notification-panel {
+        margin: 0 !important;
+        border-radius: 12px 12px 0 0 !important;
+        max-height: 80vh !important;
+        overflow-y: auto;
+    }
+    
+    /* Explanation panels */
+    .explanation-details {
+        padding: 16px !important;
+        margin: 8px 0 !important;
+    }
+    
+    /* Chart containers */
+    .chart-container {
+        position: relative;
+        height: 250px !important; /* Smaller height for mobile */
+        margin: 16px 0 !important;
+    }
+    
+    /* AI insights cards */
+    .ai-feature {
+        padding: 16px !important;
+        margin: 8px 0 !important;
+    }
+    
+    /* Risk indicators */
+    .risk-indicator {
+        padding: 8px 12px !important;
+        font-size: 0.875rem !important;
+        display: inline-block;
+        margin: 2px;
+    }
+    
+    /* Loading states */
+    .loading {
+        padding: 24px 16px !important;
+        text-align: center;
+    }
+    
+    /* Notification bell adjustments */
+    .notification-bell {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .notification-count {
+        width: 18px !important;
+        height: 18px !important;
+        font-size: 11px !important;
+    }
+    
+    /* Hide less critical elements on very small screens */
+    .demo-badge, .ai-badge {
+        font-size: 0.75rem !important;
+        padding: 4px 8px !important;
+    }
+    
+    /* Improve spacing for sections */
+    .section {
+        margin: 16px 0 !important;
+        padding: 16px !important;
+    }
+    
+    /* Better spacing for analytics grid */
+    .analytics-grid, .insights-grid, .ai-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+    
+    /* Two-panel layout improvements */
+    .two-panel-layout {
+        flex-direction: column !important;
+        min-height: auto !important;
+    }
+    
+    /* Integration card improvements */
+    .integration-card {
+        margin: 8px 0 !important;
+        padding: 16px !important;
+    }
+    
+    .lms-actions, .sis-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+    
+    /* Results improvements */
+    .results-summary {
+        padding: 16px !important;
+        margin: 8px 0 !important;
+    }
+    
+    /* Success story cards */
+    .success-story {
+        margin: 8px 0 !important;
+        padding: 16px !important;
+    }
+}
+
+/* Medium mobile screens (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+    /* Header adjustments */
+    .header h1 {
+        font-size: 1.75rem !important;
+    }
+    
+    /* Container */
+    .container {
+        padding: 0 20px !important;
+    }
+    
+    /* Cards */
+    .card {
+        padding: 20px !important;
+        margin: 16px 0 !important;
+    }
+    
+    /* Buttons */
+    .btn {
+        min-height: 42px !important;
+        padding: 10px 20px !important;
+    }
+    
+    /* Chart containers */
+    .chart-container {
+        height: 300px !important;
+    }
+    
+    /* Grid layouts */
+    .ai-grid, .insights-grid, .analytics-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 16px !important;
+    }
+    
+    /* Form improvements */
+    .form-row {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+    
+    /* Modal improvements */
+    .modal, .popup {
+        max-width: 90% !important;
+        max-height: 85vh !important;
+    }
+}
+
+/* Touch device improvements (all mobile/tablet) */
+@media (pointer: coarse) {
+    /* Larger touch targets */
+    button, .btn, input[type="button"], input[type="submit"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Better hover states for touch */
+    .btn:hover, button:hover {
+        transform: translateY(-1px);
+        transition: transform 0.2s ease;
+    }
+    
+    /* Improved scrollable areas */
+    .scrollable, .results-container, .notification-panel {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+    
+    /* Better tap highlights */
+    button, .btn, a, input, textarea, select {
+        -webkit-tap-highlight-color: rgba(37, 99, 235, 0.2);
+    }
+    
+    /* Prevent zoom on form inputs */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) {
+    @media (max-width: 768px) {
+        :root {
+            --gray-50: #1f2937;
+            --gray-100: #374151;
+            --gray-200: #4b5563;
+            --gray-700: #f3f4f6;
+            --gray-900: #f9fafb;
+            --notification-bg: #374151;
+            --notification-panel-bg: #1f2937;
+        }
+        
+        body {
+            background-color: var(--gray-50);
+            color: var(--gray-700);
+        }
+        
+        .card {
+            background-color: var(--gray-100);
+            border-color: var(--gray-200);
+        }
+    }
+}
+
+/* Reduced motion preferences for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print styles for mobile reports */
+@media print {
+    .header, .notification-panel, .btn, .ai-showcase {
+        display: none !important;
+    }
+    
+    .main {
+        padding-top: 0 !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        page-break-inside: avoid;
+        background: white !important;
+    }
+    
+    .results-table {
+        width: 100% !important;
+        border-collapse: collapse;
+        font-size: 10px;
+    }
+    
+    .results-table th, .results-table td {
+        border: 1px solid #000 !important;
+        padding: 4px !important;
+    }
+}
