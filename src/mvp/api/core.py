@@ -44,7 +44,8 @@ k12_ultra_predictor = None
 def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = None):
     """Simple authentication dependency with fallback for browser requests"""
     # For development/demo mode, allow requests from localhost without auth
-    if os.getenv('DEVELOPMENT_MODE', 'true').lower() == 'true':
+    # SECURITY: Development mode is OFF by default for production safety
+    if os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true':
         client_host = request.client.host
         if client_host in ['127.0.0.1', 'localhost', '::1']:
             return {"user": "demo_user", "permissions": ["read", "write"]}
@@ -96,13 +97,41 @@ async def analyze_student_data(
         if len(df) == 0:
             raise HTTPException(status_code=400, detail="CSV file is empty")
         
+        # Convert to prediction format using universal converter
+        from mvp.csv_processing import universal_gradebook_converter
+        try:
+            converted_df = universal_gradebook_converter(df)
+            logger.info(f"Converted CSV from generic format to prediction format")
+        except Exception as e:
+            logger.error(f"CSV conversion failed: {e}")
+            raise HTTPException(status_code=400, detail=f"Unable to process CSV format: {str(e)}")
+        
         # Get risk predictions
-        results = intervention_system.assess_student_risk(df)
+        results_df = intervention_system.assess_student_risk(converted_df)
+        
+        # Convert DataFrame to list of dictionaries for JSON serialization
+        results = []
+        for _, row in results_df.iterrows():
+            results.append({
+                'student_id': int(row['student_id']) if pd.notna(row['student_id']) else None,
+                'risk_score': float(row['risk_score']) if pd.notna(row['risk_score']) else 0.0,
+                'risk_category': str(row['risk_category']) if pd.notna(row['risk_category']) else 'Unknown',
+                'success_probability': float(row['success_probability']) if pd.notna(row['success_probability']) else 0.0,
+                'needs_intervention': bool(row['needs_intervention']) if pd.notna(row['needs_intervention']) else False
+            })
         
         # Save predictions to database (if available)
         try:
             session_id = f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            save_predictions_batch(results, session_id)
+            # Convert results to format expected by database
+            db_results = []
+            for result in results:
+                db_results.append({
+                    'student_id': result['student_id'],
+                    'risk_score': result['risk_score'],
+                    'risk_category': result['risk_category']
+                })
+            save_predictions_batch(db_results, session_id)
         except Exception as db_error:
             logger.warning(f"Could not save to database: {db_error}")
         
@@ -113,9 +142,27 @@ async def analyze_student_data(
         
     except HTTPException:
         raise
+    except FileNotFoundError as e:
+        logger.error(f"Model file not found: {e}")
+        raise HTTPException(status_code=503, detail="ML models not available - system needs initialization")
+    except UnicodeDecodeError as e:
+        logger.error(f"File encoding error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid file encoding - please ensure UTF-8 CSV format")
+    except pd.errors.EmptyDataError:
+        logger.error("CSV parsing error: empty data")
+        raise HTTPException(status_code=400, detail="CSV file appears to be empty or invalid")
+    except pd.errors.ParserError as e:
+        logger.error(f"CSV parsing error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid CSV format - please check file structure")
+    except KeyError as e:
+        logger.error(f"Missing required data column: {e}")
+        raise HTTPException(status_code=400, detail=f"CSV missing required column: {str(e)}")
+    except ValueError as e:
+        logger.error(f"Data validation error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid data format: {str(e)}")
     except Exception as e:
-        logger.error(f"Error in analysis: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+        logger.error(f"Unexpected error in analysis: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during file processing")
 
 @router.post("/analyze-detailed")
 async def analyze_detailed_student_data(
@@ -137,17 +184,43 @@ async def analyze_detailed_student_data(
         if len(df) == 0:
             raise HTTPException(status_code=400, detail="CSV file is empty")
         
+        # Convert to prediction format using universal converter
+        from mvp.csv_processing import universal_gradebook_converter
+        try:
+            converted_df = universal_gradebook_converter(df)
+            logger.info(f"Converted CSV for detailed analysis")
+        except Exception as e:
+            logger.error(f"CSV conversion failed: {e}")
+            raise HTTPException(status_code=400, detail=f"Unable to process CSV format: {str(e)}")
+        
         # Get explainable predictions
-        detailed_results = intervention_system.get_explainable_predictions(df)
+        detailed_results = intervention_system.get_explainable_predictions(converted_df)
         
         return JSONResponse({
             'predictions': detailed_results,
             'message': f'Successfully analyzed {len(detailed_results)} students with detailed explanations'
         })
         
+    except HTTPException:
+        raise
+    except FileNotFoundError as e:
+        logger.error(f"Model file not found: {e}")
+        raise HTTPException(status_code=503, detail="Explainable AI models not available")
+    except AttributeError as e:
+        logger.error(f"Model method missing: {e}")
+        raise HTTPException(status_code=503, detail="Explainable AI system not properly initialized")
+    except UnicodeDecodeError as e:
+        logger.error(f"File encoding error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid file encoding - please ensure UTF-8 CSV format")
+    except pd.errors.EmptyDataError:
+        logger.error("CSV parsing error: empty data")
+        raise HTTPException(status_code=400, detail="CSV file appears to be empty or invalid")
+    except pd.errors.ParserError as e:
+        logger.error(f"CSV parsing error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid CSV format - please check file structure")
     except Exception as e:
-        logger.error(f"Error in detailed analysis: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing detailed analysis: {str(e)}")
+        logger.error(f"Unexpected error in detailed analysis: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during detailed analysis")
 
 @router.post("/analyze-k12")
 async def analyze_k12_gradebook(
@@ -212,9 +285,29 @@ async def analyze_k12_gradebook(
             'message': f'Successfully analyzed {len(predictions)} students with Ultra-Advanced K-12 model (81.5% AUC)'
         })
         
+    except HTTPException:
+        raise
+    except FileNotFoundError as e:
+        logger.error(f"K-12 model file not found: {e}")
+        raise HTTPException(status_code=503, detail="K-12 Ultra-Advanced model not available")
+    except ImportError as e:
+        logger.error(f"K-12 model dependencies missing: {e}")
+        raise HTTPException(status_code=503, detail="K-12 model dependencies not installed")
+    except UnicodeDecodeError as e:
+        logger.error(f"File encoding error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid file encoding - please ensure UTF-8 CSV format")
+    except pd.errors.EmptyDataError:
+        logger.error("CSV parsing error: empty data")
+        raise HTTPException(status_code=400, detail="CSV file appears to be empty or invalid")
+    except pd.errors.ParserError as e:
+        logger.error(f"CSV parsing error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid CSV format - please check gradebook structure")
+    except ValueError as e:
+        logger.error(f"Gradebook validation error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid gradebook format: {str(e)}")
     except Exception as e:
-        logger.error(f"Error in K-12 analysis: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing K-12 gradebook: {str(e)}")
+        logger.error(f"Unexpected error in K-12 analysis: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during K-12 analysis")
 
 @router.get("/sample")
 async def load_sample_data(current_user: dict = Depends(get_current_user)):

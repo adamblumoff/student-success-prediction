@@ -19,9 +19,8 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from mvp.database import init_database, get_db_session
+from mvp.database import init_database, get_db_session, save_predictions_batch, save_prediction
 from mvp.models import Institution, Student, Prediction
-from mvp.mvp_api import save_predictions_batch, save_prediction
 from tests.fixtures.mock_data import SAMPLE_DATABASE_RECORDS
 
 class TestBatchDatabasePerformance(unittest.TestCase):
@@ -92,14 +91,7 @@ class TestBatchDatabasePerformance(unittest.TestCase):
         start_time = time.time()
         
         for pred_data in individual_data:
-            save_prediction(
-                pred_data['student_id'],
-                pred_data['risk_score'],
-                pred_data['risk_category'],
-                session_id + "_individual",
-                pred_data['features_data'],
-                pred_data['explanation_data']
-            )
+            save_prediction(pred_data, session_id + "_individual")
         
         individual_time = time.time() - start_time
         
