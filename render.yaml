@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: student-success-prediction
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: MVP_API_KEY
+        value: 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe
+      - key: ENVIRONMENT
+        value: production
+      - key: DEVELOPMENT_MODE
+        value: false
+      - key: PORT
+        value: 10000
