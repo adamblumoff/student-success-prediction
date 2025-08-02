@@ -853,44 +853,31 @@ class StudentSuccessApp {
     }
 
     startDemoUpdates() {
-        // Update metrics every 3 seconds
-        this.demoInterval = setInterval(async () => {
-            try {
-                const response = await fetch('/api/mvp/demo/stats', {
-                    headers: {
-                        'Authorization': 'Bearer dev-key-change-me'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    this.updateDemoMetrics(data);
-                }
-            } catch (error) {
-                console.error('Demo update error:', error);
-            }
+        // Update metrics every 3 seconds with simulated data
+        this.demoInterval = setInterval(() => {
+            this.updateDemoMetrics(this.generateSimulatedMetrics());
         }, 3000);
         
         // Initial load
-        this.updateDemoMetrics();
+        this.updateDemoMetrics(this.generateSimulatedMetrics());
+    }
+
+    generateSimulatedMetrics() {
+        // Generate realistic fluctuating metrics for demo
+        const baseMetrics = {
+            total_students: 1247 + Math.floor(Math.random() * 10),
+            high_risk_count: 89 + Math.floor(Math.random() * 5),
+            interventions_active: 34 + Math.floor(Math.random() * 3),
+            success_rate: 0.847 + (Math.random() - 0.5) * 0.02,
+            new_enrollments_today: Math.floor(Math.random() * 8),
+            alerts_generated: 12 + Math.floor(Math.random() * 4)
+        };
+        return baseMetrics;
     }
 
     async updateDemoMetrics(data = null) {
         if (!data) {
-            try {
-                const response = await fetch('/api/mvp/demo/stats', {
-                    headers: {
-                        'Authorization': 'Bearer dev-key-change-me'
-                    }
-                });
-                
-                if (response.ok) {
-                    data = await response.json();
-                }
-            } catch (error) {
-                console.error('Failed to fetch demo stats:', error);
-                return;
-            }
+            data = this.generateSimulatedMetrics();
         }
 
         if (data) {
@@ -945,33 +932,47 @@ class StudentSuccessApp {
 
     async simulateNewStudent() {
         try {
-            const response = await fetch('/api/mvp/demo/simulate-new-student', {
-                headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
-                }
-            });
+            // Generate a simulated new student
+            const studentId = 2000 + Math.floor(Math.random() * 1000);
+            const riskScore = Math.random();
+            const riskCategories = ['Low Risk', 'Medium Risk', 'High Risk'];
+            let riskCategory;
             
-            if (response.ok) {
-                const data = await response.json();
-                const student = data.new_student;
-                
-                // Add to feed
-                this.addFeedItem(
-                    `New student enrolled: #${student.id_student} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
-                    'new-student'
-                );
-                
-                // Simulate intervention if high risk
-                if (student.risk_category === 'High Risk') {
-                    setTimeout(() => {
-                        this.addFeedItem(
-                            `Intervention triggered for student #${student.id_student} - Academic advisor assigned`,
-                            'intervention'
+            if (riskScore < 0.3) riskCategory = 'Low Risk';
+            else if (riskScore < 0.7) riskCategory = 'Medium Risk';
+            else riskCategory = 'High Risk';
+            
+            const student = {
+                id_student: studentId,
+                risk_score: riskScore,
+                risk_category: riskCategory,
+                success_probability: 1 - riskScore
+            };
+            
+            // Add to feed with animation
+            this.addFeedItem(
+                `New student enrolled: #${student.id_student} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
+                'new-student'
+            );
+            
+            // Simulate intervention if high risk
+            if (student.risk_category === 'High Risk') {
+                setTimeout(() => {
+                    this.addFeedItem(
+                        `Intervention triggered for student #${student.id_student} - Academic advisor assigned`,
+                        'intervention'
+                    );
+                    
+                    // Trigger notification if enabled
+                    if (window.notificationSystem && window.notificationSystem.settings.enableNotifications) {
+                        window.notificationSystem.simulateAlert(
+                            `Student #${student.id_student}`,
+                            student.risk_score
                         );
-                    }, 2000);
-                }
-                
+                    }
+                }, 2000);
             }
+            
         } catch (error) {
             console.error('Failed to simulate new student:', error);
         }
