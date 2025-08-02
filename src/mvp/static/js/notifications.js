@@ -11,6 +11,7 @@ class NotificationSystem {
         this.settings = {
             enableSound: true,
             enableDesktop: true,
+            enableNotifications: true,  // New setting to completely disable notifications
             riskThreshold: 0.7
         };
         this.reconnectInterval = null;
@@ -47,6 +48,12 @@ class NotificationSystem {
             this.saveSettings();
         });
         
+        document.getElementById('enable-notifications')?.addEventListener('change', (e) => {
+            this.settings.enableNotifications = e.target.checked;
+            this.saveSettings();
+            this.toggleNotificationsPanel();
+        });
+        
         document.getElementById('risk-threshold')?.addEventListener('change', (e) => {
             this.settings.riskThreshold = parseFloat(e.target.value);
             this.saveSettings();
@@ -68,6 +75,7 @@ class NotificationSystem {
     applySettings() {
         document.getElementById('enable-sound').checked = this.settings.enableSound;
         document.getElementById('enable-desktop').checked = this.settings.enableDesktop;
+        document.getElementById('enable-notifications').checked = this.settings.enableNotifications;
         document.getElementById('risk-threshold').value = this.settings.riskThreshold;
     }
 
@@ -161,6 +169,12 @@ class NotificationSystem {
 
     handleStudentAlert(alert) {
         console.log('🚨 New student alert received:', alert);
+        
+        // If notifications are disabled, don't show any alerts
+        if (!this.settings.enableNotifications) {
+            console.log('🔕 Notifications disabled, alert suppressed');
+            return;
+        }
         
         // Add to alerts list
         this.alerts.unshift(alert);
@@ -446,8 +460,19 @@ class NotificationSystem {
 
     showNotificationsPanel() {
         const panel = document.getElementById('notifications-panel');
-        if (panel) {
+        if (panel && this.settings.enableNotifications) {
             panel.style.display = 'block';
+        }
+    }
+
+    toggleNotificationsPanel() {
+        const panel = document.getElementById('notifications-panel');
+        if (panel) {
+            if (this.settings.enableNotifications) {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
         }
     }
 
