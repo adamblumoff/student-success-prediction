@@ -224,11 +224,70 @@ except Exception as e:
 
 ## Development Workflow
 
+### Local Development
 1. **Start MVP** for testing: `python3 run_mvp.py`
 2. **Use web interface** at http://localhost:8001
 3. **Upload CSV** or try sample data
 4. **View explanations** by clicking "Explain Prediction" on any student
 5. **Check insights** in the Model Insights panel
+6. **Test notifications** via browser console: `notificationSystem.testAlert()`
+
+### Production Deployment
+1. **Validate deployment readiness**: `python3 scripts/validate_deployment.py`
+2. **Configure environment**: Copy `.env.production` to `.env` and update values
+3. **Deploy with Docker**: `./deploy.sh --environment production`
+4. **Verify deployment**: `curl http://localhost:8001/health`
+5. **Monitor system**: Check logs with `docker compose -f docker-compose.prod.yml logs -f`
+
+### Docker Deployment Options
+
+**Quick Development Setup**:
+```bash
+# Copy environment file
+cp .env.development .env
+
+# Deploy development environment
+./deploy.sh --environment development
+
+# Access application
+open http://localhost:8001
+```
+
+**Production Deployment**:
+```bash
+# Validate deployment readiness
+python3 scripts/validate_deployment.py
+
+# Configure production environment
+cp .env.production .env
+nano .env  # Update DATABASE_URL, MVP_API_KEY, etc.
+
+# Deploy with full testing
+./deploy.sh --environment production
+
+# Or skip tests for faster deployment
+./deploy.sh --environment production --skip-tests
+
+# Verify deployment
+curl http://localhost:8001/health
+curl http://localhost:8001/docs
+```
+
+**Manual Docker Commands**:
+```bash
+# Build production image
+docker build --target production -t student-success-prediction:latest .
+
+# Run production stack
+docker compose -f docker-compose.prod.yml up -d --build
+
+# Check status
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs -f app
+
+# Stop and cleanup
+docker compose -f docker-compose.prod.yml down
+```
 
 ## Common Issues and Solutions
 
@@ -357,7 +416,229 @@ family_comm = intervention_system.generate_family_communication(intervention_pla
 
 The system is designed for educational demonstration with explainable AI features, now supporting both development simplicity and production scalability with specialized K-12 capabilities.
 
+## Repository Cleanup Guidelines
+
+### Regular Cleanup Process
+**When to perform cleanup**: After completing major features or integrations
+
+**Cleanup checklist**:
+1. **Remove old model files**: Keep only the latest/best performing models in `results/models/`
+2. **Delete backup files**: Remove any `*.bak`, `*_old*`, `*~`, `.DS_Store` files
+3. **Consolidate documentation**: Remove duplicate documentation files
+4. **Organize test files**: Ensure all tests are in the `tests/` directory
+5. **Clean empty directories**: Remove empty directories in `results/figures/` etc.
+6. **Update structure docs**: Update `DIRECTORY_STRUCTURE.md` to reflect new integrations
+7. **Commit and push**: Always commit cleanup changes with descriptive messages
+
+**Cleanup command pattern**:
+```bash
+# Remove old model versions (keep latest/best performing)
+rm -f results/models/k12/k12_*_old_date_*.pkl
+
+# Update documentation to reflect current structure
+# Update CLAUDE.md with new features/patterns
+
+# Commit the cleanup
+git add -A
+git commit -m "Clean up repository structure and remove outdated files
+
+- Remove outdated model files (keep ultra-advanced 81.5% AUC model)
+- Consolidate duplicate documentation
+- Update directory structure to reflect Google Classroom integration
+- Organize repository for better navigation
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push origin dev
+```
+
+**Files to always keep**:
+- Latest K-12 ultra-advanced model (`k12_ultra_advanced_*.pkl`)
+- Production-ready trained models
+- Current integration code
+- Active documentation and guides
+
+**Files safe to remove**:
+- Older model versions with lower performance
+- Duplicate structure documentation
+- Empty result directories
+- Backup/temporary files
+
+
+## System Maintenance and Reliability
+
+### Automated Testing and Health Monitoring
+
+The system includes comprehensive testing and monitoring infrastructure to ensure reliability:
+
+**Health Monitoring:**
+```bash
+# Run system health check
+python3 scripts/system_health_monitor.py
+
+# Continuous monitoring (every 15 minutes)
+python3 scripts/system_health_monitor.py --continuous 15
+
+# Email alerts on issues
+python3 scripts/system_health_monitor.py --email
+```
+
+**Automated Testing:**
+```bash
+# Run full test suite
+python3 scripts/run_automated_tests.py
+
+# Run specific test categories
+python3 scripts/run_automated_tests.py --suites unit_tests api_tests notification_tests
+
+# Performance benchmarking
+python3 scripts/run_automated_tests.py --performance-only
+```
+
+**Maintenance Scripts:**
+```bash
+# Daily maintenance
+./scripts/daily_maintenance.sh
+
+# Weekly maintenance
+./scripts/weekly_maintenance.sh
+
+# Emergency restart
+./scripts/emergency_restart.sh
+
+# System status check
+./scripts/system_status.sh
+```
+
+### Test Coverage
+
+The system includes comprehensive tests:
+- **Unit Tests**: Individual component testing
+- **API Tests**: All endpoint testing with authentication
+- **Notification Tests**: Real-time notification system testing
+- **Integration Tests**: LMS/SIS integration testing
+- **Performance Tests**: Response time and throughput testing
+
+### Monitoring and Alerting
+
+**Health Checks Monitor:**
+- API endpoint responsiveness
+- Database connectivity
+- Model loading and performance
+- Notification system functionality
+- Integration system health
+- File system and resource usage
+
+**Alerting Thresholds:**
+- Response time > 5 seconds (warning)
+- Disk usage > 85% (warning)
+- Memory usage > 80% (warning)
+- API errors > 50% (critical)
+- Database connection failures (critical)
+
+### Maintenance Schedule
+
+**Daily (Automated):**
+- Health monitoring every 15 minutes
+- Error log analysis
+- Basic connectivity checks
+
+**Weekly (Automated):**
+- Full test suite execution
+- Database maintenance and optimization
+- Log rotation and cleanup
+- Dependency updates
+
+**Monthly (Manual Review):**
+- Model performance evaluation
+- Security audit
+- Full system backup
+- Documentation updates
+
+### Configuration Files
+
+**Health Monitor**: `config/health_monitor.json`
+**Test Runner**: `config/test_runner.json`
+**Cron Jobs**: `config/cron_examples.txt`
+**Systemd Service**: `config/student-success.service`
+
+See `docs/SYSTEM_MAINTENANCE.md` for comprehensive maintenance procedures.
+
 ## Development Guidelines for Claude Code
+
+### Modular API Architecture (2024 Update)
+
+**Why Split APIs?**: To improve debugging, maintainability, and development velocity.
+
+**Current Modular Structure**:
+```
+src/mvp/mvp_api.py          # Main entry point - imports all routers
+src/mvp/api/
+├── core.py                 # Core MVP endpoints (/api/mvp/*)
+├── canvas_endpoints.py     # Canvas LMS endpoints (/api/lms/*)
+├── powerschool_endpoints.py # PowerSchool SIS endpoints (/api/sis/*)
+├── google_classroom_endpoints.py # Google Classroom endpoints (/api/google/*)
+└── combined_endpoints.py   # Combined integration endpoints (/api/integration/*)
+```
+
+**Benefits Achieved**:
+- **Easier Debugging**: Each integration system isolated in separate files
+- **Faster Development**: Can work on specific integrations without navigating large monolithic files
+- **Better Testing**: Each router can be tested independently
+- **Cleaner Organization**: Related endpoints grouped logically
+- **Reduced Merge Conflicts**: Multiple developers can work on different integrations simultaneously
+
+**Development Pattern**:
+```python
+# When adding new endpoints, create focused routers:
+from fastapi import APIRouter
+router = APIRouter()
+
+@router.post("/new-endpoint")
+async def new_endpoint():
+    return {"status": "success"}
+
+# Then include in main API:
+app.include_router(router, prefix="/api/category", tags=["Category"])
+```
+
+**Future Considerations**:
+- Consider splitting routers further if they exceed 300-400 lines
+- Keep related endpoints together (don't over-split)
+- Always include proper error handling and logging in each router
+- Maintain consistent authentication patterns across all routers
+
+### Key Debugging Improvements Made
+
+**1. Fixed Sample Endpoint**: The original `/api/mvp/sample` endpoint only provided 7 features but the ML model requires all 31 engineered features. Fixed by providing complete feature set:
+
+```python
+# All 31 required features must be provided:
+# Demographics (6): gender_encoded, region_encoded, age_band_encoded, education_encoded, is_male, has_disability
+# Academic History (4): studied_credits, num_of_prev_attempts, registration_delay, unregistered  
+# Early VLE Engagement (10): early_total_clicks, early_avg_clicks, early_clicks_std, etc.
+# Early Assessment Performance (11): early_assessments_count, early_avg_score, early_score_std, etc.
+```
+
+**2. Fixed Database Function Imports**: Added missing `save_predictions_batch` and `save_prediction` functions to `src/mvp/database.py` with proper ORM model integration.
+
+**3. Import Path Consistency**: Standardized all imports to use `src.` prefix for consistency across the modular structure.
+
+**4. DataFrame to Dict Conversion**: Fixed API endpoints to properly convert intervention system DataFrame outputs to JSON-serializable dictionaries:
+
+```python
+# Convert DataFrame results to API format
+results = []
+for _, row in results_df.iterrows():
+    results.append({
+        'student_id': int(row['student_id']),
+        'risk_score': float(row['risk_score']),
+        'risk_category': str(row['risk_category']),
+        'success_probability': float(row['success_probability']),
+        'needs_intervention': bool(row['needs_intervention'])
+    })
+```
 
 ### Commit Frequently and Update Documentation
 - **Commit after every significant change** - Don't batch multiple unrelated changes
@@ -373,6 +654,8 @@ Update this file whenever you:
 - Add new UI components or visualizations
 - Modify the gradebook conversion logic
 - Update the intervention recommendation system
+- **Make architectural changes like API modularization**
+- **Fix debugging issues that future developers might encounter**
 
 ### CLAUDE.md Update Pattern
 After making changes, always:
@@ -380,24 +663,111 @@ After making changes, always:
 2. **Add new patterns** you've implemented to the relevant sections
 3. **Update commands** if you've added new scripts
 4. **Document new explainable AI features** 
-5. **Commit the updated CLAUDE.md** along with your code changes
+5. **Document debugging fixes and architectural decisions**
+6. **Commit the updated CLAUDE.md** along with your code changes
 
 Example commit workflow:
 ```bash
 # Make your code changes
-git add src/mvp/new_feature.py
+git add src/mvp/api/
 
 # Update CLAUDE.md to reflect the changes
 git add CLAUDE.md
 
 # Commit both together with descriptive message
-git commit -m "Add new explainable AI visualization feature
+git commit -m "Refactor monolithic API into modular structure for easier debugging
 
-- Implement risk factor severity visualization in student explanations
-- Add color-coded risk indicators in the web interface  
-- Update CLAUDE.md with new explainable AI patterns
+- Split MVP API into 4 focused routers (core, canvas, powerschool, combined)
+- Fix sample endpoint to provide all 31 required ML features
+- Add missing database functions with proper ORM integration
+- Standardize import paths for consistency
+- Update CLAUDE.md with modular architecture patterns
+
+Benefits: Easier debugging, faster development, better testing isolation
 
 🤖 Generated with [Claude Code](https://claude.ai/code)"
 ```
 
-This ensures future Claude instances always have up-to-date guidance that reflects the current simplified MVP state.
+This ensures future Claude instances always have up-to-date guidance that reflects the current modular architecture and debugging improvements.
+
+## Repository Cleanup and Organization
+
+### Regular Cleanup Process
+
+**When to Clean Up**: Perform repository cleanup regularly, especially:
+- After major feature development
+- Before important commits/releases
+- When repository becomes cluttered
+- After refactoring or modularization
+- When onboarding new developers
+
+**Cleanup Checklist**:
+```bash
+# 1. Remove unnecessary files
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.pyc" -delete 2>/dev/null || true
+rm -f *_old.py *_backup.py *.tmp
+
+# 2. Remove duplicate test files from root
+rm -f test_*.py  # (if they exist in tests/ directory)
+
+# 3. Check for empty directories
+find . -type d -empty | grep -v ".git" | grep -v "venv"
+
+# 4. Verify .gitignore is up to date
+git status  # Check for untracked files that should be ignored
+
+# 5. Update documentation
+# - Update DIRECTORY_STRUCTURE.md if structure changed
+# - Update CLAUDE.md with new patterns
+# - Update README.md if major changes made
+```
+
+### Repository Organization Principles
+
+**Directory Structure Goals**:
+- **Logical Grouping**: Related functionality in same directories
+- **Modular Design**: Each module can be developed/tested independently  
+- **Clear Navigation**: Developers can quickly find what they need
+- **Scalability**: Structure supports growth without reorganization
+
+**Current Organization**:
+```
+📁 Core Application (src/mvp/) - Web app and API
+📁 ML Models (src/models/) - All machine learning components
+📁 Integrations (src/integrations/) - External system connections
+📁 Testing (tests/) - Comprehensive test suite
+📁 Documentation (docs/ + *.md) - All project documentation
+📁 Data & Results (data/, results/) - Datasets and model outputs
+📁 Deployment (deployment/, alembic/) - Infrastructure and migrations
+```
+
+**Navigation Helper**: Use `DIRECTORY_STRUCTURE.md` for quick reference to file locations and purposes.
+
+### Automated Cleanup Integration
+
+**Repository Cleanup Commands** (Available in scripts/cleanup.sh):
+```bash
+# Quick cleanup (run before commits)
+./scripts/cleanup.sh
+
+# Manual cleanup steps:
+find . -name "*.pyc" -delete && find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.tmp" -delete && find . -name "*~" -delete 2>/dev/null || true
+rm -f *_old.py *_backup.py *.bak 2>/dev/null || true
+
+# Clean old logs and reports
+find logs/ -name "*.log" -mtime +30 -delete 2>/dev/null || true  
+find test_reports/ -name "*" -mtime +7 -delete 2>/dev/null || true
+
+# Validate repository structure
+python3 scripts/validate_deployment.py
+```
+
+**Integration with Development Workflow**:
+1. **Before Major Commits**: Run cleanup to ensure repository is organized
+2. **After Refactoring**: Remove old files and update structure documentation
+3. **Weekly Maintenance**: Quick cleanup check during development
+4. **Before Deployment**: Ensure no development artifacts in production code
+
+This systematic approach maintains a clean, navigable repository that scales with the project's growth.

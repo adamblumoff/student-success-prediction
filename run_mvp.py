@@ -31,10 +31,26 @@ except ImportError:
 sys.path.append(str(Path(__file__).parent / "src"))
 
 if __name__ == "__main__":
+    print("🚀 Starting MVP Student Success Prediction System")
+    
+    # Validate security configuration before starting
+    try:
+        from mvp.simple_auth import validate_security_configuration_on_startup
+        security_config = validate_security_configuration_on_startup()
+        print(f"🔒 Security configuration validated successfully")
+    except ValueError as e:
+        print(f"\n{e}")
+        print("\n💡 To fix this:")
+        print("   export MVP_API_KEY='your-secure-api-key-here'")
+        print("   export DEVELOPMENT_MODE=false  # For production")
+        print("   # Or set DEVELOPMENT_MODE=true for development")
+        sys.exit(1)
+    except Exception as e:
+        print(f"⚠️  Warning during security validation: {e}")
+    
     # Import the MVP API
     from mvp.mvp_api import app
     
-    print("🚀 Starting MVP Student Success Prediction System")
     print("📊 Web interface will be available at: http://localhost:8001")
     print("📋 API documentation at: http://localhost:8001/docs")
     print("❌ Press Ctrl+C to stop")

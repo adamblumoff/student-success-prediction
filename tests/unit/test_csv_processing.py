@@ -18,7 +18,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
 
-from mvp.mvp_api import (
+from mvp.csv_processing import (
     detect_gradebook_format, universal_gradebook_converter,
     convert_canvas_to_prediction_format, extract_student_identifier,
     extract_assignment_scores, extract_engagement_metrics
