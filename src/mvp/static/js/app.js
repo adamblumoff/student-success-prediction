@@ -116,7 +116,9 @@ class StudentSuccessApp {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to analyze student data');
+                const errorData = await response.text();
+                console.error('CSV Analysis Error:', response.status, errorData);
+                throw new Error(`Failed to analyze student data (${response.status}): ${errorData}`);
             }
 
             const data = await response.json();
@@ -139,7 +141,9 @@ class StudentSuccessApp {
                 }
             });
             if (!response.ok) {
-                throw new Error('Failed to load sample data');
+                const errorData = await response.text();
+                console.error('Sample Data Error:', response.status, errorData);
+                throw new Error(`Failed to load sample data (${response.status}): ${errorData}`);
             }
 
             const data = await response.json();
@@ -154,7 +158,8 @@ class StudentSuccessApp {
 
     displayResults(data) {
         // Ensure students array is properly set and normalized
-        this.students = data.students || [];
+        // API returns 'predictions' but UI expects 'students'
+        this.students = data.students || data.predictions || [];
         
         // Normalize student IDs for consistent access
         this.students = this.students.map(student => {
@@ -181,13 +186,34 @@ class StudentSuccessApp {
         document.getElementById('interventions-section').classList.remove('hidden');
 
         // Update summary stats
-        this.updateSummaryStats(data.summary);
+        this.updateSummaryStats(data.summary || this.calculateSummary());
 
         // Display students using two-panel layout
         this.displayStudentsTwoPanel();
 
         // Display intervention tracking
         this.displayInterventionTracking();
+    }
+
+    calculateSummary() {
+        if (!this.students || this.students.length === 0) {
+            return { high_risk: 0, moderate_risk: 0, low_risk: 0 };
+        }
+        
+        let high_risk = 0, moderate_risk = 0, low_risk = 0;
+        
+        this.students.forEach(student => {
+            const riskScore = student.risk_score || 0;
+            if (riskScore >= 0.7) {
+                high_risk++;
+            } else if (riskScore >= 0.4) {
+                moderate_risk++;
+            } else {
+                low_risk++;
+            }
+        });
+        
+        return { high_risk, moderate_risk, low_risk };
     }
 
     updateSummaryStats(summary) {
