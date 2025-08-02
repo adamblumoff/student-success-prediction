@@ -3,7 +3,7 @@ services:
     name: student-success-prediction
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: python3 app.py
     envVars:
       - key: MVP_API_KEY
         value: 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe
