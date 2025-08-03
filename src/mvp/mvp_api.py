@@ -11,9 +11,54 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import os
 import sys
+import time
+import pathlib
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+# Initialize structured logging first
+from src.mvp.logging_config import get_logger, log_request, log_error
+logger = get_logger(__name__)
+
+# Request Logging Middleware
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """Log all requests with timing and user context"""
+    
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        
+        # Extract user context if available
+        user_id = getattr(request.state, 'user', {}).get('user', 'anonymous')
+        
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            
+            # Log successful requests
+            log_request(
+                endpoint=str(request.url.path),
+                method=request.method,
+                user_id=user_id,
+                processing_time=round(process_time * 1000, 2)  # Convert to ms
+            )
+            
+            # Add timing header
+            response.headers["X-Process-Time"] = str(round(process_time * 1000, 2))
+            
+            return response
+            
+        except Exception as e:
+            process_time = time.time() - start_time
+            
+            # Log failed requests
+            log_error(
+                error=e,
+                context=f"{request.method} {request.url.path}",
+                user_id=user_id
+            )
+            
+            raise
 
 # Security Headers Middleware
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -82,6 +127,7 @@ from src.mvp.api.powerschool_endpoints import router as powerschool_router
 from src.mvp.api.google_classroom_endpoints import router as google_classroom_router
 from src.mvp.api.combined_endpoints import router as combined_router
 from src.mvp.api.notifications_endpoints import router as notifications_router
+from src.mvp.api.health import router as health_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -90,8 +136,9 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Add security middleware
+# Add middleware in correct order (last added = first executed)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 # Add trusted host middleware for production
 if os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']:
@@ -116,6 +163,7 @@ app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
 app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
+app.include_router(health_router, prefix="", tags=["Health & Monitoring"])
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):

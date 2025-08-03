@@ -14,9 +14,11 @@ from pathlib import Path
 import sys
 import json
 import logging
+from src.mvp.logging_config import get_logger, log_prediction, log_error
 import os
 from typing import List, Dict, Any
 import io
+import time
 from datetime import datetime
 
 # Add project root to path
@@ -31,8 +33,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import desc
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Create router
 router = APIRouter()
@@ -124,7 +125,9 @@ async def analyze_student_data(
             raise HTTPException(status_code=400, detail=f"Unable to process CSV format: {str(e)}")
         
         # Get risk predictions
+        start_time = time.time()
         results_df = intervention_system.assess_student_risk(converted_df)
+        prediction_time = time.time() - start_time
         
         # Convert DataFrame to list of dictionaries for JSON serialization
         results = []
@@ -136,6 +139,13 @@ async def analyze_student_data(
                 'success_probability': float(row['success_probability']) if pd.notna(row['success_probability']) else 0.0,
                 'needs_intervention': bool(row['needs_intervention']) if pd.notna(row['needs_intervention']) else False
             })
+        
+        # Log prediction metrics
+        log_prediction(
+            student_count=len(results),
+            model_type="intervention_system",
+            processing_time=round(prediction_time * 1000, 2)
+        )
         
         # Save predictions to database (if available)
         try:
