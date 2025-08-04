@@ -21,9 +21,13 @@ import io
 import time
 from datetime import datetime
 
-# Add project root to path
-sys.path.append(str(Path(__file__).parent.parent.parent))
-# Import models using src prefix for consistency
+# Import models using consistent approach (consolidated path management)
+import sys
+from pathlib import Path
+# Single consolidated path addition
+if str(Path(__file__).parent.parent.parent) not in sys.path:
+    sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
 from mvp.simple_auth import simple_auth, simple_rate_limit, simple_file_validation
