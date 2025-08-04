@@ -38,9 +38,8 @@ logger = get_logger(__name__)
 # Create router
 router = APIRouter()
 
-# Global variables for model instances
-intervention_system = None
-k12_ultra_predictor = None
+# Import dependency injection services
+from mvp.services import get_intervention_system, get_k12_ultra_predictor
 
 def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = None):
     """Authentication dependency with secure session support"""
@@ -79,30 +78,17 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
     # No valid authentication found
     raise HTTPException(status_code=401, detail="Authentication required")
 
-def ensure_system_initialized():
-    """Ensure the intervention system is initialized"""
-    global intervention_system
-    if intervention_system is None:
-        try:
-            intervention_system = InterventionRecommendationSystem()
-            logger.info("✅ Intervention system initialized on-demand")
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize intervention system: {e}")
-            raise HTTPException(status_code=500, detail="System initialization failed")
-
 @router.post("/analyze")
 async def analyze_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    intervention_system = Depends(get_intervention_system)
 ):
     """Analyze uploaded CSV file and return risk predictions"""
     try:
         # Simple rate limiting
         simple_rate_limit(request, 10)
-        
-        # Ensure system is initialized
-        ensure_system_initialized()
         
         # Simple file validation and processing
         contents = await file.read()
@@ -195,12 +181,12 @@ async def analyze_student_data(
 async def analyze_detailed_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    intervention_system = Depends(get_intervention_system)
 ):
     """Detailed analysis with explainable AI predictions"""
     try:
         simple_rate_limit(request, 5)
-        ensure_system_initialized()
         
         contents = await file.read()
         simple_file_validation(contents, file.filename)
@@ -253,7 +239,8 @@ async def analyze_detailed_student_data(
 async def analyze_k12_gradebook(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Analyze K-12 gradebook CSV using ultra-advanced model"""
     try:
@@ -268,11 +255,6 @@ async def analyze_k12_gradebook(
             raise HTTPException(status_code=400, detail="CSV file is empty")
         
         logger.info(f"Processing K-12 gradebook: {file.filename} with {len(df)} students")
-        
-        # Use ultra-advanced K-12 predictor directly on gradebook data
-        global k12_ultra_predictor
-        if k12_ultra_predictor is None:
-            k12_ultra_predictor = K12UltraPredictor()
         
         # Get ultra-advanced K-12 predictions
         predictions = k12_ultra_predictor.predict_from_gradebook(df)
@@ -337,10 +319,12 @@ async def analyze_k12_gradebook(
         raise HTTPException(status_code=500, detail="Internal server error during K-12 analysis")
 
 @router.get("/sample")
-async def load_sample_data(current_user: dict = Depends(get_current_user)):
+async def load_sample_data(
+    current_user: dict = Depends(get_current_user),
+    intervention_system = Depends(get_intervention_system)
+):
     """Load sample student data for demonstration"""
     try:
-        ensure_system_initialized()
         
         # Create sample data with all 31 required features
         sample_data = pd.DataFrame({
@@ -440,11 +424,11 @@ async def get_simple_stats(current_user: dict = Depends(get_current_user)):
 @router.get("/explain/{student_id}")
 async def explain_prediction(
     student_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    intervention_system = Depends(get_intervention_system)
 ):
     """Get detailed explanation for a specific student prediction"""
     try:
-        ensure_system_initialized()
         
         # Create sample student data for explanation (since we don't store actual features)
         sample_features = {
@@ -497,10 +481,12 @@ async def explain_prediction(
         raise HTTPException(status_code=500, detail=f"Error generating explanation: {str(e)}")
 
 @router.get("/insights")
-async def get_model_insights(current_user: dict = Depends(get_current_user)):
+async def get_model_insights(
+    current_user: dict = Depends(get_current_user),
+    intervention_system = Depends(get_intervention_system)
+):
     """Get global model insights and feature importance"""
     try:
-        ensure_system_initialized()
         
         # Get feature importance
         feature_importance = intervention_system.explainable_ai.get_feature_importance()
