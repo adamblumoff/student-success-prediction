@@ -11,6 +11,7 @@ import numpy as np
 from pathlib import Path
 import joblib
 import json
+import os
 from typing import Dict, List, Tuple, Optional
 import warnings
 import sys
@@ -33,9 +34,21 @@ class InterventionRecommendationSystem:
             models_dir: Directory containing trained models
         """
         if models_dir is None:
-            # Get absolute path to project root, then models directory
-            project_root = Path(__file__).parent.parent.parent
-            models_dir = project_root / "results" / "models"
+            # Use environment variable if set (for production deployments)
+            models_env = os.getenv('MODELS_DIR')
+            if models_env:
+                models_dir = Path(models_env)
+            else:
+                # Calculate relative to current working directory (more reliable)
+                import os
+                cwd = Path(os.getcwd())
+                models_dir = cwd / "results" / "models"
+                
+                # If not found, try relative to file location
+                if not models_dir.exists():
+                    file_based = Path(__file__).parent.parent.parent / "results" / "models"
+                    if file_based.exists():
+                        models_dir = file_based
         self.models_dir = models_dir
         self.model = None
         self.scaler = None
