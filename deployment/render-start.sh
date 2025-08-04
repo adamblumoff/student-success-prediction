@@ -3,16 +3,16 @@
 
 echo "🚀 Starting Student Success Predictor on Render.com"
 
-# Set model paths for production (models are actually in src directory on Render)
-export MODELS_DIR="/opt/render/project/src/results/models"
-export K12_MODELS_DIR="/opt/render/project/src/results/models/k12"
+# Set model paths for production (models are in project root, not src)
+export MODELS_DIR="/opt/render/project/results/models"
+export K12_MODELS_DIR="/opt/render/project/results/models/k12"
 
 # Debug: Show current directory and model files
 echo "📁 Current directory: $(pwd)"
 echo "📁 Project structure:"
 ls -la /opt/render/project/ 2>/dev/null | head -10
-echo "📁 Src directory:"
-ls -la /opt/render/project/src/ 2>/dev/null | head -10
+echo "📁 Results directory:"
+ls -la /opt/render/project/results/ 2>/dev/null | head -10
 echo "📁 Looking for model files:"
 find /opt/render/project -name "*.pkl" -type f 2>/dev/null | head -10
 
