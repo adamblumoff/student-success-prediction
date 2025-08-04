@@ -40,7 +40,6 @@ class InterventionRecommendationSystem:
                 models_dir = Path(models_env)
             else:
                 # Calculate relative to current working directory (more reliable)
-                import os
                 cwd = Path(os.getcwd())
                 models_dir = cwd / "results" / "models"
                 
