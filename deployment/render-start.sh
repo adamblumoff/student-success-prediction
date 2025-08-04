@@ -17,22 +17,45 @@ if [ ! -f "$MODELS_DIR/best_binary_model.pkl" ]; then
     mkdir -p results/models
     mkdir -p results/models/k12
     
+    # Set up Python path and verify files exist
+    export PYTHONPATH="/opt/render/project/src:/opt/render/project:$PYTHONPATH"
+    echo "🔍 Python path: $PYTHONPATH"
+    echo "🔍 Current directory: $(pwd)"
+    echo "🔍 Checking for training scripts..."
+    
+    if [ -f "src/models/train_models.py" ]; then
+        echo "✅ Found src/models/train_models.py"
+    else
+        echo "❌ src/models/train_models.py not found"
+        echo "📁 Contents of src/models/:"
+        ls -la src/models/ 2>/dev/null || echo "src/models directory not found"
+    fi
+    
     # Train the original models (required for intervention system)
     echo "🔬 Training original OULAD models..."
-    timeout 300 python3 src/models/train_models.py
+    cd /opt/render/project
+    timeout 300 python3 -m src.models.train_models
     
     if [ $? -eq 0 ]; then
         echo "✅ Original models trained successfully"
         
         # Train K-12 models (optional but recommended)
         echo "🎓 Training K-12 models..."
-        timeout 300 python3 src/models/train_k12_models.py || echo "⚠️  K-12 training skipped (non-critical)"
+        timeout 300 python3 -m src.models.train_k12_models || echo "⚠️  K-12 training skipped (non-critical)"
         
         echo "✅ Model training completed"
     else
-        echo "❌ Model training failed or timed out"
-        echo "🚀 Attempting to start with minimal model fallback..."
-        # The app will use fallback models or graceful degradation
+        echo "❌ Model training failed or timed out - trying alternative approach..."
+        echo "🔬 Attempting direct script execution..."
+        cd /opt/render/project
+        timeout 300 python3 src/models/train_models.py
+        
+        if [ $? -eq 0 ]; then
+            echo "✅ Models trained with direct execution"
+        else
+            echo "❌ All training approaches failed"
+            echo "🚀 Starting with fallback model handling..."
+        fi
     fi
 else
     echo "✅ Models found - skipping training"
