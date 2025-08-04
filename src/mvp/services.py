@@ -13,7 +13,8 @@ from typing import Optional
 import logging
 
 # Add project root to path for model imports
-sys.path.append(str(Path(__file__).parent.parent.parent))
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
