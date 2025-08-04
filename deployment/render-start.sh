@@ -7,6 +7,37 @@ echo "🚀 Starting Student Success Predictor on Render.com"
 export MODELS_DIR="/opt/render/project/results/models"
 export K12_MODELS_DIR="/opt/render/project/results/models/k12"
 
+# Train models if they don't exist
+echo "🤖 Checking for trained models..."
+if [ ! -f "$MODELS_DIR/best_binary_model.pkl" ]; then
+    echo "📚 Models not found - training models for production..."
+    cd /opt/render/project
+    
+    # Create results directory structure
+    mkdir -p results/models
+    mkdir -p results/models/k12
+    
+    # Train the original models (required for intervention system)
+    echo "🔬 Training original OULAD models..."
+    timeout 300 python3 src/models/train_models.py
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Original models trained successfully"
+        
+        # Train K-12 models (optional but recommended)
+        echo "🎓 Training K-12 models..."
+        timeout 300 python3 src/models/train_k12_models.py || echo "⚠️  K-12 training skipped (non-critical)"
+        
+        echo "✅ Model training completed"
+    else
+        echo "❌ Model training failed or timed out"
+        echo "🚀 Attempting to start with minimal model fallback..."
+        # The app will use fallback models or graceful degradation
+    fi
+else
+    echo "✅ Models found - skipping training"
+fi
+
 # Debug: Show current directory and model files
 echo "📁 Current directory: $(pwd)"
 echo "📁 Project structure:"
