@@ -25,13 +25,17 @@ class InterventionRecommendationSystem:
     Intelligent intervention recommendation system for at-risk students
     """
     
-    def __init__(self, models_dir: Path = Path("results/models")):
+    def __init__(self, models_dir: Path = None):
         """
         Initialize the intervention system
         
         Args:
             models_dir: Directory containing trained models
         """
+        if models_dir is None:
+            # Get absolute path to project root, then models directory
+            project_root = Path(__file__).parent.parent.parent
+            models_dir = project_root / "results" / "models"
         self.models_dir = models_dir
         self.model = None
         self.scaler = None

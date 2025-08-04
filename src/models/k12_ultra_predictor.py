@@ -17,7 +17,11 @@ warnings.filterwarnings('ignore')
 class K12UltraPredictor:
     """Ultra-advanced K-12 predictor interface for gradebook CSV files."""
     
-    def __init__(self, models_dir: str = "results/models/k12"):
+    def __init__(self, models_dir: str = None):
+        if models_dir is None:
+            # Get absolute path to project root, then K-12 models directory
+            project_root = Path(__file__).parent.parent.parent
+            models_dir = project_root / "results" / "models" / "k12"
         self.models_dir = Path(models_dir)
         self.model = None
         self.scaler = None
