@@ -19,9 +19,21 @@ class K12UltraPredictor:
     
     def __init__(self, models_dir: str = None):
         if models_dir is None:
-            # Get absolute path to project root, then K-12 models directory
-            project_root = Path(__file__).parent.parent.parent
-            models_dir = project_root / "results" / "models" / "k12"
+            # Use environment variable if set (for production deployments)
+            import os
+            models_env = os.getenv('K12_MODELS_DIR')
+            if models_env:
+                models_dir = Path(models_env)
+            else:
+                # Calculate relative to current working directory (more reliable)
+                cwd = Path(os.getcwd())
+                models_dir = cwd / "results" / "models" / "k12"
+                
+                # If not found, try relative to file location
+                if not models_dir.exists():
+                    file_based = Path(__file__).parent.parent.parent / "results" / "models" / "k12"
+                    if file_based.exists():
+                        models_dir = file_based
         self.models_dir = Path(models_dir)
         self.model = None
         self.scaler = None
