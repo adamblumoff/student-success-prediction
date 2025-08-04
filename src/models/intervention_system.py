@@ -48,6 +48,17 @@ class InterventionRecommendationSystem:
                     file_based = Path(__file__).parent.parent.parent / "results" / "models"
                     if file_based.exists():
                         models_dir = file_based
+                    else:
+                        # Try additional production paths as fallbacks
+                        production_paths = [
+                            Path("/opt/render/project/results/models"),
+                            Path("/opt/render/project/src/results/models"),
+                            Path(os.getcwd()) / "src" / "results" / "models",
+                        ]
+                        for prod_path in production_paths:
+                            if prod_path.exists():
+                                models_dir = prod_path
+                                break
         self.models_dir = models_dir
         self.model = None
         self.scaler = None
