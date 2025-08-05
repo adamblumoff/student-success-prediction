@@ -45,6 +45,21 @@ router = APIRouter()
 # Import dependency injection services
 from mvp.services import get_intervention_system, get_k12_ultra_predictor
 
+def convert_student_id_to_int(student_id):
+    """Convert student ID to integer, handling string formats from K-12 predictor"""
+    try:
+        return int(student_id)
+    except (ValueError, TypeError):
+        # If it's a string like 'student_0', extract the number or use hash
+        student_id_str = str(student_id)
+        if student_id_str.startswith('student_'):
+            try:
+                return int(student_id_str.split('_')[1]) + 1001  # Start from 1001
+            except (IndexError, ValueError):
+                return hash(student_id_str) % 10000  # Fallback to hash
+        else:
+            return hash(student_id_str) % 10000  # Fallback to hash
+
 def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = None):
     """Authentication dependency with secure session support"""
     # Check for session-based authentication first
@@ -118,7 +133,7 @@ async def analyze_student_data(
         results = []
         for prediction in predictions:
             results.append({
-                'student_id': int(prediction['student_id']),
+                'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': float(1.0 - prediction['success_probability']),  # Convert success to risk
                 'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
                 'success_probability': float(prediction['success_probability']),
@@ -349,7 +364,7 @@ async def load_sample_data(
         results = []
         for prediction in predictions:
             results.append({
-                'student_id': int(prediction['student_id']),
+                'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': float(1.0 - prediction['success_probability']),  # Convert success to risk
                 'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
                 'success_probability': float(prediction['success_probability']),
