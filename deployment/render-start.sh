@@ -19,7 +19,7 @@ if [ ! -f "$MODELS_DIR/best_binary_model.pkl" ]; then
     mkdir -p data/processed
     
     # Set up Python path and verify files exist
-    export PYTHONPATH="/opt/render/project/src:/opt/render/project:$PYTHONPATH"
+    export PYTHONPATH="/opt/render/project:$PYTHONPATH"
     echo "🔍 Python path: $PYTHONPATH"
     echo "🔍 Current directory: $(pwd)"
     echo "🔍 Checking for training scripts..."
@@ -28,6 +28,8 @@ if [ ! -f "$MODELS_DIR/best_binary_model.pkl" ]; then
         echo "✅ Found src/models/train_models.py"
     else
         echo "❌ src/models/train_models.py not found"
+        echo "📁 Contents of src/:"
+        ls -la src/ 2>/dev/null || echo "src directory not found"
         echo "📁 Contents of src/models/:"
         ls -la src/models/ 2>/dev/null || echo "src/models directory not found"
     fi
@@ -37,9 +39,9 @@ if [ ! -f "$MODELS_DIR/best_binary_model.pkl" ]; then
     cd /opt/render/project
     timeout 300 python3 -c "
 import sys
-sys.path.append('src')
+sys.path.append('/opt/render/project')
 try:
-    from models.k12_data_generator import K12DataGenerator
+    from src.models.k12_data_generator import K12DataGenerator
     generator = K12DataGenerator()
     print('📊 Generating synthetic dataset...')
     df = generator.generate_dataset(student_count=5000)
@@ -122,23 +124,22 @@ if [ -d "$MODELS_DIR" ]; then
 fi
 
 # Start the application - ensure we're in the right directory
-cd /opt/render/project/src
+cd /opt/render/project
 echo "📁 Changed to directory: $(pwd)"
-echo "📁 Looking for app.py:"
-ls -la app.py 2>/dev/null || echo "❌ app.py not found in $(pwd)"
-ls -la ../app.py 2>/dev/null && echo "✅ Found app.py in parent directory"
+echo "📁 Looking for startup files:"
+ls -la run_mvp.py 2>/dev/null && echo "✅ Found run_mvp.py" || echo "❌ run_mvp.py not found"
+ls -la app.py 2>/dev/null && echo "✅ Found app.py" || echo "❌ app.py not found"
 
-# Try to run from the correct location
-if [ -f "../app.py" ]; then
-    echo "🚀 Starting app.py from parent directory"
-    cd /opt/render/project
-    python3 app.py
+# Try to run from the correct location (prefer run_mvp.py)
+if [ -f "run_mvp.py" ]; then
+    echo "🚀 Starting MVP application with run_mvp.py"
+    python3 run_mvp.py
 elif [ -f "app.py" ]; then
-    echo "🚀 Starting app.py from current directory"
+    echo "🚀 Starting application with app.py"
     python3 app.py
 else
-    echo "❌ Cannot find app.py in current or parent directory"
+    echo "❌ Cannot find run_mvp.py or app.py in $(pwd)"
     echo "📁 Directory contents:"
-    ls -la
+    ls -la | head -10
     exit 1
 fi
