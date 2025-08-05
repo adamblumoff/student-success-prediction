@@ -130,15 +130,15 @@ echo "📁 Looking for startup files:"
 ls -la run_mvp.py 2>/dev/null && echo "✅ Found run_mvp.py" || echo "❌ run_mvp.py not found"
 ls -la app.py 2>/dev/null && echo "✅ Found app.py" || echo "❌ app.py not found"
 
-# Try to run from the correct location (prefer run_mvp.py)
-if [ -f "run_mvp.py" ]; then
-    echo "🚀 Starting MVP application with run_mvp.py"
-    python3 run_mvp.py
-elif [ -f "app.py" ]; then
-    echo "🚀 Starting application with app.py"
+# Try to run from the correct location (prefer app.py for production)
+if [ -f "app.py" ]; then
+    echo "🚀 Starting production application with app.py"
     python3 app.py
+elif [ -f "run_mvp.py" ]; then
+    echo "🚀 Starting MVP application with run_mvp.py (fallback)"
+    python3 run_mvp.py
 else
-    echo "❌ Cannot find run_mvp.py or app.py in $(pwd)"
+    echo "❌ Cannot find app.py or run_mvp.py in $(pwd)"
     echo "📁 Directory contents:"
     ls -la | head -10
     exit 1
