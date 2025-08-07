@@ -188,7 +188,8 @@ async def analyze_student_data(
                 db_results.append({
                     'student_id': result['student_id'],
                     'risk_score': result['risk_score'],
-                    'risk_category': result['risk_category']
+                    'risk_category': result['risk_category'],
+                    'success_probability': result['success_probability']
                 })
             save_predictions_batch(db_results, session_id)
         except Exception as db_error:
