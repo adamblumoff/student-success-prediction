@@ -3,812 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Success Predictor - Help Students Succeed</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Student Success Predictor</title>
+    <link rel="stylesheet" href="/static/css/modern-style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
         <div class="container">
-            <div class="logo">
-                <h1>📊 Student Success Predictor</h1>
-                <p>Identify at-risk students early and provide targeted support</p>
-            </div>
-            <div class="header-controls">
-                <button class="btn btn-link notification-toggle" id="main-notification-toggle" title="Toggle Notifications">
-                    🔔 <span id="notification-status">OFF</span>
-                </button>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <div class="logo-text">
+                        <h1>Student Success Predictor</h1>
+                        <p>AI-powered early intervention system</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" id="notifications-toggle" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge hidden" id="notification-count">0</span>
+                    </button>
+                    <button class="btn-icon" id="settings-toggle" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="main">
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
         <div class="container">
-            <!-- AI/ML Advantages Section -->
-            <section class="ai-advantages-section">
-                <div class="card ai-showcase">
-                    <div class="ai-header">
-                        <span class="ai-badge">🧠 AI-Powered Analytics</span>
-                        <h2>Why Our Machine Learning Approach Works</h2>
+            <div class="tabs-wrapper">
+                <button class="tab-button active" data-tab="upload">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload Data</span>
+                </button>
+                <button class="tab-button" data-tab="connect">
+                    <i class="fas fa-plug"></i>
+                    <span>Connect LMS</span>
+                </button>
+                <button class="tab-button" data-tab="analyze" disabled>
+                    <i class="fas fa-brain"></i>
+                    <span>AI Analysis</span>
+                </button>
+                <button class="tab-button" data-tab="dashboard" disabled>
+                    <i class="fas fa-chart-dashboard"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="tab-button" data-tab="insights" disabled>
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Insights</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Progress Indicator -->
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Upload Tab -->
+            <section class="tab-content active" id="tab-upload">
+                <div class="content-header">
+                    <h2>Upload Student Data</h2>
+                    <p>Get started by uploading your student data or connecting to your LMS</p>
+                </div>
+
+                <!-- AI Features Highlight -->
+                <div class="ai-showcase-card">
+                    <div class="showcase-header">
+                        <div class="ai-badge">
+                            <i class="fas fa-brain"></i>
+                            <span>AI-Powered</span>
+                        </div>
+                        <h3>89.4% Prediction Accuracy</h3>
                     </div>
-                    
-                    <div class="ai-grid">
-                        <div class="ai-feature">
-                            <div class="feature-icon">📊</div>
-                            <h3>89.4% Prediction Accuracy</h3>
-                            <p>Our XGBoost models analyze 31 carefully engineered features to predict student outcomes with industry-leading accuracy.</p>
+                    <div class="showcase-features">
+                        <div class="feature">
+                            <i class="fas fa-search-plus"></i>
+                            <div>
+                                <strong>Explainable AI</strong>
+                                <p>Understand exactly why students are at risk</p>
+                            </div>
                         </div>
-                        
-                        <div class="ai-feature">
-                            <div class="feature-icon">🔍</div>
-                            <h3>Explainable AI</h3>
-                            <p>Get detailed explanations of <em>why</em> a student is at risk, including specific risk factors and protective elements.</p>
+                        <div class="feature">
+                            <i class="fas fa-bolt"></i>
+                            <div>
+                                <strong>Real-time Analysis</strong>
+                                <p>Instant predictions in under 100ms</p>
+                            </div>
                         </div>
-                        
-                        <div class="ai-feature">
-                            <div class="feature-icon">⚡</div>
-                            <h3>Real-Time Analysis</h3>
-                            <p>Instant predictions in under 100ms. Upload your gradebook and get actionable insights immediately.</p>
-                        </div>
-                        
-                        <div class="ai-feature">
-                            <div class="feature-icon">🎯</div>
-                            <h3>Personalized Interventions</h3>
-                            <p>AI-generated recommendations tailored to each student's unique risk profile and learning patterns.</p>
-                        </div>
-                        
-                        <div class="ai-feature">
-                            <div class="feature-icon">📈</div>
-                            <h3>Feature Importance</h3>
-                            <p>Understand which factors most influence student success: early scores (22%), engagement (19%), history (12%).</p>
-                        </div>
-                        
-                        <div class="ai-feature">
-                            <div class="feature-icon">🏫</div>
-                            <h3>Universal Compatibility</h3>
-                            <p>Works with Canvas LMS, generic CSV files, and any gradebook format. Automatic detection and conversion.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="ai-cta">
-                        <div class="cta-content">
-                            <strong>Ready to see AI in action?</strong> 
-                            <span>Try the sample data below or upload your own CSV to experience explainable predictions.</span>
+                        <div class="feature">
+                            <i class="fas fa-bullseye"></i>
+                            <div>
+                                <strong>Personalized Interventions</strong>
+                                <p>Tailored recommendations for each student</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- Step 1: Upload Data -->
-            <section class="upload-section" id="upload-section">
-                <div class="card">
-                    <div class="step-header">
-                        <span class="step-number">1</span>
-                        <h2>Upload Student Data</h2>
-                        <p>Upload your class roster with student engagement data to get started</p>
-                    </div>
-                    
-                    <div class="upload-area" id="upload-area">
-                        <div class="upload-icon">📁</div>
-                        <p class="upload-text">Drop your CSV file here or click to browse</p>
-                        <p class="upload-hint">Required columns: student_id, early_avg_score, early_total_clicks, studied_credits</p>
-                        <input type="file" id="file-input" accept=".csv" hidden>
-                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                <!-- Upload Options -->
+                <div class="upload-options">
+                    <div class="upload-card primary">
+                        <div class="upload-icon">
+                            <i class="fas fa-file-csv"></i>
+                        </div>
+                        <h3>Upload CSV File</h3>
+                        <p>Upload your gradebook or student data CSV file</p>
+                        <div class="upload-zone" id="upload-zone">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Drop your CSV file here or click to browse</p>
+                                <small>Supports Canvas, PowerSchool, and generic formats</small>
+                            </div>
+                            <input type="file" id="file-input" accept=".csv" hidden>
+                        </div>
+                        <button class="btn btn-primary btn-large" onclick="document.getElementById('file-input').click()">
+                            <i class="fas fa-upload"></i>
                             Choose File
                         </button>
                     </div>
 
-                    <div class="sample-data-section">
-                        <p>Don't have data ready?</p>
-                        <div class="sample-options">
-                            <button class="btn btn-link" id="load-sample">📊 Try with sample data</button>
-                            <button class="btn btn-primary" id="start-demo-from-upload">🎬 Start Live Demo Mode</button>
+                    <div class="upload-card">
+                        <div class="upload-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3>Try Sample Data</h3>
+                        <p>Explore the system with our sample university dataset</p>
+                        <button class="btn btn-secondary btn-large" id="load-sample">
+                            <i class="fas fa-play"></i>
+                            Load Sample Data
+                        </button>
+                    </div>
+
+                    <div class="upload-card">
+                        <div class="upload-icon">
+                            <i class="fas fa-presentation"></i>
+                        </div>
+                        <h3>Live Demo Mode</h3>
+                        <p>Watch real-time predictions in action</p>
+                        <button class="btn btn-accent btn-large" id="start-demo">
+                            <i class="fas fa-play-circle"></i>
+                            Start Demo
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Connect Tab -->
+            <section class="tab-content" id="tab-connect">
+                <div class="content-header">
+                    <h2>Connect to Your LMS</h2>
+                    <p>Seamlessly integrate with your learning management system for real-time data</p>
+                </div>
+
+                <div class="integration-grid">
+                    <div class="integration-card" data-integration="canvas">
+                        <div class="integration-header">
+                            <div class="integration-icon canvas">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="integration-info">
+                                <h3>Canvas LMS</h3>
+                                <p>Connect directly to Canvas courses</p>
+                                <span class="status-badge" id="canvas-status">Not Connected</span>
+                            </div>
+                        </div>
+                        <div class="integration-features">
+                            <span class="feature-tag">Gradebooks</span>
+                            <span class="feature-tag">Assignments</span>
+                            <span class="feature-tag">Engagement</span>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="showIntegrationForm('canvas')">
+                            <i class="fas fa-plug"></i>
+                            Connect Canvas
+                        </button>
+                    </div>
+
+                    <div class="integration-card" data-integration="powerschool">
+                        <div class="integration-header">
+                            <div class="integration-icon powerschool">
+                                <i class="fas fa-school"></i>
+                            </div>
+                            <div class="integration-info">
+                                <h3>PowerSchool SIS</h3>
+                                <p>District-wide student information system</p>
+                                <span class="status-badge" id="powerschool-status">Not Connected</span>
+                            </div>
+                        </div>
+                        <div class="integration-features">
+                            <span class="feature-tag">Demographics</span>
+                            <span class="feature-tag">Grades</span>
+                            <span class="feature-tag">Attendance</span>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="showIntegrationForm('powerschool')">
+                            <i class="fas fa-plug"></i>
+                            Connect PowerSchool
+                        </button>
+                    </div>
+
+                    <div class="integration-card" data-integration="google">
+                        <div class="integration-header">
+                            <div class="integration-icon google">
+                                <i class="fab fa-google"></i>
+                            </div>
+                            <div class="integration-info">
+                                <h3>Google Classroom</h3>
+                                <p>Enhanced collaboration analytics</p>
+                                <span class="status-badge" id="google-status">Not Connected</span>
+                            </div>
+                        </div>
+                        <div class="integration-features">
+                            <span class="feature-tag">Assignments</span>
+                            <span class="feature-tag">Participation</span>
+                            <span class="feature-tag">Communication</span>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="showIntegrationForm('google')">
+                            <i class="fas fa-plug"></i>
+                            Connect Google
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Integration Forms (Initially Hidden) -->
+                <div class="integration-forms" id="integration-forms">
+                    <!-- Forms will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Analysis Tab -->
+            <section class="tab-content" id="tab-analyze">
+                <div class="content-header">
+                    <h2>AI-Powered Risk Analysis</h2>
+                    <p>Advanced machine learning identifies at-risk students with 89.4% accuracy</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid" id="analysis-stats">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+
+                <!-- Analysis Content -->
+                <div class="analysis-layout">
+                    <div class="analysis-sidebar">
+                        <div class="sidebar-section">
+                            <h3>Filter Students</h3>
+                            <div class="filter-controls">
+                                <input type="text" class="search-input" id="student-search" placeholder="Search students...">
+                                <div class="filter-buttons">
+                                    <button class="filter-btn active" data-filter="all">All</button>
+                                    <button class="filter-btn" data-filter="high">High Risk</button>
+                                    <button class="filter-btn" data-filter="medium">Medium</button>
+                                    <button class="filter-btn" data-filter="low">Low Risk</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sidebar-section">
+                            <h3>Students List</h3>
+                            <div class="student-list" id="student-list">
+                                <!-- Student cards will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-main">
+                        <div class="student-detail" id="student-detail">
+                            <div class="no-selection">
+                                <i class="fas fa-user-graduate"></i>
+                                <h3>Select a Student</h3>
+                                <p>Choose a student from the list to view detailed AI analysis, risk factors, and intervention recommendations.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Unified LMS/SIS Integration Section -->
-            <section class="integration-section" id="integration-section">
-                <div class="card">
-                    <div class="step-header">
-                        <span class="step-number">🔗</span>
-                        <h2>LMS/SIS Integration</h2>
-                        <p>Connect to your learning management system or student information system for real-time data analysis</p>
+            <!-- Dashboard Tab -->
+            <section class="tab-content" id="tab-dashboard">
+                <div class="content-header">
+                    <h2>Analytics Dashboard</h2>
+                    <p>Monitor class performance and intervention effectiveness</p>
+                </div>
+
+                <!-- Dashboard content will be populated here -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Risk Distribution</h3>
+                        <canvas id="risk-chart"></canvas>
                     </div>
-                    
-                    <!-- Integration Type Selection -->
-                    <div class="integration-selector">
-                        <div class="form-group">
-                            <label for="integration-type">Choose Integration Platform</label>
-                            <select id="integration-type" class="form-control">
-                                <option value="">Select your platform...</option>
-                                <option value="canvas">🎨 Canvas LMS</option>
-                                <option value="powerschool">🏫 PowerSchool SIS</option>
-                                <option value="google-classroom">🎓 Google Classroom</option>
-                            </select>
-                            <small class="form-help">Select your school's learning management or student information system</small>
-                        </div>
-                    </div>
-                    
-                    <!-- Canvas LMS Integration -->
-                    <div class="integration-form hidden" id="canvas-integration">
-                        <div class="integration-header">
-                            <h4>🎨 Canvas LMS Integration</h4>
-                            <p>Connect directly to your Canvas courses for real-time gradebook analysis</p>
-                        </div>
-                        
-                        <div class="canvas-connection" id="canvas-connection">
-                            <div class="canvas-form">
-                                <div class="form-group">
-                                    <label for="canvas-url">Canvas Instance URL</label>
-                                    <input type="url" id="canvas-url" placeholder="https://yourschool.instructure.com" 
-                                           class="form-control">
-                                    <small class="form-help">Your Canvas base URL (e.g., yourschool.instructure.com)</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="canvas-token">Canvas Access Token</label>
-                                    <input type="password" id="canvas-token" placeholder="Your Canvas API token" 
-                                           class="form-control">
-                                    <small class="form-help">
-                                        Generate at: Canvas → Account → Settings → Approved Integrations → New Access Token
-                                    </small>
-                                </div>
-                                
-                                <div class="canvas-actions">
-                                    <button class="btn btn-primary" id="connect-canvas">
-                                        🔗 Connect to Canvas
-                                    </button>
-                                    <button class="btn btn-link" id="show-token-help">
-                                        ❓ How to get Canvas token
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Canvas Help Modal -->
-                            <div class="help-modal hidden" id="canvas-help-modal">
-                                <div class="help-content">
-                                    <div class="help-header">
-                                        <h4>🔧 Canvas API Token Setup</h4>
-                                        <button class="close-help" id="close-token-help">&times;</button>
-                                    </div>
-                                    <div class="help-body">
-                                        <p><strong>To get your Canvas API token:</strong></p>
-                                        <ol>
-                                            <li>Log into your Canvas account</li>
-                                            <li>Go to <strong>Account → Settings</strong></li>
-                                            <li>Scroll to <strong>Approved Integrations</strong></li>
-                                            <li>Click <strong>+ New Access Token</strong></li>
-                                            <li>Set purpose: "Student Success Prediction"</li>
-                                            <li>Copy the generated token</li>
-                                        </ol>
-                                        <div class="help-note">
-                                            <strong>Security:</strong> Tokens are stored locally in your browser only.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Canvas Connected Interface -->
-                        <div class="canvas-connected hidden" id="canvas-connected">
-                            <div class="connection-success">
-                                <h4>✅ Connected to Canvas</h4>
-                                <p>Successfully connected to <span id="canvas-instance-name"></span></p>
-                            </div>
-                            
-                            <div class="course-selection">
-                                <div class="form-group">
-                                    <label for="canvas-course-select">Select Course</label>
-                                    <div class="select-wrapper">
-                                        <select id="canvas-course-select" class="form-control">
-                                            <option value="">Choose a Canvas course...</option>
-                                        </select>
-                                        <button class="btn btn-secondary" id="refresh-courses">🔄 Refresh</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="course-info hidden" id="canvas-course-info">
-                                <div class="course-details" id="canvas-course-details">
-                                    <!-- Course details populated by JavaScript -->
-                                </div>
-                                <div class="course-actions">
-                                    <button class="btn btn-primary" id="sync-course">
-                                        📊 Analyze Course
-                                    </button>
-                                    <button class="btn btn-secondary" id="select-different-course">
-                                        🔄 Select Different Course
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Canvas Results -->
-                            <div class="canvas-results hidden" id="canvas-results">
-                                <div class="results-summary" id="canvas-results-summary">
-                                    <!-- Results summary will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- PowerSchool SIS Integration -->
-                    <div class="integration-form hidden" id="powerschool-integration">
-                        <div class="integration-header">
-                            <h4>🏫 PowerSchool SIS Integration</h4>
-                            <p>Connect to your district's PowerSchool system for comprehensive student data analysis</p>
-                        </div>
-                        
-                        <div class="powerschool-connection" id="powerschool-connection">
-                            <div class="powerschool-form">
-                                <div class="form-group">
-                                    <label for="powerschool-url">PowerSchool Instance URL</label>
-                                    <input type="url" id="powerschool-url" placeholder="https://district.powerschool.com" 
-                                           class="form-control">
-                                    <small class="form-help">Your district's PowerSchool URL</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="powerschool-client-id">Client ID</label>
-                                    <input type="text" id="powerschool-client-id" placeholder="PowerSchool API Client ID"
-                                           class="form-control">
-                                    <small class="form-help">OAuth2 Client ID from PowerSchool API registration</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="powerschool-client-secret">Client Secret</label>
-                                    <input type="password" id="powerschool-client-secret" placeholder="PowerSchool API Client Secret"
-                                           class="form-control">
-                                    <small class="form-help">OAuth2 Client Secret from PowerSchool API registration</small>
-                                </div>
-                                
-                                <div class="powerschool-actions">
-                                    <button class="btn btn-primary" id="connect-powerschool">
-                                        🔗 Connect to PowerSchool
-                                    </button>
-                                    <button class="btn btn-link" id="show-powerschool-help">
-                                        ❓ How to get PowerSchool API access
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- PowerSchool Help Modal -->
-                            <div class="help-modal hidden" id="powerschool-help-modal">
-                                <div class="help-content">
-                                    <div class="help-header">
-                                        <h4>🔧 PowerSchool API Setup</h4>
-                                        <button class="close-help" id="close-powerschool-help">&times;</button>
-                                    </div>
-                                    <div class="help-body">
-                                        <p><strong>To set up PowerSchool API access:</strong></p>
-                                        <ol>
-                                            <li>Contact your PowerSchool district administrator</li>
-                                            <li>Request API access for "Student Success Prediction"</li>
-                                            <li>Provide these required scopes: students, schools, courses, grades</li>
-                                            <li>Administrator creates OAuth2 client credentials</li>
-                                            <li>Receive Client ID and Client Secret</li>
-                                        </ol>
-                                        <div class="help-note">
-                                            <strong>Note:</strong> Requires district administrator approval and API licensing.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- PowerSchool Connected Interface -->
-                        <div class="powerschool-connected hidden" id="powerschool-connected">
-                            <div class="connection-success">
-                                <h4>✅ Connected to PowerSchool</h4>
-                                <p>Successfully authenticated with PowerSchool SIS</p>
-                            </div>
-                            
-                            <div class="school-selection">
-                                <div class="form-group">
-                                    <label for="powerschool-school-select">Select School</label>
-                                    <div class="select-wrapper">
-                                        <select id="powerschool-school-select" class="form-control">
-                                            <option value="">Choose a school...</option>
-                                        </select>
-                                        <button class="btn btn-secondary" id="refresh-schools">🔄 Refresh</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="school-info hidden" id="powerschool-school-info">
-                                <div class="school-details" id="powerschool-school-details">
-                                    <!-- School details populated by JavaScript -->
-                                </div>
-                                <div class="school-actions">
-                                    <button class="btn btn-primary" id="sync-school">
-                                        📊 Analyze School Data
-                                    </button>
-                                    <button class="btn btn-secondary" id="select-different-school">
-                                        🔄 Select Different School
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- PowerSchool Results -->
-                            <div class="powerschool-results hidden" id="powerschool-results">
-                                <div class="results-summary" id="powerschool-results-summary">
-                                    <!-- Results summary will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Google Classroom Integration -->
-                    <div class="integration-form hidden" id="google-classroom-integration">
-                        <div class="integration-header">
-                            <h4>🎓 Google Classroom Integration</h4>
-                            <p>Connect to Google Classroom for enhanced engagement analytics and real-time collaboration insights</p>
-                        </div>
-                        
-                        <div class="google-connection" id="google-connection">
-                            <div class="google-form">
-                                <div class="form-group">
-                                    <label for="google-credentials-status">Google Classroom API Status</label>
-                                    <div class="status-indicator" id="google-status-indicator">
-                                        <span id="google-connection-status">Checking connection...</span>
-                                    </div>
-                                    <small class="form-help">OAuth2 authentication with Google Classroom API</small>
-                                </div>
-                                
-                                <div class="google-actions">
-                                    <button class="btn btn-primary" id="connect-google-classroom">
-                                        🔗 Connect to Google Classroom
-                                    </button>
-                                    <button class="btn btn-link" id="show-google-help">
-                                        ❓ How to set up Google API
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Google API Help Modal -->
-                            <div class="help-modal hidden" id="google-help-modal">
-                                <div class="help-content">
-                                    <div class="help-header">
-                                        <h4>🔧 Google Classroom API Setup</h4>
-                                        <button class="close-help" id="close-google-help">&times;</button>
-                                    </div>
-                                    <div class="help-body">
-                                        <p><strong>Follow these steps to enable Google Classroom integration:</strong></p>
-                                        <ol>
-                                            <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
-                                            <li>Create a new project or select existing project</li>
-                                            <li>Enable the <strong>Google Classroom API</strong></li>
-                                            <li>Create OAuth2 credentials (Desktop application type)</li>
-                                            <li>Download the credentials JSON file</li>
-                                            <li>Place it as <code>config/google_credentials.json</code></li>
-                                            <li>Restart the application</li>
-                                        </ol>
-                                        <div class="help-note">
-                                            <strong>📝 Need detailed instructions?</strong> See <code>docs/Google_Classroom_Setup.md</code>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Google Connected Interface -->
-                        <div class="google-connected hidden" id="google-connected">
-                            <div class="connection-success">
-                                <h4>✅ Connected to Google Classroom</h4>
-                                <p>Successfully authenticated with Google Classroom API</p>
-                            </div>
-                            
-                            <div class="course-selection">
-                                <div class="form-group">
-                                    <label for="google-course-select">Select Course</label>
-                                    <div class="select-wrapper">
-                                        <select id="google-course-select" class="form-control">
-                                            <option value="">Choose a Google Classroom course...</option>
-                                        </select>
-                                        <button class="btn btn-secondary" id="refresh-google-courses">🔄 Refresh</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="course-info hidden" id="google-course-info">
-                                <div class="course-details" id="google-course-details">
-                                    <!-- Course details populated by JavaScript -->
-                                </div>
-                                <div class="course-actions">
-                                    <button class="btn btn-primary" id="sync-google-course">
-                                        📊 Analyze Course
-                                    </button>
-                                    <button class="btn btn-secondary" id="select-different-google-course">
-                                        🔄 Select Different Course
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Google Results -->
-                            <div class="google-results hidden" id="google-results">
-                                <div class="results-summary" id="google-results-summary">
-                                    <!-- Results summary will be populated here -->
-                                </div>
-                                <div class="results-actions">
-                                    <button class="btn btn-success" id="google-enhanced-analysis">
-                                        🎯 Enhanced Google Analysis
-                                    </button>
-                                    <button class="btn btn-secondary" id="cross-platform-analysis">
-                                        📊 Cross-Platform Compare
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Status Messages -->
-                    <div class="status-message hidden" id="integration-status">
-                        <!-- Status messages will appear here -->
+                    <div class="dashboard-card">
+                        <h3>Intervention Success</h3>
+                        <canvas id="success-chart"></canvas>
                     </div>
                 </div>
             </section>
 
-            <!-- Live Demo Dashboard -->
-            <section class="demo-dashboard hidden" id="demo-dashboard">
-                <div class="card">
-                    <div class="step-header">
-                        <span class="step-number">📊</span>
-                        <h2>Live University Dashboard</h2>
-                        <div class="demo-controls">
-                            <button class="btn btn-primary" id="demo-toggle">🎬 Start Live Demo</button>
-                            <button class="btn btn-secondary" id="demo-simulate">⚡ Simulate New Student</button>
-                        </div>
-                    </div>
-
-                    <div class="demo-institution-info">
-                        <div class="institution-header">
-                            <h3 id="institution-name">State University Demo</h3>
-                            <div class="semester-info">
-                                <span id="semester-name">Fall 2024 Semester</span> • 
-                                <span id="semester-week">Week 8</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="demo-metrics-grid">
-                        <div class="demo-metric-card">
-                            <div class="metric-icon">👥</div>
-                            <div class="metric-content">
-                                <div class="metric-number" id="total-students">1,247</div>
-                                <div class="metric-label">Students Analyzed</div>
-                                <div class="metric-change" id="new-students">+18 this week</div>
-                            </div>
-                        </div>
-
-                        <div class="demo-metric-card">
-                            <div class="metric-icon">🎯</div>
-                            <div class="metric-content">
-                                <div class="metric-number" id="interventions-triggered">52</div>
-                                <div class="metric-label">Interventions Triggered</div>
-                                <div class="metric-change" id="success-rate">73% success rate</div>
-                            </div>
-                        </div>
-
-                        <div class="demo-metric-card">
-                            <div class="metric-icon">⏰</div>
-                            <div class="metric-content">
-                                <div class="metric-number" id="time-saved">18.5</div>
-                                <div class="metric-label">Hours Saved/Week</div>
-                                <div class="metric-change" id="prevented-dropouts">12 dropouts prevented</div>
-                            </div>
-                        </div>
-
-                        <div class="demo-metric-card">
-                            <div class="metric-icon">📈</div>
-                            <div class="metric-content">
-                                <div class="metric-number" id="students-helped">156</div>
-                                <div class="metric-label">Students Helped</div>
-                                <div class="metric-change" id="avg-improvement">+15.2 avg improvement</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="demo-live-feed" id="demo-feed">
-                        <h4>🔴 Live Activity Feed</h4>
-                        <div class="feed-container" id="feed-container">
-                            <div class="feed-item">
-                                <span class="feed-time">12:34 PM</span>
-                                <span class="feed-message">System ready for live demonstration</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Analytics Charts Section -->
-                    <div class="demo-analytics-section">
-                        <h4>📈 Analytics Dashboard</h4>
-                        <div class="analytics-grid">
-                            <div class="chart-container">
-                                <h5>Risk Distribution Over Time</h5>
-                                <canvas id="riskTrendChart"></canvas>
-                            </div>
-                            <div class="chart-container">
-                                <h5>Intervention Success Rate</h5>
-                                <canvas id="interventionChart"></canvas>
-                            </div>
-                            <div class="chart-container">
-                                <h5>Engagement Metrics</h5>
-                                <canvas id="engagementChart"></canvas>
-                            </div>
-                            <div class="chart-container">
-                                <h5>Academic Performance Trends</h5>
-                                <canvas id="performanceChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ROI Calculator Section -->
-                    <div class="roi-calculator-section">
-                        <h4>💰 ROI Impact Calculator</h4>
-                        <div class="roi-calculator">
-                            <div class="roi-inputs">
-                                <div class="roi-input-group">
-                                    <label for="class-size">Class Size:</label>
-                                    <input type="number" id="class-size" value="150" min="10" max="1000">
-                                </div>
-                                <div class="roi-input-group">
-                                    <label for="tuition-cost">Annual Tuition:</label>
-                                    <input type="number" id="tuition-cost" value="45000" min="1000" step="100">
-                                </div>
-                                <div class="roi-input-group">
-                                    <label for="intervention-cost">Cost per Intervention:</label>
-                                    <input type="number" id="intervention-cost" value="200" min="50" step="10">
-                                </div>
-                                <button class="btn btn-primary" id="calculate-roi">Calculate ROI</button>
-                            </div>
-                            <div class="roi-results" id="roi-results">
-                                <div class="roi-metric">
-                                    <div class="roi-value" id="roi-savings">$0</div>
-                                    <div class="roi-label">Annual Savings</div>
-                                </div>
-                                <div class="roi-metric">
-                                    <div class="roi-value" id="roi-percentage">0%</div>
-                                    <div class="roi-label">ROI Percentage</div>
-                                </div>
-                                <div class="roi-metric">
-                                    <div class="roi-value" id="roi-students">0</div>
-                                    <div class="roi-label">Students Helped</div>
-                                </div>
-                                <div class="roi-metric">
-                                    <div class="roi-value" id="roi-dropouts">0</div>
-                                    <div class="roi-label">Dropouts Prevented</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Advanced Insights Section -->
-                    <div class="advanced-insights-section">
-                        <h4>🧠 AI Insights & Predictions</h4>
-                        <div class="insights-grid">
-                            <div class="insight-card">
-                                <div class="insight-icon">🎯</div>
-                                <div class="insight-content">
-                                    <h5>Early Warning System</h5>
-                                    <p>Identifies at-risk students 6-8 weeks earlier than traditional methods</p>
-                                    <div class="insight-stat">89.4% accuracy</div>
-                                </div>
-                            </div>
-                            <div class="insight-card">
-                                <div class="insight-icon">🔍</div>
-                                <div class="insight-content">
-                                    <h5>Predictive Factors</h5>
-                                    <p>Early assessment scores (22%) and engagement patterns (19%) are top predictors</p>
-                                    <div class="insight-stat">31 features analyzed</div>
-                                </div>
-                            </div>
-                            <div class="insight-card">
-                                <div class="insight-icon">⚡</div>
-                                <div class="insight-content">
-                                    <h5>Real-time Processing</h5>
-                                    <p>Instant predictions with sub-100ms response time for immediate action</p>
-                                    <div class="insight-stat">&lt;100ms response</div>
-                                </div>
-                            </div>
-                            <div class="insight-card">
-                                <div class="insight-icon">📊</div>
-                                <div class="insight-content">
-                                    <h5>Intervention Impact</h5>
-                                    <p>Students receiving early intervention show 73% success rate improvement</p>
-                                    <div class="insight-stat">73% success rate</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="demo-success-stories" id="success-stories-section" style="display: none;">
-                        <h4>📖 Recent Success Stories</h4>
-                        <div class="success-stories-grid" id="success-stories-grid">
-                            <!-- Success stories will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Real-time Notifications Panel -->
-            <section class="notifications-panel" id="notifications-panel">
-                <div class="notifications-header">
-                    <div class="notifications-title">
-                        <span class="notification-icon">🔔</span>
-                        <h3>Real-time Alerts</h3>
-                        <span class="alert-count" id="alert-count">0</span>
-                    </div>
-                    <div class="notifications-controls">
-                        <button class="btn btn-link" id="clear-alerts">Clear All</button>
-                        <button class="btn btn-link" id="toggle-notifications">⚙️ Settings</button>
-                    </div>
+            <!-- Insights Tab -->
+            <section class="tab-content" id="tab-insights">
+                <div class="content-header">
+                    <h2>AI Insights</h2>
+                    <p>Deep learning insights and predictive analytics</p>
                 </div>
                 
-                <div class="notifications-content">
-                    <div class="connection-status" id="notification-connection-status">
-                        <div class="status-indicator disconnected" id="ws-status-indicator">
-                            <span id="ws-status-text">Connecting...</span>
-                        </div>
+                <!-- Insights content will be populated here -->
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <h3>Model Performance</h3>
+                        <div class="metric-display">89.4%</div>
+                        <p>Prediction accuracy on validation set</p>
                     </div>
-                    
-                    <div class="alerts-list" id="alerts-list">
-                        <div class="no-alerts" id="no-alerts">
-                            <div class="no-alerts-icon">🔕</div>
-                            <p>No active alerts</p>
-                            <span class="no-alerts-subtitle">Student risk monitoring is active</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Notification Settings Modal -->
-                <div class="notification-settings-modal hidden" id="notification-settings-modal">
-                    <div class="settings-content">
-                        <div class="settings-header">
-                            <h4>🔔 Notification Settings</h4>
-                            <button class="close-settings" id="close-notification-settings">&times;</button>
-                        </div>
-                        <div class="settings-body">
-                            <div class="setting-group">
-                                <label class="setting-label">
-                                    <input type="checkbox" id="enable-notifications" checked>
-                                    <span>Enable all notifications</span>
-                                </label>
-                                <small class="form-help">Uncheck to completely hide notification panel</small>
-                            </div>
-                            <div class="setting-group">
-                                <label class="setting-label">
-                                    <input type="checkbox" id="enable-sound" checked>
-                                    <span>Enable sound alerts</span>
-                                </label>
-                            </div>
-                            <div class="setting-group">
-                                <label class="setting-label">
-                                    <input type="checkbox" id="enable-desktop" checked>
-                                    <span>Enable desktop notifications</span>
-                                </label>
-                            </div>
-                            <div class="setting-group">
-                                <label for="risk-threshold">Alert Risk Threshold:</label>
-                                <select id="risk-threshold" class="form-control">
-                                    <option value="0.5">50% (Medium Risk)</option>
-                                    <option value="0.7" selected>70% (High Risk)</option>
-                                    <option value="0.85">85% (Critical Risk)</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="insight-card">
+                        <h3>Top Risk Factors</h3>
+                        <ul class="factor-list">
+                            <li>Early assessment scores (22%)</li>
+                            <li>Engagement patterns (19%)</li>
+                            <li>Academic history (12%)</li>
+                        </ul>
                     </div>
                 </div>
             </section>
 
-            <!-- Step 2: AI-Powered Analysis Results -->
-            <section class="results-section hidden" id="results-section">
-                <div class="card">
-                    <div class="step-header">
-                        <span class="step-number">🤖</span>
-                        <h2>AI-Powered Risk Analysis</h2>
-                        <p>Advanced machine learning identifies at-risk students with 89.4% accuracy</p>
-                    </div>
-
-                    <div class="summary-stats" id="summary-stats">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-
-                    <!-- AI Features Notice -->
-                    <div class="ai-features-notice" style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); padding: 16px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #2563eb;">
-                        <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 16px;">🧠 AI Features Available</h4>
-                        <p style="margin: 0; color: #1e40af; font-size: 14px;">
-                            Click <strong>"🔍 Explain AI Prediction"</strong> on any student card to see detailed explanations, 
-                            feature importance, and personalized recommendations powered by explainable AI.
-                        </p>
-                    </div>
-
-                    <!-- Two-Panel Layout for Better Navigation -->
-                    <div class="two-panel-layout">
-                        <!-- Left Panel: Student List -->
-                        <div class="student-list-panel">
-                            <div class="panel-header">
-                                <h3>Students at Risk</h3>
-                                <div class="list-controls">
-                                    <input type="text" id="student-search" placeholder="Search by Student ID..." class="search-input">
-                                    <div class="risk-filter-tabs">
-                                        <button class="filter-tab active" data-filter="all">All</button>
-                                        <button class="filter-tab" data-filter="high">High Risk</button>
-                                        <button class="filter-tab" data-filter="medium">Medium Risk</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="student-list-compact" id="student-list-compact">
-                                <!-- Compact student list will be populated here -->
-                            </div>
-                        </div>
-                        
-                        <!-- Right Panel: Student Detail -->
-                        <div class="student-detail-panel">
-                            <div id="student-detail-content">
-                                <div class="no-student-selected">
-                                    <div class="placeholder-icon">👆</div>
-                                    <h3>Select a Student</h3>
-                                    <p>Click on any student from the list to view detailed analysis, risk factors, and AI-powered intervention recommendations.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Legacy students list for fallback -->
-                    <div class="students-list hidden" id="students-list">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Step 3: Intervention Tracking -->
-            <section class="interventions-section hidden" id="interventions-section">
-                <div class="card">
-                    <div class="step-header">
-                        <span class="step-number">3</span>
-                        <h2>Track Your Interventions</h2>
-                        <p>Mark actions you've taken and track their effectiveness</p>
-                    </div>
-
-                    <div class="intervention-tracking" id="intervention-tracking">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-            </section>
         </div>
     </main>
 
-    <!-- Loading overlay -->
+    <!-- Notification Panel -->
+    <aside class="notification-panel hidden" id="notification-panel">
+        <div class="panel-header">
+            <h3>Notifications</h3>
+            <button class="btn-icon" id="close-notifications">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="panel-content">
+            <div class="no-notifications">
+                <i class="fas fa-bell-slash"></i>
+                <p>No notifications</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Loading Overlay -->
     <div class="loading-overlay hidden" id="loading-overlay">
-        <div class="loading-spinner">
-            <div class="spinner"></div>
-            <p>Analyzing student data...</p>
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Analyzing Student Data</h3>
+            <p id="loading-message">Processing your data with AI...</p>
         </div>
     </div>
 
-    <!-- Student Detail Modal -->
-    <div class="modal hidden" id="student-modal">
-        <div class="modal-content">
+    <!-- Modals -->
+    <div class="modal-overlay hidden" id="modal-overlay">
+        <div class="modal" id="modal">
             <div class="modal-header">
-                <h3 id="modal-student-name">Student Details</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h3 id="modal-title">Modal Title</h3>
+                <button class="btn-icon" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Will be populated by JavaScript -->
+            <div class="modal-content" id="modal-content">
+                <!-- Modal content will be inserted here -->
             </div>
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
-    <!-- Temporarily disable other scripts to isolate rendering issues -->
-    <!--
-    <script src="/static/js/explainable-ui.js"></script>
-    <script src="/static/js/canvas-integration.js"></script>
-    <script src="/static/js/powerschool-integration.js"></script>
-    <script src="/static/js/google-classroom-integration.js"></script>
-    <script src="/static/js/unified-integration.js"></script>
-    <script src="/static/js/notifications.js"></script>
-    -->
+    <!-- Scripts -->
+    <script src="/static/js/modern-app.js"></script>
 </body>
 </html>
