@@ -224,33 +224,67 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                 for student in new_students:
                     existing_student_lookup[student.student_id] = student.id
             
-            # Prepare prediction records
+            # Check for existing predictions to avoid duplicates
+            student_db_ids = [existing_student_lookup[str(pred['student_id'])] for pred in predictions_data]
+            existing_predictions = session.query(Prediction).filter(
+                Prediction.institution_id == institution.id,
+                Prediction.student_id.in_(student_db_ids)
+            ).all()
+            
+            # Create lookup of existing predictions by student_id
+            existing_pred_lookup = {pred.student_id: pred for pred in existing_predictions}
+            
+            # Process each prediction - update existing or create new
+            predictions_to_create = []
+            predictions_to_update = []
+            
             for pred_data in predictions_data:
                 student_id_str = str(pred_data['student_id'])
                 db_student_id = existing_student_lookup[student_id_str]
                 
-                predictions_to_create.append({
-                    'institution_id': institution.id,
-                    'student_id': db_student_id,
+                prediction_data = {
                     'risk_score': pred_data['risk_score'],
                     'risk_category': pred_data['risk_category'],
                     'success_probability': pred_data.get('success_probability'),
                     'session_id': session_id,
                     'data_source': 'csv_upload',
                     'features_used': json.dumps(pred_data.get('features_data')),
-                    'explanation': json.dumps(pred_data.get('explanation_data'))
-                })
+                    'explanation': json.dumps(pred_data.get('explanation_data')),
+                    'updated_at': datetime.utcnow()
+                }
+                
+                if db_student_id in existing_pred_lookup:
+                    # Update existing prediction
+                    existing_pred = existing_pred_lookup[db_student_id]
+                    predictions_to_update.append({
+                        'id': existing_pred.id,
+                        **prediction_data
+                    })
+                else:
+                    # Create new prediction
+                    predictions_to_create.append({
+                        'institution_id': institution.id,
+                        'student_id': db_student_id,
+                        **prediction_data
+                    })
             
-            # Batch insert predictions
+            # Batch insert new predictions
             if predictions_to_create:
                 session.execute(
                     Prediction.__table__.insert(),
                     predictions_to_create
                 )
             
+            # Batch update existing predictions
+            if predictions_to_update:
+                for pred_update in predictions_to_update:
+                    session.query(Prediction).filter(
+                        Prediction.id == pred_update['id']
+                    ).update({k: v for k, v in pred_update.items() if k != 'id'})
+            
             # Single commit for all operations
             session.commit()
-            logger.info(f"✅ Batch saved {len(predictions_data)} predictions in single transaction")
+            logger.info(f"✅ Batch processed {len(predictions_data)} predictions: {len(predictions_to_create)} new, {len(predictions_to_update)} updated")
             
     except Exception as e:
         logger.error(f"❌ Batch save failed: {e}")
