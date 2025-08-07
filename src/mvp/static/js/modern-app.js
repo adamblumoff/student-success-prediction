@@ -378,7 +378,13 @@ class FileUpload extends Component {
     this.showNotification(`Analysis complete! Found ${students.length} students.`, 'success');
     
     // CRITICAL: Actually render the students using working pattern from app.js
-    this.renderStudentsClean(students);
+    // Call the main app's render method instead of this component's method
+    if (window.modernApp && window.modernApp.renderStudentsClean) {
+      window.modernApp.renderStudentsClean(students);
+    } else {
+      // Fallback: call this component's method
+      this.renderStudentsClean(students);
+    }
   }
 
   // EXACT WORKING METHOD FROM app.js - Simple student rendering 
@@ -411,72 +417,63 @@ class FileUpload extends Component {
     
     console.log('✅ Using container:', container.id);
     
-    // Create clean HTML for each student (exact same as working app.js)
+    // Create clean HTML for each student (fix context issue)
     const html = students.map(student => {
       const riskPercent = Math.round(student.risk_score * 100);
       const successPercent = Math.round(student.success_probability * 100);
       
+      // Get intervention status from the main app instance instead of 'this'
+      let interventionStatus = { class: 'status-none', text: 'No Action' };
+      if (window.modernApp && window.modernApp.getInterventionStatus) {
+        interventionStatus = window.modernApp.getInterventionStatus(student);
+      }
+      
+      const riskColor = student.risk_category === 'Warning' ? '#dc2626' : 
+                       student.risk_category === 'Moderate Risk' ? '#d97706' : '#16a34a';
+      
       return `
-        <div style="border: 1px solid #ddd; margin: 10px; padding: 15px; background: white; border-radius: 8px; cursor: pointer;" 
+        <div class="student-intervention-card" style="border: 1px solid #ddd; margin: 10px; padding: 15px; background: white; border-radius: 8px; cursor: pointer; border-left: 4px solid ${riskColor}; min-width: 400px; max-width: 500px;" 
              onclick="window.modernApp.selectStudent(${student.student_id})">
-          <h3>Student #${student.student_id}</h3>
-          <p><strong>Risk Score:</strong> ${riskPercent}%</p>
-          <p><strong>Success Probability:</strong> ${successPercent}%</p>
-          <p><strong>Category:</strong> ${student.risk_category}</p>
-          <p><strong>Needs Intervention:</strong> ${student.needs_intervention ? 'Yes' : 'No'}</p>
-          <button onclick="event.stopPropagation(); window.modernApp.showStudentExplanation(${student.student_id})" 
-                  style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 8px; cursor: pointer;">
-            🔍 Explain AI Prediction
-          </button>
+          <div class="student-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Student #${student.student_id}</h3>
+            <span class="intervention-status ${interventionStatus.class}" style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+              ${interventionStatus.text}
+            </span>
+          </div>
+          
+          <div class="risk-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div><strong>Risk Score:</strong> <span style="color: ${riskColor};">${riskPercent}%</span></div>
+            <div><strong>Success Prob:</strong> ${successPercent}%</div>
+            <div><strong>Category:</strong> ${student.risk_category}</div>
+            <div><strong>Intervention:</strong> ${student.needs_intervention ? 'Needed' : 'Not Needed'}</div>
+          </div>
+          
+          <div class="action-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="event.stopPropagation(); window.modernApp.showStudentExplanation(${student.student_id})" 
+                    onmouseover="this.style.background='#1d4ed8'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(37, 99, 235, 0.3)'" 
+                    onmouseout="this.style.background='#2563eb'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              🔍 Explain AI
+            </button>
+            <button onclick="event.stopPropagation(); window.modernApp.showInterventionPanel(${student.student_id})" 
+                    onmouseover="this.style.background='#047857'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(5, 150, 105, 0.3)'" 
+                    onmouseout="this.style.background='#059669'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              📋 Interventions
+            </button>
+            <button onclick="event.stopPropagation(); window.modernApp.showProgressTracking(${student.student_id})" 
+                    onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(124, 58, 237, 0.3)'" 
+                    onmouseout="this.style.background='#7c3aed'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #7c3aed; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              📈 Progress
+            </button>
+          </div>
         </div>
       `;
     }).join('');
     
     container.innerHTML = html;
     console.log('✅ Students rendered to container successfully');
-  }
-
-  // Method to handle student selection 
-  selectStudent(studentId) {
-    console.log('Student selected:', studentId);
-    const students = this.appState.getState().students;
-    const student = students.find(s => s.student_id === studentId);
-    if (student) {
-      this.appState.setState({ selectedStudent: student });
-      alert(`Selected student #${studentId}\nRisk: ${Math.round(student.risk_score * 100)}%`);
-    }
-  }
-
-  // Method to show AI explanation
-  async showStudentExplanation(studentId) {
-    console.log('Showing explanation for student:', studentId);
-    try {
-      const response = await fetch(`/api/mvp/explain/${studentId}`, {
-        headers: {
-          'Authorization': 'Bearer dev-key-change-me'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get explanation');
-      }
-      
-      const data = await response.json();
-      const explanation = data.explanation;
-      
-      // Show explanation in simple alert for now
-      alert(`AI Explanation for Student #${studentId}:
-
-Risk Score: ${Math.round(explanation.risk_score * 100)}%
-Category: ${explanation.risk_category}
-Confidence: ${Math.round(explanation.confidence * 100)}%
-
-${explanation.explanation}`);
-      
-    } catch (error) {
-      console.error('Error getting explanation:', error);
-      alert('Failed to get AI explanation. Please try again.');
-    }
   }
 
   startDemo() {
@@ -897,6 +894,586 @@ class StudentSuccessApp {
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) modalOverlay.classList.add('hidden');
   }
+
+  // Method to handle student selection - MOVED TO MAIN CLASS
+  selectStudent(studentId) {
+    console.log('Student selected:', studentId);
+    const students = this.appState.getState().students;
+    const student = students.find(s => s.student_id === studentId);
+    if (student) {
+      this.appState.setState({ selectedStudent: student });
+      alert(`Selected student #${studentId}\nRisk: ${Math.round(student.risk_score * 100)}%`);
+    }
+  }
+
+  // Method to show AI explanation - PROPER UI MODAL IMPLEMENTATION
+  async showStudentExplanation(studentId) {
+    console.log('Showing explanation for student:', studentId);
+    
+    try {
+      // Show loading modal first
+      this.showModal(
+        `AI Explanation - Student #${studentId}`,
+        `<div class="loading-content" style="text-align: center; padding: 20px;">
+          <div class="loading-spinner" style="border: 3px solid #f3f3f3; border-top: 3px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+          <p>Loading AI explanation...</p>
+        </div>
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>`
+      );
+
+      // Get the student data from the current state
+      const students = this.appState.getState().students;
+      const student = students.find(s => s.student_id === studentId);
+      
+      const response = await fetch(`/api/mvp/explain/${studentId}`, {
+        headers: {
+          'Authorization': 'Bearer dev-key-change-me'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get explanation');
+      }
+      
+      const data = await response.json();
+      const explanation = data.explanation;
+      
+      // Use the original risk score from student data (more accurate)
+      const displayRiskScore = student ? student.risk_score : explanation.risk_score;
+      const displayCategory = student ? student.risk_category : explanation.risk_category;
+      const displaySuccessProb = student ? student.success_probability : (1 - explanation.risk_score);
+      
+      // Create comprehensive explanation UI
+      const explanationHTML = `
+        <div class="explanation-panel">
+          <div class="explanation-header" style="text-align: center; margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 12px; color: white;">
+            <h3 style="margin: 0; font-size: 18px;">🧠 AI Risk Analysis</h3>
+            <div style="margin-top: 10px; font-size: 14px; opacity: 0.9;">Advanced machine learning insights</div>
+          </div>
+          
+          <div class="risk-overview" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div class="risk-metric" style="text-align: center; padding: 15px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: #dc2626;">${Math.round(displayRiskScore * 100)}%</div>
+              <div style="font-size: 12px; color: #991b1b; font-weight: 500;">Risk Score</div>
+            </div>
+            <div class="success-metric" style="text-align: center; padding: 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: #16a34a;">${Math.round(displaySuccessProb * 100)}%</div>
+              <div style="font-size: 12px; color: #15803d; font-weight: 500;">Success Probability</div>
+            </div>
+            <div class="confidence-metric" style="text-align: center; padding: 15px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+              <div style="font-size: 24px; font-weight: bold; color: #2563eb;">${Math.round((explanation.confidence || 0.85) * 100)}%</div>
+              <div style="font-size: 12px; color: #1d4ed8; font-weight: 500;">AI Confidence</div>
+            </div>
+          </div>
+
+          <div class="risk-category-badge" style="text-align: center; margin-bottom: 20px;">
+            <span style="padding: 8px 16px; background: ${displayCategory === 'High Risk' ? '#dc2626' : displayCategory === 'Medium Risk' ? '#d97706' : '#16a34a'}; color: white; border-radius: 20px; font-weight: bold; font-size: 14px;">
+              ${displayCategory}
+            </span>
+          </div>
+
+          <div class="explanation-content" style="margin-bottom: 25px;">
+            <h4 style="color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">📊</span> Analysis Summary
+            </h4>
+            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb;">
+              <p style="margin: 0; line-height: 1.6; color: #4b5563;">
+                ${explanation.explanation || `This student shows ${displayCategory.toLowerCase()} patterns based on comprehensive analysis of academic performance, engagement metrics, and behavioral indicators.`}
+              </p>
+            </div>
+          </div>
+
+          ${explanation.top_risk_factors && explanation.top_risk_factors.length > 0 ? `
+            <div class="risk-factors-section" style="margin-bottom: 25px;">
+              <h4 style="color: #374151; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">⚠️</span> Key Risk Factors
+              </h4>
+              <div class="risk-factors-list">
+                ${explanation.top_risk_factors.map(factor => `
+                  <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <div style="font-weight: 500; color: #991b1b;">${factor.description}</div>
+                      <div style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">Impact Level: ${factor.severity}</div>
+                    </div>
+                    <div style="background: #dc2626; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                      ${factor.severity}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${explanation.recommendations && explanation.recommendations.length > 0 ? `
+            <div class="recommendations-section" style="margin-bottom: 20px;">
+              <h4 style="color: #374151; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">💡</span> AI Recommendations
+              </h4>
+              <div class="recommendations-list">
+                ${explanation.recommendations.map(rec => `
+                  <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; margin-bottom: 8px; position: relative; padding-left: 30px;">
+                    <div style="position: absolute; left: 10px; top: 12px; color: #16a34a; font-weight: bold;">→</div>
+                    <div style="color: #15803d; font-weight: 500;">${rec}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="explanation-actions" style="display: flex; gap: 10px; justify-content: center; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <button onclick="window.modernApp.showInterventionPanel(${studentId}); window.modernApp.hideModal();" 
+                    style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              📋 Manage Interventions
+            </button>
+            <button onclick="window.modernApp.showProgressTracking(${studentId}); window.modernApp.hideModal();" 
+                    style="background: #7c3aed; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              📈 Track Progress
+            </button>
+            <button onclick="window.modernApp.hideModal();" 
+                    style="background: #6b7280; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer;">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Update modal with explanation
+      this.showModal(`AI Explanation - Student #${studentId}`, explanationHTML);
+      
+    } catch (error) {
+      console.error('Error getting explanation:', error);
+      this.showModal(
+        'Error Loading Explanation',
+        `<div class="error-content" style="text-align: center; padding: 20px;">
+          <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+          <p style="color: #dc2626; font-weight: 500; margin-bottom: 20px;">Failed to load AI explanation</p>
+          <p style="color: #6b7280; margin-bottom: 20px;">${error.message}</p>
+          <button onclick="window.modernApp.hideModal();" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+            Close
+          </button>
+        </div>`
+      );
+    }
+  }
+
+  // Helper method to determine intervention status
+  getInterventionStatus(student) {
+    const studentId = student.student_id;
+    const storedInterventions = this.getStoredInterventions(studentId);
+    
+    if (storedInterventions.length === 0 && student.needs_intervention) {
+      return { class: 'status-needed', text: 'Action Needed' };
+    } else if (storedInterventions.length > 0) {
+      const active = storedInterventions.filter(i => i.status === 'active').length;
+      return { class: 'status-active', text: `${active} Active` };
+    } else {
+      return { class: 'status-none', text: 'No Action' };
+    }
+  }
+
+  // Get stored interventions for a student (from localStorage for now)
+  getStoredInterventions(studentId) {
+    const key = `interventions_${studentId}`;
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : [];
+  }
+
+  // Store interventions for a student
+  storeInterventions(studentId, interventions) {
+    const key = `interventions_${studentId}`;
+    localStorage.setItem(key, JSON.stringify(interventions));
+  }
+
+  // Show intervention management panel
+  async showInterventionPanel(studentId) {
+    console.log('Opening intervention panel for student:', studentId);
+    
+    try {
+      // Get student data
+      const students = this.appState.getState().students;
+      const student = students.find(s => s.student_id === studentId);
+      
+      if (!student) {
+        alert('Student data not found');
+        return;
+      }
+
+      // Get existing interventions
+      const existingInterventions = this.getStoredInterventions(studentId);
+      
+      // Get AI recommendations from the explanation endpoint
+      const response = await fetch(`/api/mvp/explain/${studentId}`, {
+        headers: { 'Authorization': 'Bearer dev-key-change-me' }
+      });
+      
+      let recommendations = ['Academic tutoring', 'Attendance monitoring', 'Family engagement'];
+      if (response.ok) {
+        const data = await response.json();
+        recommendations = data.explanation.recommendations || recommendations;
+      }
+
+      // Create intervention panel HTML
+      const interventionHTML = this.createInterventionPanelHTML(student, existingInterventions, recommendations);
+      
+      // Show in modal
+      this.showModal(`Intervention Management - Student #${studentId}`, interventionHTML);
+      
+      // Set up event listeners for the intervention panel
+      this.setupInterventionPanelEvents(studentId);
+      
+    } catch (error) {
+      console.error('Error showing intervention panel:', error);
+      alert('Failed to load intervention panel. Please try again.');
+    }
+  }
+
+  // Create intervention panel HTML
+  createInterventionPanelHTML(student, existingInterventions, recommendations) {
+    const riskPercent = Math.round(student.risk_score * 100);
+    
+    return `
+      <div class="intervention-panel">
+        <div class="student-summary" style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <h4>Student Summary</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div><strong>Risk Score:</strong> ${riskPercent}%</div>
+            <div><strong>Category:</strong> ${student.risk_category}</div>
+            <div><strong>Needs Intervention:</strong> ${student.needs_intervention ? 'Yes' : 'No'}</div>
+            <div><strong>Success Probability:</strong> ${Math.round(student.success_probability * 100)}%</div>
+          </div>
+        </div>
+
+        <div class="current-interventions" style="margin-bottom: 20px;">
+          <h4>Current Interventions</h4>
+          <div id="current-interventions-list">
+            ${existingInterventions.length === 0 ? 
+              '<p style="color: #6b7280;">No interventions currently active.</p>' :
+              existingInterventions.map(intervention => `
+                <div class="intervention-item" style="border: 1px solid #d1d5db; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <strong>${intervention.type}</strong>
+                      <div style="font-size: 12px; color: #6b7280;">
+                        Started: ${intervention.startDate} | Status: <span style="color: ${intervention.status === 'active' ? '#059669' : '#dc2626'};">${intervention.status}</span>
+                      </div>
+                    </div>
+                    <button onclick="window.modernApp.updateInterventionStatus('${student.student_id}', '${intervention.id}', '${intervention.status === 'active' ? 'completed' : 'active'}')"
+                            style="padding: 4px 8px; border: none; border-radius: 4px; background: ${intervention.status === 'active' ? '#dc2626' : '#059669'}; color: white; font-size: 11px; cursor: pointer;">
+                      ${intervention.status === 'active' ? 'Complete' : 'Reactivate'}
+                    </button>
+                  </div>
+                  ${intervention.notes ? `<div style="margin-top: 5px; font-size: 12px;">${intervention.notes}</div>` : ''}
+                </div>
+              `).join('')
+            }
+          </div>
+        </div>
+
+        <div class="add-intervention">
+          <h4>Add New Intervention</h4>
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Recommended Actions:</label>
+            <div id="recommended-interventions" style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${recommendations.map(rec => `
+                <button class="recommendation-btn" data-intervention="${rec}"
+                        style="padding: 6px 12px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                  + ${rec}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Custom Intervention:</label>
+            <input type="text" id="custom-intervention" placeholder="Enter custom intervention..." 
+                   style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; margin-bottom: 8px;">
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Notes (optional):</label>
+            <textarea id="intervention-notes" placeholder="Additional notes or instructions..."
+                      style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; height: 60px;"></textarea>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Priority:</label>
+            <select id="intervention-priority" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">
+              <option value="high">High - Immediate action needed</option>
+              <option value="medium" selected>Medium - Address within a week</option>
+              <option value="low">Low - Monitor and plan</option>
+            </select>
+          </div>
+
+          <button id="add-intervention-btn" 
+                  style="width: 100%; padding: 12px; background: #059669; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+            Add Intervention
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Set up event listeners for intervention panel
+  setupInterventionPanelEvents(studentId) {
+    // Recommendation button clicks
+    document.querySelectorAll('.recommendation-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const intervention = btn.dataset.intervention;
+        document.getElementById('custom-intervention').value = intervention;
+      });
+    });
+
+    // Add intervention button
+    document.getElementById('add-intervention-btn').addEventListener('click', () => {
+      this.addNewIntervention(studentId);
+    });
+  }
+
+  // Add new intervention
+  addNewIntervention(studentId) {
+    const interventionType = document.getElementById('custom-intervention').value.trim();
+    const notes = document.getElementById('intervention-notes').value.trim();
+    const priority = document.getElementById('intervention-priority').value;
+    
+    if (!interventionType) {
+      alert('Please enter an intervention type.');
+      return;
+    }
+
+    const newIntervention = {
+      id: Date.now().toString(), // Simple ID generation
+      type: interventionType,
+      startDate: new Date().toLocaleDateString(),
+      status: 'active',
+      priority: priority,
+      notes: notes,
+      createdBy: 'Current User' // In a real system, this would be the logged-in user
+    };
+
+    // Get existing interventions and add new one
+    const existingInterventions = this.getStoredInterventions(studentId);
+    existingInterventions.push(newIntervention);
+    
+    // Store updated interventions
+    this.storeInterventions(studentId, existingInterventions);
+    
+    // Close modal and refresh display
+    this.hideModal();
+    
+    // Re-render the student list to show updated status
+    this.renderStudentsClean();
+    
+    alert(`Intervention "${interventionType}" added successfully for Student #${studentId}`);
+  }
+
+  // Update intervention status
+  updateInterventionStatus(studentId, interventionId, newStatus) {
+    const interventions = this.getStoredInterventions(studentId);
+    const intervention = interventions.find(i => i.id === interventionId);
+    
+    if (intervention) {
+      intervention.status = newStatus;
+      intervention.lastUpdated = new Date().toLocaleDateString();
+      
+      this.storeInterventions(studentId, interventions);
+      
+      // Refresh the intervention panel
+      this.showInterventionPanel(studentId);
+      
+      alert(`Intervention status updated to: ${newStatus}`);
+    }
+  }
+
+  // Show progress tracking
+  async showProgressTracking(studentId) {
+    console.log('Opening progress tracking for student:', studentId);
+    
+    const students = this.appState.getState().students;
+    const student = students.find(s => s.student_id === studentId);
+    const interventions = this.getStoredInterventions(studentId);
+    
+    if (!student) {
+      alert('Student data not found');
+      return;
+    }
+
+    // Create simple progress tracking display
+    const progressHTML = `
+      <div class="progress-tracking">
+        <h4>Progress Overview - Student #${studentId}</h4>
+        
+        <div class="progress-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+          <div style="text-align: center; padding: 15px; background: #f8fafc; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #059669;">${Math.round(student.success_probability * 100)}%</div>
+            <div style="color: #6b7280;">Success Probability</div>
+          </div>
+          <div style="text-align: center; padding: 15px; background: #f8fafc; border-radius: 8px;">
+            <div style="font-size: 24px; font-weight: bold; color: #dc2626;">${Math.round(student.risk_score * 100)}%</div>
+            <div style="color: #6b7280;">Risk Score</div>
+          </div>
+        </div>
+
+        <div class="intervention-timeline" style="margin: 20px 0;">
+          <h5>Intervention Timeline</h5>
+          ${interventions.length === 0 ? 
+            '<p style="color: #6b7280;">No interventions recorded yet.</p>' :
+            interventions.map(intervention => `
+              <div style="border-left: 3px solid ${intervention.status === 'active' ? '#059669' : '#6b7280'}; padding-left: 15px; margin-bottom: 15px;">
+                <div style="font-weight: bold;">${intervention.type}</div>
+                <div style="font-size: 12px; color: #6b7280;">
+                  ${intervention.startDate} | ${intervention.priority} priority | ${intervention.status}
+                </div>
+                ${intervention.notes ? `<div style="font-size: 12px; margin-top: 5px;">${intervention.notes}</div>` : ''}
+              </div>
+            `).join('')
+          }
+        </div>
+
+        <div class="progress-actions" style="margin-top: 20px;">
+          <button onclick="window.modernApp.showInterventionPanel(${studentId})" 
+                  style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 6px; margin-right: 10px; cursor: pointer;">
+            Manage Interventions
+          </button>
+          <button onclick="window.modernApp.exportStudentReport(${studentId})" 
+                  style="padding: 10px 20px; background: #7c3aed; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Export Report
+          </button>
+        </div>
+      </div>
+    `;
+
+    this.showModal(`Progress Tracking - Student #${studentId}`, progressHTML);
+  }
+
+  // Export student report
+  exportStudentReport(studentId) {
+    const students = this.appState.getState().students;
+    const student = students.find(s => s.student_id === studentId);
+    const interventions = this.getStoredInterventions(studentId);
+    
+    if (!student) {
+      alert('Student data not found');
+      return;
+    }
+
+    // Create simple report data
+    const report = {
+      student_id: studentId,
+      generated_date: new Date().toISOString(),
+      risk_assessment: {
+        risk_score: student.risk_score,
+        risk_category: student.risk_category,
+        success_probability: student.success_probability,
+        needs_intervention: student.needs_intervention
+      },
+      interventions: interventions,
+      recommendations: [
+        'Continue monitoring student progress',
+        'Regular check-ins with family',
+        'Academic support as needed'
+      ]
+    };
+
+    // Create downloadable file
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student_${studentId}_report.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert(`Report exported for Student #${studentId}`);
+  }
+
+  // Main app's renderStudentsClean method - accessible for intervention features
+  renderStudentsClean(students = null) {
+    if (!students) students = this.appState.getState().students;
+    if (!students || students.length === 0) {
+      console.log('No students to render');
+      return;
+    }
+    
+    // Find a container - try multiple options (exact same logic as working app.js)
+    let container = document.getElementById('student-list-compact');
+    if (!container) {
+      container = document.getElementById('student-list'); // Modern interface has this
+      if (container) {
+        // Make sure the container is visible (key fix!)
+        container.classList.remove('hidden');
+      }
+    }
+    if (!container) {
+      container = document.getElementById('students-list'); // Backup fallback
+      if (container) {
+        container.classList.remove('hidden');
+      }
+    }
+    if (!container) {
+      console.error('No suitable container found for student display');
+      return;
+    }
+    
+    console.log('✅ Using container:', container.id);
+    
+    // Create clean HTML for each student with intervention features
+    const html = students.map(student => {
+      const riskPercent = Math.round(student.risk_score * 100);
+      const successPercent = Math.round(student.success_probability * 100);
+      
+      // Get intervention status using the main app's method
+      const interventionStatus = this.getInterventionStatus(student);
+      const riskColor = student.risk_category === 'Warning' ? '#dc2626' : 
+                       student.risk_category === 'Moderate Risk' ? '#d97706' : '#16a34a';
+      
+      return `
+        <div class="student-intervention-card" style="border: 1px solid #ddd; margin: 10px; padding: 15px; background: white; border-radius: 8px; cursor: pointer; border-left: 4px solid ${riskColor}; min-width: 400px; max-width: 500px;" 
+             onclick="window.modernApp.selectStudent(${student.student_id})">
+          <div class="student-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Student #${student.student_id}</h3>
+            <span class="intervention-status ${interventionStatus.class}" style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+              ${interventionStatus.text}
+            </span>
+          </div>
+          
+          <div class="risk-metrics" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+            <div><strong>Risk Score:</strong> <span style="color: ${riskColor};">${riskPercent}%</span></div>
+            <div><strong>Success Prob:</strong> ${successPercent}%</div>
+            <div><strong>Category:</strong> ${student.risk_category}</div>
+            <div><strong>Intervention:</strong> ${student.needs_intervention ? 'Needed' : 'Not Needed'}</div>
+          </div>
+          
+          <div class="action-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+            <button onclick="event.stopPropagation(); window.modernApp.showStudentExplanation(${student.student_id})" 
+                    onmouseover="this.style.background='#1d4ed8'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(37, 99, 235, 0.3)'" 
+                    onmouseout="this.style.background='#2563eb'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              🔍 Explain AI
+            </button>
+            <button onclick="event.stopPropagation(); window.modernApp.showInterventionPanel(${student.student_id})" 
+                    onmouseover="this.style.background='#047857'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(5, 150, 105, 0.3)'" 
+                    onmouseout="this.style.background='#059669'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              📋 Interventions
+            </button>
+            <button onclick="event.stopPropagation(); window.modernApp.showProgressTracking(${student.student_id})" 
+                    onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(124, 58, 237, 0.3)'" 
+                    onmouseout="this.style.background='#7c3aed'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'" 
+                    style="background: #7c3aed; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; flex: 1; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              📈 Progress
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    container.innerHTML = html;
+    console.log('✅ Students rendered to container successfully');
+  }
 }
 
 // =============================================================================
@@ -1231,6 +1808,62 @@ const additionalStyles = `
   margin-top: var(--space-6);
   padding-top: var(--space-6);
   border-top: 1px solid var(--gray-200);
+}
+
+/* Intervention status styles */
+.intervention-status.status-needed {
+  background: #dc2626; color: white;
+}
+
+.intervention-status.status-active {
+  background: #059669; color: white;
+}
+
+.intervention-status.status-none {
+  background: #6b7280; color: white;
+}
+
+.student-intervention-card {
+  transition: all 0.2s ease;
+}
+
+.student-intervention-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced button hover effects */
+.action-buttons button {
+  position: relative;
+  overflow: hidden;
+}
+
+.action-buttons button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.action-buttons button:hover::before {
+  left: 100%;
+}
+
+.intervention-panel .recommendation-btn:hover {
+  background: #e5e7eb !important;
+  border-color: #059669 !important;
+}
+
+.progress-tracking .progress-metrics > div {
+  transition: all 0.2s ease;
+}
+
+.progress-tracking .progress-metrics > div:hover {
+  transform: scale(1.05);
 }
 </style>
 `;
