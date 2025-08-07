@@ -164,7 +164,7 @@ class StudentSuccessApp {
 
         try {
             const response = await fetch('/api/mvp/sample', {
-                credentials: 'include' // Include session cookies
+                credentials: 'include'
             });
             if (!response.ok) {
                 const errorData = await response.text();
@@ -183,50 +183,13 @@ class StudentSuccessApp {
     }
 
     displayResults(data) {
-        // Debug: Always log that this function is called
-        console.log('=== displayResults() called ===');
-        // Debug: Log the raw API response
-        console.log('Raw API response:', data);
-        
         // Ensure students array is properly set and normalized
-        // API returns 'predictions' but UI expects 'students'
         this.students = data.students || data.predictions || [];
         
-        // Debug: Check what we got from API
-        console.log('Students array before processing:', this.students);
-        if (this.students.length > 0) {
-            console.log('First student raw data:', this.students[0]);
+        if (this.students.length === 0) {
+            console.error('No students found in API response');
+            return;
         }
-        
-        // Normalize student IDs for consistent access
-        this.students = this.students.map(student => {
-            // Debug: Log each student before processing
-            console.log('Processing student:', student);
-            
-            // Ensure id_student exists for modal compatibility
-            if (!student.id_student && student.student_id) {
-                student.id_student = student.student_id;
-            }
-            if (!student.id_student && student.id) {
-                student.id_student = student.id;
-            }
-            if (!student.id_student && student.ID) {
-                student.id_student = student.ID;
-            }
-            // Ensure numeric ID for consistent comparison
-            if (student.id_student) {
-                student.id_student = parseInt(student.id_student);
-            }
-            
-            // Debug: Check if success_probability exists
-            console.log('Student success_probability:', student.success_probability);
-            console.log('Student risk_score:', student.risk_score);
-            
-            return student;
-        });
-        
-        console.log('Processed students data:', this.students.length, 'students');
-        console.log('Sample processed student:', this.students[0]);
         
         // Hide upload section and show results
         document.getElementById('upload-section').style.display = 'none';
@@ -236,8 +199,8 @@ class StudentSuccessApp {
         // Update summary stats
         this.updateSummaryStats(data.summary || this.calculateSummary());
 
-        // Display students using two-panel layout
-        this.displayStudentsTwoPanel();
+        // Render students with clean approach
+        this.renderStudentsClean();
 
         // Display intervention tracking
         this.displayInterventionTracking();
@@ -261,7 +224,7 @@ class StudentSuccessApp {
             }
         });
         
-        return { high_risk, moderate_risk, low_risk };
+        return { high_risk, medium_risk: moderate_risk, low_risk, total: this.students.length };
     }
 
     updateSummaryStats(summary) {
@@ -293,9 +256,9 @@ class StudentSuccessApp {
         ).sort((a, b) => b.risk_score - a.risk_score);
 
         const studentsHTML = atRiskStudents.map(student => `
-            <div class="student-card risk-${student.risk_category.toLowerCase().replace(' ', '-')}" onclick="app.showStudentDetail(${student.id_student})">
+            <div class="student-card risk-${student.risk_category.toLowerCase().replace(' ', '-')}" onclick="app.showStudentDetail(${student.student_id})">
                 <div class="student-header">
-                    <div class="student-name">Student #${student.id_student}</div>
+                    <div class="student-name">Student #${student.student_id}</div>
                     <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
                         ${student.risk_category} • ${Math.round(student.risk_score * 100)}%
                     </div>
@@ -351,7 +314,7 @@ class StudentSuccessApp {
         // Add the AI explanation button
         const explainButton = `
             <div class="intervention-item explain-button">
-                <span class="intervention-text" onclick="window.explainableUI && window.explainableUI.showStudentExplanation(${student.id_student})" style="cursor: pointer; color: #2563eb; font-weight: 600;">
+                <span class="intervention-text" onclick="window.explainableUI && window.explainableUI.showStudentExplanation(${student.student_id})" style="cursor: pointer; color: #2563eb; font-weight: 600;">
                     🔍 Explain AI Prediction
                 </span>
                 <span class="intervention-status available">AI Analysis</span>
@@ -403,7 +366,7 @@ class StudentSuccessApp {
 
     showStudentDetail(studentId) {
         // Try multiple ways to find the student (for CSV upload compatibility)
-        let student = this.students.find(s => s.id_student === studentId);
+        let student = this.students.find(s => s.student_id === studentId);
         
         // If not found, try different ID formats
         if (!student) {
@@ -414,10 +377,10 @@ class StudentSuccessApp {
         }
         if (!student) {
             // Try converting to string/number for comparison
-            student = this.students.find(s => String(s.id_student) === String(studentId));
+            student = this.students.find(s => String(s.student_id) === String(studentId));
         }
         if (!student) {
-            student = this.students.find(s => parseInt(s.id_student) === parseInt(studentId));
+            student = this.students.find(s => parseInt(s.student_id) === parseInt(studentId));
         }
         
         if (!student) {
@@ -580,7 +543,7 @@ class StudentSuccessApp {
             const topAction = interventions[0]?.title || 'General support needed';
             
             return [
-                student.id_student,
+                student.student_id,
                 student.risk_category,
                 Math.round(student.risk_score * 100) + '%',
                 student.early_avg_score || 'N/A',
@@ -648,6 +611,7 @@ class StudentSuccessApp {
     }
 
     displayStudentsTwoPanel() {
+        console.log('🖥️ displayStudentsTwoPanel() called with', this.students.length, 'students');
         // Show all students (high, medium, low risk) for better navigation
         this.filteredStudents = this.students.slice().sort((a, b) => b.risk_score - a.risk_score);
         
@@ -679,7 +643,7 @@ class StudentSuccessApp {
         if (searchTerm) {
             const term = searchTerm.toLowerCase();
             filtered = filtered.filter(s => 
-                String(s.id_student).toLowerCase().includes(term) ||
+                String(s.student_id).toLowerCase().includes(term) ||
                 String(s.id || '').toLowerCase().includes(term)
             );
         }
@@ -693,7 +657,15 @@ class StudentSuccessApp {
 
     renderCompactStudentList() {
         const container = document.getElementById('student-list-compact');
-        if (!container) return;
+        const oldContainer = document.getElementById('students-list');
+        console.log('📋 Container check:', {
+            'student-list-compact': container ? 'EXISTS' : 'MISSING',
+            'students-list': oldContainer ? 'EXISTS' : 'MISSING'
+        });
+        if (!container) {
+            console.error('❌ student-list-compact container not found!');
+            return;
+        }
         
         if (this.filteredStudents.length === 0) {
             container.innerHTML = `
@@ -705,23 +677,32 @@ class StudentSuccessApp {
             return;
         }
         
-        const studentsHTML = this.filteredStudents.map(student => `
-            <div class="compact-student-item" data-student-id="${student.id_student}" 
-                 onclick="app.selectStudent(${student.id_student})">
-                <div class="compact-student-header">
-                    <div class="student-compact-id">Student #${student.id_student}</div>
-                    <div class="risk-badge-compact risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
-                        ${student.risk_category.split(' ')[0]}
+        console.log('🎨 Rendering students. First student data:', this.filteredStudents[0]);
+        
+        const studentsHTML = this.filteredStudents.map(student => {
+            const riskPercentage = Math.round(student.risk_score * 100);
+            console.log(`Rendering student ${student.student_id}: risk_score=${student.risk_score}, percentage=${riskPercentage}%`);
+            
+            return `
+                <div class="compact-student-item" data-student-id="${student.student_id}" 
+                     onclick="app.selectStudent(${student.student_id})">
+                    <div class="compact-student-header">
+                        <div class="student-compact-id">Student #${student.student_id}</div>
+                        <div class="risk-badge-compact risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
+                            ${student.risk_category.split(' ')[0]}
+                        </div>
+                    </div>
+                    <div class="compact-student-metrics">
+                        <span class="student-compact-score">Score: N/A</span>
+                        <span>Risk: ${riskPercentage}%</span>
                     </div>
                 </div>
-                <div class="compact-student-metrics">
-                    <span class="student-compact-score">Score: ${student.early_avg_score ? Math.round(student.early_avg_score) : 'N/A'}</span>
-                    <span>Risk: ${Math.round(student.risk_score * 100)}%</span>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
+        console.log('📝 Generated HTML (first 500 chars):', studentsHTML.substring(0, 500));
         container.innerHTML = studentsHTML;
+        console.log('✅ HTML written to container. Container element:', container);
     }
 
     selectStudent(studentId) {
@@ -737,9 +718,9 @@ class StudentSuccessApp {
         
         // Find student data
         this.selectedStudent = this.students.find(s => 
-            s.id_student === studentId || 
-            String(s.id_student) === String(studentId) ||
-            parseInt(s.id_student) === parseInt(studentId)
+            s.student_id === studentId || 
+            String(s.student_id) === String(studentId) ||
+            parseInt(s.student_id) === parseInt(studentId)
         );
         
         if (this.selectedStudent) {
@@ -756,7 +737,7 @@ class StudentSuccessApp {
         const detailHTML = `
             <div class="student-detail-view">
                 <div class="detail-header">
-                    <h2>Student #${student.id_student}</h2>
+                    <h2>Student #${student.student_id}</h2>
                     <div class="risk-badge risk-${student.risk_category.toLowerCase().replace(' ', '-')}">
                         ${student.risk_category} • ${Math.round(student.risk_score * 100)}% Risk
                     </div>
@@ -782,10 +763,10 @@ class StudentSuccessApp {
                 </div>
                 
                 <div class="detail-actions">
-                    <button class="btn btn-primary" onclick="explainableUI.showStudentExplanation(${student.id_student})">
+                    <button class="btn btn-primary" onclick="explainableUI.showStudentExplanation(${student.student_id})">
                         🔍 Explain AI Prediction
                     </button>
-                    <button class="btn btn-secondary" onclick="app.showStudentDetail(${student.id_student})">
+                    <button class="btn btn-secondary" onclick="app.showStudentDetail(${student.student_id})">
                         📊 Full Details
                     </button>
                 </div>
@@ -965,7 +946,7 @@ class StudentSuccessApp {
             else riskCategory = 'High Risk';
             
             const student = {
-                id_student: studentId,
+                student_id: studentId,
                 risk_score: riskScore,
                 risk_category: riskCategory,
                 success_probability: 1 - riskScore
@@ -973,7 +954,7 @@ class StudentSuccessApp {
             
             // Add to feed with animation
             this.addFeedItem(
-                `New student enrolled: #${student.id_student} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
+                `New student enrolled: #${student.student_id} - ${student.risk_category} (${Math.round(student.risk_score * 100)}% risk)`,
                 'new-student'
             );
             
@@ -981,14 +962,14 @@ class StudentSuccessApp {
             if (student.risk_category === 'High Risk') {
                 setTimeout(() => {
                     this.addFeedItem(
-                        `Intervention triggered for student #${student.id_student} - Academic advisor assigned`,
+                        `Intervention triggered for student #${student.student_id} - Academic advisor assigned`,
                         'intervention'
                     );
                     
                     // Trigger notification if enabled
                     if (window.notificationSystem && window.notificationSystem.settings.enableNotifications) {
                         window.notificationSystem.simulateAlert(
-                            `Student #${student.id_student}`,
+                            `Student #${student.student_id}`,
                             student.risk_score
                         );
                     }
@@ -1293,6 +1274,41 @@ class StudentSuccessApp {
             element.textContent = targetValue;
             element.classList.remove('demo-pulse');
         }, 300);
+    }
+
+    // Simple student rendering with risk score fix
+    renderStudentsClean() {
+        // Find a container - try multiple options
+        let container = document.getElementById('student-list-compact');
+        if (!container) {
+            container = document.getElementById('students-list');
+            if (container) {
+                // Make sure the legacy container is visible (key fix!)
+                container.classList.remove('hidden');
+            }
+        }
+        if (!container) {
+            console.error('No suitable container found for student display');
+            return;
+        }
+        
+        // Create clean HTML for each student
+        const html = this.students.map(student => {
+            const riskPercent = Math.round(student.risk_score * 100);
+            const successPercent = Math.round(student.success_probability * 100);
+            
+            return `
+                <div style="border: 1px solid #ddd; margin: 10px; padding: 15px; background: white; border-radius: 8px;">
+                    <h3>Student #${student.student_id}</h3>
+                    <p><strong>Risk Score:</strong> ${riskPercent}%</p>
+                    <p><strong>Success Probability:</strong> ${successPercent}%</p>
+                    <p><strong>Category:</strong> ${student.risk_category}</p>
+                    <p><strong>Needs Intervention:</strong> ${student.needs_intervention ? 'Yes' : 'No'}</p>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = html;
     }
 }
 
