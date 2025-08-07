@@ -117,3 +117,22 @@ local_*
 config/google_credentials.json
 config/google_token.json
 !config/google_credentials_example.json
+
+# Node.js and npm (from cleanup)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Browser automation artifacts
+*.png
+*.jpg
+*.jpeg
+webapp_screenshot.*
+puppeteer_browser.js
+
+# Build and deployment
+Makefile
+docker-compose.yml
+*.deb
