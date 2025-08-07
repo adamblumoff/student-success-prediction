@@ -39,7 +39,18 @@ def start_server():
     try:
         # Import the FastAPI app directly
         import uvicorn
-        from src.mvp.mvp_api import app
+        
+        # First try the modular import path
+        try:
+            from src.mvp.mvp_api import app
+        except ImportError:
+            # Fallback to direct import after adding src to path
+            import sys
+            from pathlib import Path
+            src_path = str(Path(__file__).parent / "src")
+            if src_path not in sys.path:
+                sys.path.insert(0, src_path)
+            from mvp.mvp_api import app
         
         # Run with uvicorn
         uvicorn.run(app, host="127.0.0.1", port=8001, reload=False)
