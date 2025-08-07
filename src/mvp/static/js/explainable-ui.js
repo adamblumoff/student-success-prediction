@@ -155,9 +155,9 @@ class ExplainableUI {
 
         return riskFactors.map(factor => `
             <div class="risk-factor-item">
-                <div class="risk-factor-name">${this.getFeatureDisplayName(factor.feature)}</div>
-                <div class="risk-factor-description">${factor.description}</div>
-                <div class="risk-factor-category">${this.getCategoryDisplayName(factor.category)}</div>
+                <div class="risk-factor-name">${this.getFeatureDisplayName(factor.feature || 'unknown')}</div>
+                <div class="risk-factor-description">${factor.description || 'No description available'}</div>
+                <div class="risk-factor-category">${this.getCategoryDisplayName(factor.category || 'general')}</div>
             </div>
         `).join('');
     }
@@ -319,7 +319,7 @@ class ExplainableUI {
             'education_encoded': 'Educational Background'
         };
         
-        return displayNames[feature] || feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return displayNames[feature] || (feature ? feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Feature');
     }
 
     getCategoryDisplayName(category) {
@@ -330,7 +330,7 @@ class ExplainableUI {
             'assessment_performance': 'Assignment Performance'
         };
         
-        return displayNames[category] || category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return displayNames[category] || (category ? category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General');
     }
 
     getCategoryColor(category) {
