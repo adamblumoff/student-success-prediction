@@ -234,6 +234,7 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                     'student_id': db_student_id,
                     'risk_score': pred_data['risk_score'],
                     'risk_category': pred_data['risk_category'],
+                    'success_probability': pred_data.get('success_probability'),
                     'session_id': session_id,
                     'data_source': 'csv_upload',
                     'features_used': json.dumps(pred_data.get('features_data')),
