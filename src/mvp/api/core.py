@@ -606,10 +606,26 @@ async def get_model_insights(
         # Global insights for K-12 context
         insights = {
             'top_risk_factors': [
-                'Low GPA (below 2.0)',
-                'Poor attendance (below 80%)',
-                'Incomplete assignments (below 70%)',
-                'Weak family communication'
+                {
+                    'feature': 'current_gpa',
+                    'description': 'Low GPA (below 2.0)',
+                    'category': 'academic'
+                },
+                {
+                    'feature': 'attendance_rate',
+                    'description': 'Poor attendance (below 80%)',
+                    'category': 'engagement'
+                },
+                {
+                    'feature': 'assignment_completion',
+                    'description': 'Incomplete assignments (below 70%)',
+                    'category': 'academic'
+                },
+                {
+                    'feature': 'family_communication_quality',
+                    'description': 'Weak family communication',
+                    'category': 'family'
+                }
             ],
             'protective_factors': [
                 'Strong teacher relationships',

@@ -316,7 +316,11 @@ class ExplainableUI {
             'studied_credits': 'Course Credit Load',
             'has_disability': 'Disability Support Needs',
             'age_band_encoded': 'Age Group',
-            'education_encoded': 'Educational Background'
+            'education_encoded': 'Educational Background',
+            'current_gpa': 'Current GPA',
+            'attendance_rate': 'Attendance Rate',
+            'assignment_completion': 'Assignment Completion',
+            'family_communication_quality': 'Family Communication'
         };
         
         return displayNames[feature] || (feature ? feature.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Feature');
@@ -327,7 +331,9 @@ class ExplainableUI {
             'demographics': 'Demographics',
             'academic_history': 'Academic History',
             'engagement': 'Course Engagement',
-            'assessment_performance': 'Assignment Performance'
+            'assessment_performance': 'Assignment Performance',
+            'academic': 'Academic Performance',
+            'family': 'Family Factors'
         };
         
         return displayNames[category] || (category ? category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'General');
