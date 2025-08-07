@@ -183,13 +183,30 @@ class StudentSuccessApp {
     }
 
     displayResults(data) {
+        // Debug: Always log that this function is called
+        console.log('=== displayResults() called ===');
+        // Debug: Log the raw API response
+        console.log('Raw API response:', data);
+        
         // Ensure students array is properly set and normalized
         // API returns 'predictions' but UI expects 'students'
         this.students = data.students || data.predictions || [];
         
+        // Debug: Check what we got from API
+        console.log('Students array before processing:', this.students);
+        if (this.students.length > 0) {
+            console.log('First student raw data:', this.students[0]);
+        }
+        
         // Normalize student IDs for consistent access
         this.students = this.students.map(student => {
+            // Debug: Log each student before processing
+            console.log('Processing student:', student);
+            
             // Ensure id_student exists for modal compatibility
+            if (!student.id_student && student.student_id) {
+                student.id_student = student.student_id;
+            }
             if (!student.id_student && student.id) {
                 student.id_student = student.id;
             }
@@ -200,11 +217,16 @@ class StudentSuccessApp {
             if (student.id_student) {
                 student.id_student = parseInt(student.id_student);
             }
+            
+            // Debug: Check if success_probability exists
+            console.log('Student success_probability:', student.success_probability);
+            console.log('Student risk_score:', student.risk_score);
+            
             return student;
         });
         
         console.log('Processed students data:', this.students.length, 'students');
-        console.log('Sample student:', this.students[0]);
+        console.log('Sample processed student:', this.students[0]);
         
         // Hide upload section and show results
         document.getElementById('upload-section').style.display = 'none';
