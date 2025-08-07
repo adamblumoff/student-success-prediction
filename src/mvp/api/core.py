@@ -132,11 +132,15 @@ async def analyze_student_data(
         # Convert to the expected format for API response
         results = []
         for prediction in predictions:
+            # K-12 predictor returns 'risk_probability' not 'success_probability'
+            risk_prob = float(prediction.get('risk_probability', 0.5))
+            success_prob = 1.0 - risk_prob  # Convert risk to success probability
+            
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
-                'risk_score': float(1.0 - prediction['success_probability']),  # Convert success to risk
+                'risk_score': risk_prob,
                 'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
-                'success_probability': float(prediction['success_probability']),
+                'success_probability': success_prob,
                 'needs_intervention': prediction['risk_level'] in ['danger', 'warning']
             })
         
@@ -363,11 +367,15 @@ async def load_sample_data(
         # Convert to the expected format for compatibility
         results = []
         for prediction in predictions:
+            # K-12 predictor returns 'risk_probability' not 'success_probability'
+            risk_prob = float(prediction.get('risk_probability', 0.5))
+            success_prob = 1.0 - risk_prob  # Convert risk to success probability
+            
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
-                'risk_score': float(1.0 - prediction['success_probability']),  # Convert success to risk
+                'risk_score': risk_prob,
                 'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
-                'success_probability': float(prediction['success_probability']),
+                'success_probability': success_prob,
                 'needs_intervention': prediction['risk_level'] in ['danger', 'warning']
             })
         
