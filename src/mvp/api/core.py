@@ -131,17 +131,45 @@ async def analyze_student_data(
         
         # Convert to the expected format for API response
         results = []
-        for prediction in predictions:
+        for i, prediction in enumerate(predictions):
+            # Debug logging to see what K-12 predictor actually returns
+            logger.info(f"K-12 prediction {i}: {prediction}")
+            
             # K-12 predictor returns 'risk_probability' not 'success_probability'
-            risk_prob = float(prediction.get('risk_probability', 0.5))
+            risk_prob = prediction.get('risk_probability')
+            
+            # Handle cases where risk_probability might be None or invalid
+            if risk_prob is None:
+                logger.warning(f"Missing risk_probability in prediction {i}, using fallback")
+                risk_prob = 0.5  # Default moderate risk
+            else:
+                try:
+                    risk_prob = float(risk_prob)
+                    # Ensure risk_prob is within valid range [0, 1]
+                    risk_prob = max(0.0, min(1.0, risk_prob))
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid risk_probability '{risk_prob}' in prediction {i}: {e}")
+                    risk_prob = 0.5  # Default moderate risk
+            
             success_prob = 1.0 - risk_prob  # Convert risk to success probability
+            
+            # Get risk level with fallback
+            risk_level = prediction.get('risk_level', 'unknown')
+            if risk_level == 'unknown':
+                # Infer risk level from risk probability
+                if risk_prob >= 0.7:
+                    risk_level = 'danger'
+                elif risk_prob >= 0.4:
+                    risk_level = 'warning'
+                else:
+                    risk_level = 'success'
             
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': risk_prob,
-                'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
+                'risk_category': risk_level.title(),
                 'success_probability': success_prob,
-                'needs_intervention': prediction['risk_level'] in ['danger', 'warning']
+                'needs_intervention': risk_level in ['danger', 'warning']
             })
         
         # Log prediction metrics
@@ -165,6 +193,11 @@ async def analyze_student_data(
             save_predictions_batch(db_results, session_id)
         except Exception as db_error:
             logger.warning(f"Could not save to database: {db_error}")
+        
+        # Debug: Log the final results being returned
+        logger.info(f"Returning {len(results)} results to API")
+        for i, result in enumerate(results[:3]):  # Log first 3 results
+            logger.info(f"Final result {i}: {result}")
         
         return JSONResponse({
             'predictions': results,
@@ -366,17 +399,45 @@ async def load_sample_data(
         
         # Convert to the expected format for compatibility
         results = []
-        for prediction in predictions:
+        for i, prediction in enumerate(predictions):
+            # Debug logging to see what K-12 predictor actually returns
+            logger.info(f"K-12 sample prediction {i}: {prediction}")
+            
             # K-12 predictor returns 'risk_probability' not 'success_probability'
-            risk_prob = float(prediction.get('risk_probability', 0.5))
+            risk_prob = prediction.get('risk_probability')
+            
+            # Handle cases where risk_probability might be None or invalid
+            if risk_prob is None:
+                logger.warning(f"Missing risk_probability in sample prediction {i}, using fallback")
+                risk_prob = 0.5  # Default moderate risk
+            else:
+                try:
+                    risk_prob = float(risk_prob)
+                    # Ensure risk_prob is within valid range [0, 1]
+                    risk_prob = max(0.0, min(1.0, risk_prob))
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Invalid risk_probability '{risk_prob}' in sample prediction {i}: {e}")
+                    risk_prob = 0.5  # Default moderate risk
+            
             success_prob = 1.0 - risk_prob  # Convert risk to success probability
+            
+            # Get risk level with fallback
+            risk_level = prediction.get('risk_level', 'unknown')
+            if risk_level == 'unknown':
+                # Infer risk level from risk probability
+                if risk_prob >= 0.7:
+                    risk_level = 'danger'
+                elif risk_prob >= 0.4:
+                    risk_level = 'warning'
+                else:
+                    risk_level = 'success'
             
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': risk_prob,
-                'risk_category': prediction['risk_level'].title(),  # Convert 'danger' to 'Danger'
+                'risk_category': risk_level.title(),
                 'success_probability': success_prob,
-                'needs_intervention': prediction['risk_level'] in ['danger', 'warning']
+                'needs_intervention': risk_level in ['danger', 'warning']
             })
         
         return JSONResponse({
