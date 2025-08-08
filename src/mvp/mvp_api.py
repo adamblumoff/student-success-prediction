@@ -158,8 +158,10 @@ templates = Jinja2Templates(directory=str(templates_dir))
 
 # Include all routers
 app.include_router(core_router, prefix="/api/mvp", tags=["Core MVP"])
-app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])
-app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])
+app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])  # provides /api/lms/canvas/*
+app.include_router(canvas_router, prefix="/api/lms/canvas", tags=["Canvas LMS"])
+app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])  # provides /api/sis/powerschool/*
+app.include_router(powerschool_router, prefix="/api/sis/powerschool", tags=["PowerSchool SIS"])
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
 app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
@@ -213,3 +215,13 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
+# Expose DI-backed services at module level for test monkeypatch compatibility
+try:
+    from src.mvp.services import get_intervention_system, get_k12_ultra_predictor
+    intervention_system = get_intervention_system()
+    k12_ultra_predictor = get_k12_ultra_predictor()
+except Exception:
+    # In tests, services may be mocked; ignore initialization failures
+    intervention_system = None
+    k12_ultra_predictor = None

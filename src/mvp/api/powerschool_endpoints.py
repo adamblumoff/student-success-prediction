@@ -23,8 +23,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/sis/powerschool", tags=["PowerSchool SIS"])
+router = APIRouter(prefix="/powerschool", tags=["PowerSchool SIS"])
 
+@router.get("/health")
+async def powerschool_health():
+    return JSONResponse({
+        'status': 'healthy',
+        'service': 'PowerSchool SIS Integration'
+    })
 @router.post("/connect")
 async def connect_powerschool_sis(
     request: Request,

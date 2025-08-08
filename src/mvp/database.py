@@ -80,11 +80,12 @@ class DatabaseConfig:
         """Create SQLAlchemy session factory."""
         if not self.engine:
             self.create_engine()
-        
+        # Use SafeSession to allow plain-string SQL in tests
         self.session_factory = sessionmaker(
             bind=self.engine,
             autocommit=False,
-            autoflush=False
+            autoflush=False,
+            class_=SafeSession
         )
         return self.session_factory
     
@@ -113,12 +114,25 @@ def get_session_factory() -> sessionmaker:
         db_config.create_session_factory()
     return db_config.session_factory
 
+class SafeSession(Session):
+    """SQLAlchemy Session that safely wraps str SQL in text().
+
+    This maintains backwards-compatibility for tests that call
+    session.execute("SELECT 1") using plain strings under SQLAlchemy 2.0.
+    """
+
+    def execute(self, statement, *args, **kwargs):  # type: ignore[override]
+        if isinstance(statement, str):
+            statement = text(statement)
+        return super().execute(statement, *args, **kwargs)
+
+
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
     """Context manager for database sessions with automatic cleanup."""
     session_factory = get_session_factory()
     session = session_factory()
-    
+
     try:
         yield session
         session.commit()
@@ -249,8 +263,7 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                     'session_id': session_id,
                     'data_source': 'csv_upload',
                     'features_used': json.dumps(pred_data.get('features_data')),
-                    'explanation': json.dumps(pred_data.get('explanation_data')),
-                    'updated_at': datetime.utcnow()
+                    'explanation': json.dumps(pred_data.get('explanation_data'))
                 }
                 
                 if db_student_id in existing_pred_lookup:

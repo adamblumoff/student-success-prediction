@@ -128,9 +128,13 @@ def _cleanup_old_entries(current_time: float) -> None:
 
 def simple_file_validation(contents: bytes, filename: str) -> None:
     """Simple file validation for MVP"""
-    # Basic size check (10MB limit)
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
+    # Basic size check (configurable via MAX_FILE_SIZE_MB, default 10MB)
+    try:
+        max_mb = int(os.getenv('MAX_FILE_SIZE_MB', '10'))
+    except ValueError:
+        max_mb = 10
+    if len(contents) > max_mb * 1024 * 1024:
+        raise HTTPException(status_code=413, detail=f"File too large (max {max_mb}MB)")
     
     # Basic CSV check
     if not filename.lower().endswith('.csv'):

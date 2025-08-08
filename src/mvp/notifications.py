@@ -444,7 +444,15 @@ class RealTimeNotificationSystem:
                 alert.details['resolved_at'] = datetime.now().isoformat()
             
             # Remove from active alerts
+            # Keep a resolved copy in history; replace the corresponding history entry if exists
+            resolved_copy = alert
             del self.active_alerts[alert_id]
+            for i, hist_alert in enumerate(self.alert_history):
+                if hist_alert.alert_id == alert_id:
+                    self.alert_history[i] = resolved_copy
+                    break
+            else:
+                self.alert_history.append(resolved_copy)
             
             # Broadcast resolution
             await self.broadcast_alert_update(alert_id, 'resolved')

@@ -25,7 +25,7 @@ router.include_router(auth_router, prefix="/auth", tags=["Google Authentication"
 router.include_router(course_router, prefix="/courses", tags=["Google Courses"])
 
 @router.get("/health")
-async def google_classroom_health(current_user: dict = Depends(get_current_user)):
+async def google_classroom_health():
     """Health check for Google Classroom integration"""
     try:
         from .shared.google_deps import get_google_classroom_integration
@@ -33,8 +33,8 @@ async def google_classroom_health(current_user: dict = Depends(get_current_user)
         
         return JSONResponse({
             'status': 'healthy',
-            'authenticated': google_classroom.is_authenticated(),
-            'service': 'google_classroom',
+            'authenticated': getattr(google_classroom, 'is_authenticated', lambda: False)(),
+            'service': 'Google Classroom Integration',
             'version': '2.0'
         })
         
