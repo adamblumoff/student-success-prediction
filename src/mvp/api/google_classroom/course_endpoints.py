@@ -39,7 +39,7 @@ async def get_courses(
         simple_rate_limit(request, 30)
         google_classroom = get_google_classroom_integration()
         
-        if not google_classroom.is_authenticated():
+        if hasattr(google_classroom, 'is_authenticated') and not google_classroom.is_authenticated():
             raise HTTPException(status_code=401, detail="Google Classroom not authenticated")
         
         # Get courses

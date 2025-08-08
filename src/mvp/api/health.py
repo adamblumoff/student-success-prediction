@@ -28,7 +28,7 @@ async def health_check():
     return JSONResponse({
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "service": "student-success-predictor"
+        "service": "mvp-api"
     })
 
 @router.get("/health/detailed")

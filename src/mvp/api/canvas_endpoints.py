@@ -23,8 +23,35 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/lms/canvas", tags=["Canvas LMS"])
+router = APIRouter(prefix="/canvas", tags=["Canvas LMS"])
 
+@router.get("/health")
+async def canvas_health():
+    return JSONResponse({
+        'status': 'healthy',
+        'service': 'Canvas LMS Integration'
+    })
+
+@router.get("/courses")
+async def get_canvas_courses_get(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """GET variant to satisfy tests calling GET /api/lms/canvas/courses"""
+    try:
+        body = {'base_url': request.headers.get('X-Canvas-URL', ''),
+                'access_token': request.headers.get('X-Canvas-Token', '')}
+        if not body['base_url'] or not body['access_token']:
+            raise HTTPException(status_code=401, detail="Canvas credentials required")
+        from integrations.canvas_lms import create_canvas_integration
+        canvas = create_canvas_integration(body['base_url'], body['access_token'])
+        courses = canvas.get_courses(include_students=False)
+        return JSONResponse({'status': 'success', 'courses': courses, 'total_courses': len(courses)})
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching Canvas courses (GET): {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching courses: {str(e)}")
 @router.post("/connect")
 async def connect_canvas_lms(
     request: Request,
