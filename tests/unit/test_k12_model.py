@@ -144,9 +144,9 @@ class TestAdvancedFeatureEngineering(unittest.TestCase):
         
         self.predictor._engineer_ultra_features(features_dict)
         
-        # Check trend calculations
-        self.assertEqual(features_dict['gpa_trend'], 0.2)  # current - previous
-        self.assertEqual(features_dict['gpa_trajectory'], 0.2)  # (current - 2_years_ago) / 2
+        # Check trend calculations (use almostEqual for floating point)
+        self.assertAlmostEqual(features_dict['gpa_trend'], 0.2, places=5)  # current - previous
+        self.assertAlmostEqual(features_dict['gpa_trajectory'], 0.2, places=5)  # (current - 2_years_ago) / 2
     
     def test_attendance_pattern_analysis(self):
         """Test attendance pattern analysis."""
@@ -515,7 +515,8 @@ class TestK12ModelIntegration(unittest.TestCase):
         
         predictions = predictor.predict_from_gradebook(test_data)
         self.assertEqual(len(predictions), 1)
-        self.assertIn('error', predictions[0] or {})
+        # When model loading fails, should return results with error field
+        self.assertIn('error', predictions[0])
     
     def test_integration_with_mock_data(self):
         """Test integration with test fixture data."""

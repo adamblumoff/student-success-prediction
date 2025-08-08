@@ -18,6 +18,7 @@ class StudentSuccessApp {
         this.setupEventListeners();
         this.setupDragAndDrop();
         this.setupTwoPanelLayout();
+        this.setupTabNavigation();
         this.initializeAuthentication();
     }
 
@@ -83,6 +84,14 @@ class StudentSuccessApp {
         if (startDemoFromUpload) {
             startDemoFromUpload.addEventListener('click', () => {
                 this.startDemoFromUpload();
+            });
+        }
+
+        // Start Demo button
+        const startDemo = document.getElementById('start-demo');
+        if (startDemo) {
+            startDemo.addEventListener('click', () => {
+                this.loadSampleData();
             });
         }
 
@@ -159,6 +168,31 @@ class StudentSuccessApp {
         }
     }
 
+    setupTabNavigation() {
+        // Set up tab switching functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (button.disabled) return;
+                
+                const targetTab = button.getAttribute('data-tab');
+                
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding content
+                button.classList.add('active');
+                const targetContent = document.getElementById(`tab-${targetTab}`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
+    }
+
     async loadSampleData() {
         this.showLoading(true);
 
@@ -191,10 +225,12 @@ class StudentSuccessApp {
             return;
         }
         
-        // Hide upload section and show results
-        document.getElementById('upload-section').style.display = 'none';
-        document.getElementById('results-section').classList.remove('hidden');
-        document.getElementById('interventions-section').classList.remove('hidden');
+        // Enable and switch to the analyze tab
+        const analyzeTab = document.querySelector('[data-tab="analyze"]');
+        if (analyzeTab) {
+            analyzeTab.disabled = false;
+            analyzeTab.click(); // Switch to the analyze tab
+        }
 
         // Update summary stats
         this.updateSummaryStats(data.summary || this.calculateSummary());
@@ -246,7 +282,10 @@ class StudentSuccessApp {
                 <div class="stat-label">Total Students</div>
             </div>
         `;
-        document.getElementById('summary-stats').innerHTML = statsHTML;
+        const statsContainer = document.getElementById('analysis-stats') || document.getElementById('summary-stats');
+        if (statsContainer) {
+            statsContainer.innerHTML = statsHTML;
+        }
     }
 
     displayStudents() {
@@ -1278,13 +1317,13 @@ class StudentSuccessApp {
 
     // Simple student rendering with risk score fix
     renderStudentsClean() {
-        // Find a container - try multiple options
-        let container = document.getElementById('student-list-compact');
+        // Find the correct student list container from the HTML
+        let container = document.getElementById('student-list');
         if (!container) {
-            container = document.getElementById('students-list');
-            if (container) {
-                // Make sure the legacy container is visible (key fix!)
-                container.classList.remove('hidden');
+            // Fallback to other possible containers
+            container = document.getElementById('student-list-compact');
+            if (!container) {
+                container = document.getElementById('students-list');
             }
         }
         if (!container) {

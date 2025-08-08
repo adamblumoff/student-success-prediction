@@ -136,3 +136,25 @@ puppeteer_browser.js
 Makefile
 docker-compose.yml
 *.deb
+
+# Additional cleanup patterns
+*~
+.#*
+.*.swp
+.*.swo
+\#*\#
+
+# Test CSV files (keep examples)
+test_*.csv
+!test_*_example.csv
+
+# Editor temporaries
+*.orig
+*.rej
+.mypy_cache/
+
+# Coverage and profiling
+.tox/
+.coverage.*
+profile_*
+*.prof
