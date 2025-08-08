@@ -621,6 +621,12 @@ class Analysis extends Component {
     // Add click handlers
     this.studentList.querySelectorAll('.student-card').forEach(card => {
       this.bindEvent(card, 'click', (e) => {
+        // Remove selected class from all cards
+        this.studentList.querySelectorAll('.student-card').forEach(c => c.classList.remove('selected'));
+        
+        // Add selected class to clicked card
+        e.currentTarget.classList.add('selected');
+        
         const studentId = e.currentTarget.dataset.studentId;
         const student = students.find(s => (s.student_id || s.id)?.toString() === studentId);
         if (student) {
