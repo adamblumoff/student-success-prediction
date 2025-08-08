@@ -708,8 +708,10 @@ body {
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-3);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: white;
+  position: relative;
+  overflow: hidden;
 }
 
 .analysis-sidebar .student-card:last-child {
@@ -724,12 +726,40 @@ body {
 
 .analysis-sidebar .student-card.selected {
   border-color: var(--primary-500);
-  background: var(--primary-50);
+  background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
   transform: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15), 0 0 0 2px var(--primary-200);
+  position: relative;
+}
+
+.analysis-sidebar .student-card.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--primary-500), var(--primary-600));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.analysis-sidebar .student-card.selected .student-name {
+  color: var(--primary-900);
+  font-weight: 700;
+}
+
+.analysis-sidebar .student-card.selected .risk-score {
+  color: var(--primary-700);
+  font-weight: 600;
+}
+
+.analysis-sidebar .student-card.selected .student-grade {
+  color: var(--primary-600);
 }
 
 .analysis-sidebar .student-card.selected:hover {
-  background: var(--primary-100);
+  background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-150) 100%);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2), 0 0 0 2px var(--primary-300);
 }
 
 .analysis-sidebar .student-info {

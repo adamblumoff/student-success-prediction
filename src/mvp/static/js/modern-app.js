@@ -1641,7 +1641,7 @@ class StudentSuccessApp {
     const student = students.find(s => s.student_id === studentId);
     if (student) {
       this.appState.setState({ selectedStudent: student });
-      alert(`Selected student #${studentId}\nRisk: ${Math.round(student.risk_score * 100)}%`);
+      // Popup alert removed - visual feedback provided by card styling instead
     }
   }
 
