@@ -1,0 +1,4 @@
+student_id,name,grade_level,current_gpa,attendance_rate
+S001,High Achiever,10,3.8,0.96
+S002,At Risk Student,11,1.8,0.69
+S003,Average Student,9,2.5,0.85
