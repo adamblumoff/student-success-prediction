@@ -612,12 +612,12 @@ body {
 
 .analysis-layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: var(--space-8);
   align-items: start;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .analysis-layout {
     grid-template-columns: 1fr;
     gap: var(--space-6);
@@ -703,7 +703,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-3);
@@ -742,9 +742,8 @@ body {
   color: var(--gray-900);
   margin-bottom: var(--space-1);
   font-size: var(--font-size-sm);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Remove text truncation to show full names in wider column */
+  line-height: 1.3;
 }
 
 .analysis-sidebar .student-risk {
