@@ -622,6 +622,48 @@ body {
     grid-template-columns: 1fr;
     gap: var(--space-6);
   }
+  
+  .analysis-sidebar {
+    position: static;
+    max-height: none;
+  }
+  
+  .student-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .analysis-layout {
+    gap: var(--space-4);
+  }
+  
+  .analysis-sidebar {
+    padding: var(--space-4);
+  }
+  
+  .analysis-main {
+    padding: var(--space-4);
+    min-height: 400px;
+  }
+  
+  .filter-buttons {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: var(--space-1);
+  }
+  
+  .filter-btn {
+    padding: var(--space-2);
+    font-size: 10px;
+  }
+  
+  .student-list {
+    max-height: 250px;
+  }
+  
+  .analysis-sidebar .student-name {
+    font-size: var(--font-size-xs);
+  }
 }
 
 .analysis-sidebar {
@@ -640,6 +682,185 @@ body {
 
 .sidebar-section:last-child {
   margin-bottom: 0;
+}
+
+.sidebar-section h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 var(--space-4) 0;
+}
+
+/* Student List Styles */
+.student-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+}
+
+/* Analysis sidebar specific student cards (compact) */
+.analysis-sidebar .student-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: white;
+}
+
+.analysis-sidebar .student-card:last-child {
+  margin-bottom: 0;
+}
+
+.analysis-sidebar .student-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-300);
+}
+
+.analysis-sidebar .student-card.selected {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  transform: none;
+}
+
+.analysis-sidebar .student-card.selected:hover {
+  background: var(--primary-100);
+}
+
+.analysis-sidebar .student-info {
+  flex: 1;
+  min-width: 0; /* Allows text to truncate */
+}
+
+.analysis-sidebar .student-name {
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analysis-sidebar .student-risk {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.analysis-sidebar .student-grade {
+  font-size: var(--font-size-xs);
+  color: var(--gray-500);
+}
+
+.analysis-sidebar .risk-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.analysis-sidebar .risk-score {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+.analysis-sidebar .student-actions {
+  flex-shrink: 0;
+  margin-left: var(--space-2);
+}
+
+/* Filter Controls */
+.filter-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.search-input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px var(--primary-100);
+}
+
+.filter-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.filter-btn {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--gray-300);
+  background: white;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--gray-700);
+}
+
+.filter-btn:hover {
+  border-color: var(--primary-400);
+  color: var(--primary-700);
+}
+
+.filter-btn.active {
+  background: var(--primary-500);
+  border-color: var(--primary-500);
+  color: white;
+}
+
+/* No students message */
+.no-students {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.no-students i {
+  font-size: 2rem;
+  margin-bottom: var(--space-3);
+  color: var(--gray-300);
+}
+
+/* Scrollbar styling for student list */
+.student-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.student-list::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 3px;
+}
+
+.student-list::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: 3px;
+}
+
+.student-list::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
 }
 
 .sidebar-section h3 {
