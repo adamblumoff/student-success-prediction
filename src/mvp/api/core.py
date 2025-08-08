@@ -171,10 +171,18 @@ async def analyze_student_data(
                 else:
                     risk_level = 'success'
             
+            # Map risk levels to frontend-expected categories
+            risk_category_map = {
+                'danger': 'High Risk',
+                'warning': 'Medium Risk', 
+                'success': 'Low Risk'
+            }
+            risk_category = risk_category_map.get(risk_level, 'Medium Risk')
+            
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': risk_prob,
-                'risk_category': risk_level.title(),
+                'risk_category': risk_category,
                 'success_probability': success_prob,
                 'needs_intervention': risk_level in ['danger', 'warning']
             })
@@ -210,9 +218,9 @@ async def analyze_student_data(
         # Build classic summary for compatibility with older clients/tests
         summary = {
             'total': len(results),
-            'high_risk': sum(1 for r in results if r['risk_category'] == 'Danger'),
-            'medium_risk': sum(1 for r in results if r['risk_category'] == 'Warning'),
-            'low_risk': sum(1 for r in results if r['risk_category'] == 'Success')
+            'high_risk': sum(1 for r in results if r['risk_category'] == 'High Risk'),
+            'medium_risk': sum(1 for r in results if r['risk_category'] == 'Medium Risk'),
+            'low_risk': sum(1 for r in results if r['risk_category'] == 'Low Risk')
         }
         return JSONResponse({
             'predictions': results,
@@ -458,19 +466,27 @@ async def load_sample_data(
                 else:
                     risk_level = 'success'
             
+            # Map risk levels to frontend-expected categories
+            risk_category_map = {
+                'danger': 'High Risk',
+                'warning': 'Medium Risk', 
+                'success': 'Low Risk'
+            }
+            risk_category = risk_category_map.get(risk_level, 'Medium Risk')
+            
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
                 'risk_score': risk_prob,
-                'risk_category': risk_level.title(),
+                'risk_category': risk_category,
                 'success_probability': success_prob,
                 'needs_intervention': risk_level in ['danger', 'warning']
             })
         
         summary = {
             'total': len(results),
-            'high_risk': sum(1 for r in results if r['risk_category'] == 'Danger'),
-            'medium_risk': sum(1 for r in results if r['risk_category'] == 'Warning'),
-            'low_risk': sum(1 for r in results if r['risk_category'] == 'Success')
+            'high_risk': sum(1 for r in results if r['risk_category'] == 'High Risk'),
+            'medium_risk': sum(1 for r in results if r['risk_category'] == 'Medium Risk'),
+            'low_risk': sum(1 for r in results if r['risk_category'] == 'Low Risk')
         }
         return JSONResponse({
             'predictions': results,
@@ -726,6 +742,104 @@ async def get_success_stories(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Error getting success stories: {e}")
         raise HTTPException(status_code=500, detail=f"Error retrieving success stories: {str(e)}")
+
+# Demo endpoints
+@router.get("/demo/stats")
+async def demo_stats(current_user: dict = Depends(get_current_user)):
+    """Get demo statistics for presentations"""
+    try:
+        return JSONResponse({
+            'semester_info': {
+                'semester': 'Fall 2024',
+                'total_students': 1847,
+                'courses_monitored': 23,
+                'faculty_users': 18
+            },
+            'student_metrics': {
+                'total_analyzed': 1847,
+                'at_risk_identified': 234,
+                'interventions_triggered': 156,
+                'early_identification_rate': 0.127  # 12.7%
+            },
+            'intervention_metrics': {
+                'success_rate': 0.73,
+                'average_improvement': 28.5,
+                'retention_increase': 0.15,
+                'time_to_intervention': 3.2  # days
+            },
+            'time_savings': {
+                'hours_saved_per_week': 12.5,
+                'manual_review_reduction': 0.67,
+                'early_detection_advantage': 4.8  # weeks
+            },
+            'model_performance': {
+                'accuracy': 0.815,
+                'precision': 0.78,
+                'recall': 0.84,
+                'auc_score': 0.815,
+                'model_name': 'K-12 Ultra-Advanced'
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting demo stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving demo stats: {str(e)}")
+
+@router.get("/demo/simulate-new-student")
+async def simulate_new_student(current_user: dict = Depends(get_current_user)):
+    """Simulate a new student for demo purposes"""
+    try:
+        # Generate a random demo student
+        import random
+        
+        student_profiles = [
+            {
+                'id_student': 98001,
+                'name': 'Sarah Chen',
+                'risk_score': 0.78,
+                'risk_category': 'High',
+                'story': 'Transfer student from out-of-state, struggling with math courses and low attendance',
+                'grade_level': 10,
+                'gpa': 2.1,
+                'attendance': 0.67
+            },
+            {
+                'id_student': 98002,
+                'name': 'Marcus Thompson',
+                'risk_score': 0.45,
+                'risk_category': 'Medium',
+                'story': 'Strong in core subjects but missing assignments due to family responsibilities',
+                'grade_level': 11,
+                'gpa': 2.8,
+                'attendance': 0.85
+            },
+            {
+                'id_student': 98003,
+                'name': 'Isabella Rodriguez',
+                'risk_score': 0.23,
+                'risk_category': 'Low',
+                'story': 'High achiever with excellent attendance, recently joined academic clubs',
+                'grade_level': 9,
+                'gpa': 3.7,
+                'attendance': 0.96
+            }
+        ]
+        
+        new_student = random.choice(student_profiles)
+        
+        return JSONResponse({
+            'new_student': new_student,
+            'message': f'Simulated new student: {new_student["name"]} (Risk: {new_student["risk_category"]})'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error simulating new student: {e}")
+        raise HTTPException(status_code=500, detail=f"Error simulating student: {str(e)}")
+
+@router.get("/demo/success-stories")
+async def demo_success_stories(current_user: dict = Depends(get_current_user)):
+    """Get success stories for demo presentations"""
+    return await get_success_stories(current_user)
 
 def get_session_secret():
     """Get or generate a secure session secret"""
