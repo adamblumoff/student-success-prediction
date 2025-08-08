@@ -99,8 +99,9 @@ Carol Davis,12003,91.2,95,89,93"""
         response = self.client.get("/api/mvp/insights", headers=self.auth_headers)
         
         if response.status_code == 200:
-            insights = response.json()
-            self.assertIn('feature_importance', insights)
+            data = response.json()
+            self.assertIn('insights', data)
+            self.assertIn('feature_importance', data['insights'])
             print("✅ Global insights retrieved")
         else:
             print(f"⚠️  Insights endpoint returned {response.status_code} (acceptable for demo)")
@@ -230,8 +231,8 @@ Carol Davis,12003,91.2,95,89,93"""
         self.assertEqual(response.status_code, 400)
         print("✅ Empty file properly rejected")
         
-        # Test invalid CSV format
-        invalid_csv = "this,is,not\nvalid,csv,data,with,mismatched,columns"
+        # Test invalid CSV format - create actual malformed CSV that pandas will reject
+        invalid_csv = "header1,header2,header3\n\"unterminated quote,data,more data\nvalid,data,here"
         files = {"file": ("invalid.csv", invalid_csv, "text/csv")}
         response = self.client.post("/api/mvp/analyze", files=files, headers=self.auth_headers)
         
