@@ -612,12 +612,12 @@ body {
 
 .analysis-layout {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: 480px 1fr;
   gap: var(--space-8);
   align-items: start;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1280px) {
   .analysis-layout {
     grid-template-columns: 1fr;
     gap: var(--space-6);
