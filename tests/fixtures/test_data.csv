@@ -1,6 +1,0 @@
-student_id,name,grade_level,current_gpa,attendance_rate,discipline_incidents,assignment_completion
-S001,Alice Johnson,9,3.5,0.98,0,0.95
-S002,Bob Smith,10,2.1,0.87,1,0.70
-S003,Carol Davis,11,1.8,0.75,3,0.45
-S004,David Wilson,12,3.8,0.99,0,0.98
-S005,Emma Brown,9,2.9,0.92,1,0.82
