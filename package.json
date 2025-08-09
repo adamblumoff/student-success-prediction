@@ -1,5 +1,50 @@
 {
   "dependencies": {
     "@playwright/test": "^1.54.2"
+  },
+  "name": "student-success-prediction",
+  "description": "An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes.",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:unit": "jest --testPathPatterns=tests/unit",
+    "test:integration": "jest --testPathPatterns=tests/integration",
+    "test:component": "jest --testPathPatterns=tests/component",
+    "test:api": "jest --testPathPatterns=tests/api",
+    "test:e2e": "jest --testPathPatterns=tests/e2e",
+    "test:watch": "jest --watch",
+    "test:watch:unit": "jest --watch --testPathPatterns=tests/unit",
+    "test:coverage": "jest --coverage",
+    "test:ci": "node -e \"import('./tests/utils/test-runner.js').then(m => m.runCITests())\"",
+    "test:validate": "node -e \"import('./tests/utils/test-runner.js').then(m => m.validateTestStructure())\"",
+    "test:report": "node -e \"import('./tests/utils/test-runner.js').then(m => m.generateTestReport())\"",
+    "test:all": "node -e \"import('./tests/utils/test-runner.js').then(m => m.runTestSuite(['unit', 'integration', 'component']))\"",
+    "test:generate": "node scripts/generate-tests.js",
+    "test:working": "jest tests/simple.test.js tests/app-functionality.test.js tests/components/tab-navigation-working.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adamblumoff/student-success-prediction.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adamblumoff/student-success-prediction/issues"
+  },
+  "homepage": "https://github.com/adamblumoff/student-success-prediction#readme",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/user-event": "^14.6.1",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jsdom": "^26.1.0"
   }
 }
