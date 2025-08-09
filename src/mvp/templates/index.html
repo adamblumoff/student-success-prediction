@@ -339,15 +339,47 @@
     <!-- Notification Panel -->
     <aside class="notification-panel hidden" id="notification-panel">
         <div class="panel-header">
-            <h3>Notifications</h3>
-            <button class="btn-icon" id="close-notifications">
-                <i class="fas fa-times"></i>
-            </button>
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <div class="panel-actions">
+                <button class="btn-icon" id="mark-all-read" title="Mark All Read">
+                    <i class="fas fa-check-double"></i>
+                </button>
+                <button class="btn-icon" id="clear-notifications" title="Clear All">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn-icon" id="close-notifications" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
-        <div class="panel-content">
-            <div class="no-notifications">
+        
+        <div class="panel-filters">
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="unread">Unread</button>
+                <button class="filter-tab" data-filter="high-risk">High Risk</button>
+                <button class="filter-tab" data-filter="system">System</button>
+            </div>
+        </div>
+        
+        <div class="panel-content" id="notification-content">
+            <div class="no-notifications" id="no-notifications">
                 <i class="fas fa-bell-slash"></i>
                 <p>No notifications</p>
+                <small>Notifications will appear here when students need attention</small>
+            </div>
+            
+            <div class="notification-list" id="notification-list">
+                <!-- Dynamic notifications will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="panel-footer">
+            <div class="notification-settings">
+                <button class="btn btn-secondary btn-small" id="notification-settings">
+                    <i class="fas fa-cog"></i>
+                    Notification Settings
+                </button>
             </div>
         </div>
     </aside>
@@ -376,7 +408,123 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settings-modal-overlay">
+        <div class="modal settings-modal" id="settings-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-cog"></i> Settings</h3>
+                <button class="btn-icon" id="settings-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content settings-content">
+                <div class="settings-section">
+                    <h4><i class="fas fa-eye"></i> Display Preferences</h4>
+                    <div class="setting-item">
+                        <label for="theme-select">Theme:</label>
+                        <select id="theme-select" class="setting-select">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="font-size-select">Font Size:</label>
+                        <select id="font-size-select" class="setting-select">
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4><i class="fas fa-chart-bar"></i> Analysis Settings</h4>
+                    <div class="setting-item">
+                        <label for="default-filter">Default Risk Filter:</label>
+                        <select id="default-filter" class="setting-select">
+                            <option value="all">All Students</option>
+                            <option value="high">High Risk Only</option>
+                            <option value="medium">Medium Risk Only</option>
+                            <option value="low">Low Risk Only</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <input type="checkbox" id="auto-refresh" class="setting-checkbox">
+                        <label for="auto-refresh">Auto-refresh data every 5 minutes</label>
+                    </div>
+                    <div class="setting-item">
+                        <input type="checkbox" id="show-confidence" class="setting-checkbox">
+                        <label for="show-confidence">Show confidence scores</label>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4><i class="fas fa-bell"></i> Notifications</h4>
+                    <div class="setting-item">
+                        <input type="checkbox" id="enable-notifications" class="setting-checkbox">
+                        <label for="enable-notifications">Enable browser notifications</label>
+                    </div>
+                    <div class="setting-item">
+                        <input type="checkbox" id="sound-alerts" class="setting-checkbox">
+                        <label for="sound-alerts">Sound alerts for high-risk students</label>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4><i class="fas fa-database"></i> Data Management</h4>
+                    <div class="setting-item">
+                        <button class="btn btn-secondary" id="export-data">
+                            <i class="fas fa-download"></i>
+                            Export Analysis Data
+                        </button>
+                    </div>
+                    <div class="setting-item">
+                        <button class="btn btn-secondary" id="clear-cache">
+                            <i class="fas fa-trash"></i>
+                            Clear Local Cache
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button class="btn btn-primary" id="save-settings">
+                        <i class="fas fa-save"></i>
+                        Save Settings
+                    </button>
+                    <button class="btn btn-secondary" id="reset-settings">
+                        <i class="fas fa-undo"></i>
+                        Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <!-- Core modules -->
+    <script src="/static/js/core/app-state.js"></script>
+    <script src="/static/js/core/component.js"></script>
+    
+    <!-- System modules -->
+    <script src="/static/js/systems/notification-system.js"></script>
+    <script src="/static/js/systems/settings-system.js"></script>
+    
+    <!-- Individual Component modules -->
+    <script src="/static/js/components/tab-navigation.js"></script>
+    <script src="/static/js/components/file-upload.js"></script>
+    <script src="/static/js/components/analysis.js"></script>
+    <script src="/static/js/components/dashboard.js"></script>
+    <script src="/static/js/components/insights.js"></script>
+    <script src="/static/js/components/loading-overlay.js"></script>
+    
+    <!-- Global functions -->
     <script src="/static/js/modern-app.js"></script>
+    
+    <!-- Main application coordinator -->
+    <script src="/static/js/modular-app.js"></script>
+    
+    <!-- Entry point -->
+    <script src="/static/js/main.js"></script>
 </body>
 </html>
