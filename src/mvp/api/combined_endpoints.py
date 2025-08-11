@@ -15,7 +15,7 @@ from datetime import datetime
 
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
-from mvp.api.core import get_current_user
+from mvp.security import get_current_user_secure as get_current_user
 from mvp.database import save_predictions_batch
 
 # Configure logging

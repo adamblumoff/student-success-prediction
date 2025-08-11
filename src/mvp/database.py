@@ -25,12 +25,14 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 class DatabaseConfig:
-    """Database configuration management with environment-based settings."""
+    """Database configuration management with environment-based settings and security."""
     
     def __init__(self):
         self.database_url = self._get_database_url()
+        self.is_production = os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']
         self.engine: Optional[Engine] = None
         self.session_factory: Optional[sessionmaker] = None
+        self._validate_security_config()
     
     def _get_database_url(self) -> str:
         """Get database URL from environment variables with fallback to SQLite."""
@@ -52,26 +54,72 @@ class DatabaseConfig:
         logger.warning("No PostgreSQL configuration found, falling back to SQLite")
         return "sqlite:///./mvp_data.db"
     
+    def _validate_security_config(self) -> None:
+        """Validate database security configuration"""
+        if self.is_production:
+            # Production security requirements
+            if not self.database_url.startswith('postgresql'):
+                raise ValueError("❌ SECURITY ERROR: Production must use PostgreSQL, not SQLite")
+            
+            if 'localhost' in self.database_url:
+                logger.warning("⚠️ Production database using localhost - ensure this is intended")
+            
+            # Check for insecure default credentials
+            if 'postgres:postgres@' in self.database_url:
+                raise ValueError("❌ SECURITY ERROR: Cannot use default PostgreSQL credentials in production")
+            
+            # Require SSL in production
+            if 'sslmode=require' not in self.database_url and 'ssl=true' not in self.database_url:
+                logger.warning("⚠️ Production database connection should use SSL")
+        
+        logger.info("✅ Database security configuration validated")
+    
     def create_engine(self) -> Engine:
-        """Create SQLAlchemy engine with appropriate configuration."""
+        """Create SQLAlchemy engine with secure configuration and connection pooling."""
         if self.database_url.startswith('postgresql'):
-            # PostgreSQL configuration with connection pooling
+            # Production PostgreSQL configuration with security hardening
+            pool_size = int(os.getenv('DB_POOL_SIZE', '5' if self.is_production else '10'))
+            max_overflow = int(os.getenv('DB_MAX_OVERFLOW', '10' if self.is_production else '20'))
+            pool_timeout = int(os.getenv('DB_POOL_TIMEOUT', '30'))
+            
             engine = create_engine(
                 self.database_url,
                 poolclass=QueuePool,
-                pool_size=10,
-                max_overflow=20,
-                pool_pre_ping=True,
-                pool_recycle=3600,
-                echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true'
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+                pool_timeout=pool_timeout,
+                pool_pre_ping=True,  # Verify connections before use
+                pool_recycle=3600,   # Recycle connections every hour
+                connect_args={
+                    'connect_timeout': 10,  # Connection timeout
+                    'application_name': 'student_success_predictor',
+                    'options': '-c statement_timeout=30000'  # 30 second query timeout
+                },
+                echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true',
+                isolation_level='READ_COMMITTED',  # Secure isolation level
+                future=True  # Use SQLAlchemy 2.0 style
             )
+            
+            # Test connection on startup
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                logger.info(f"✅ PostgreSQL connection established (pool_size={pool_size})")
+            except Exception as e:
+                logger.error(f"❌ Failed to connect to PostgreSQL: {e}")
+                raise
         else:
-            # SQLite configuration for development
+            # SQLite configuration for development with security constraints
             engine = create_engine(
                 self.database_url,
-                connect_args={"check_same_thread": False},
-                echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true'
+                connect_args={
+                    "check_same_thread": False,
+                    "timeout": 30,  # 30 second timeout for SQLite
+                },
+                echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true',
+                future=True  # Use SQLAlchemy 2.0 style
             )
+            logger.info("✅ SQLite connection established (development mode)")
         
         self.engine = engine
         return engine

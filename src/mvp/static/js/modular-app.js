@@ -9,6 +9,7 @@ class StudentSuccessApp {
     this.components = new Map();
     this.notificationSystem = null;
     this.settingsSystem = null;
+    this.cleanupManager = SecureDOM.createCleanupManager();
     this.init();
   }
 
@@ -109,16 +110,24 @@ class StudentSuccessApp {
     }
   }
 
-  // Modal management methods (used by components)
-  showModal(title, content) {
+  // Modal management methods (used by components) - XSS-safe
+  showModal(title, content, isHTML = false) {
     const modal = document.getElementById('modal');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
 
     if (modal && modalTitle && modalContent) {
-      modalTitle.textContent = title;
-      modalContent.innerHTML = content;
+      // Safely set title (always text)
+      SecureDOM.setText(modalTitle, title);
+      
+      // Safely set content
+      if (isHTML) {
+        SecureDOM.setHTML(modalContent, content);
+      } else {
+        SecureDOM.setText(modalContent, content);
+      }
+      
       if (modalOverlay) modalOverlay.classList.remove('hidden');
     }
   }
@@ -173,7 +182,58 @@ class StudentSuccessApp {
       }
     }
   }
+  
+  // Memory leak prevention: cleanup event listeners and references
+  cleanup() {
+    if (this.cleanupManager) {
+      this.cleanupManager.cleanup();
+    }
+    
+    // Clean up components
+    for (let [name, component] of this.components) {
+      if (component && typeof component.destroy === 'function') {
+        component.destroy();
+      }
+    }
+    
+    // Clean up systems
+    if (this.notificationSystem && typeof this.notificationSystem.cleanup === 'function') {
+      this.notificationSystem.cleanup();
+    }
+    
+    if (this.settingsSystem && typeof this.settingsSystem.cleanup === 'function') {
+      this.settingsSystem.cleanup();
+    }
+    
+    // Clear references
+    this.components.clear();
+    this.notificationSystem = null;
+    this.settingsSystem = null;
+  }
+
+  // Graceful cleanup on page unload or component destruction
+  destroy() {
+    console.log('🧹 Cleaning up Modular Student Success App');
+    this.cleanup();
+  }
 }
 
 // Make StudentSuccessApp available globally
 window.StudentSuccessApp = StudentSuccessApp;
+
+// Automatic cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+  if (window.studentSuccessApp && typeof window.studentSuccessApp.cleanup === 'function') {
+    window.studentSuccessApp.cleanup();
+  }
+});
+
+// Also cleanup on visibility change (when tab becomes hidden)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && window.studentSuccessApp) {
+    // Cleanup non-essential resources when tab is hidden
+    if (typeof window.studentSuccessApp.cleanup === 'function') {
+      window.studentSuccessApp.cleanup();
+    }
+  }
+});

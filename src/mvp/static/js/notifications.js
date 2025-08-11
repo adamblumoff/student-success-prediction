@@ -236,33 +236,70 @@ class NotificationSystem {
         const timeAgo = this.formatTimeAgo(new Date(alert.timestamp));
         const riskPercentage = (alert.risk_score * 100).toFixed(1);
         
-        alertElement.innerHTML = `
+        // Create safe template with escaped content
+        const safeHTML = SecureDOM.createSafeHTML(`
             <div class="alert-header">
                 <div class="alert-student">
-                    <span class="student-name">${alert.student_name}</span>
-                    <span class="alert-level-badge ${alert.alert_level}">${alert.alert_level.toUpperCase()}</span>
+                    <span class="student-name">{{student_name}}</span>
+                    <span class="alert-level-badge {{alert_level}}">{{alert_level_upper}}</span>
                 </div>
-                <div class="alert-time">${timeAgo}</div>
+                <div class="alert-time">{{time_ago}}</div>
             </div>
             
             <div class="alert-content">
-                <div class="alert-message">${alert.message}</div>
+                <div class="alert-message">{{message}}</div>`, {
+            student_name: alert.student_name,
+            alert_level: alert.alert_level,
+            alert_level_upper: alert.alert_level.toUpperCase(),
+            time_ago: timeAgo,
+            message: alert.message
+        });
+        
+        
+        // Complete the safe HTML template
+        const riskChange = alert.previous_risk_score ? 
+            ((alert.risk_score - alert.previous_risk_score) * 100).toFixed(1) : '';
+        
+        const completeHTML = safeHTML + SecureDOM.createSafeHTML(`
                 <div class="alert-details">
-                    <span class="risk-score">Risk: ${riskPercentage}%</span>
-                    ${alert.previous_risk_score ? `<span class="risk-change">+${((alert.risk_score - alert.previous_risk_score) * 100).toFixed(1)}%</span>` : ''}
+                    <span class="risk-score">Risk: {{risk_percentage}}%</span>
+                    {{#if_risk_change}}<span class="risk-change">+{{risk_change}}%</span>{{/if_risk_change}}
                 </div>
             </div>
             
             <div class="alert-actions">
-                <button class="btn btn-small btn-primary acknowledge-btn" onclick="notificationSystem.acknowledgeAlert('${alert.alert_id}')">
+                <button class="btn btn-small btn-primary acknowledge-btn" data-alert-id="{{alert_id}}">
                     ✓ Acknowledge
                 </button>
-                <button class="btn btn-small btn-secondary resolve-btn" onclick="notificationSystem.resolveAlert('${alert.alert_id}')">
+                <button class="btn btn-small btn-secondary resolve-btn" data-alert-id="{{alert_id}}">
                     ✓ Resolve
                 </button>
-                ${alert.intervention_recommended ? '<span class="intervention-flag">🎯 Intervention Recommended</span>' : ''}
-            </div>
-        `;
+                {{#if_intervention}}<span class="intervention-flag">🎯 Intervention Recommended</span>{{/if_intervention}}
+            </div>`, {
+            risk_percentage: riskPercentage,
+            risk_change: riskChange,
+            alert_id: alert.alert_id,
+            if_risk_change: riskChange ? riskChange : '',
+            if_intervention: alert.intervention_recommended ? 'true' : ''
+        });
+        
+        SecureDOM.setHTML(alertElement, completeHTML);
+        
+        // Add secure event listeners instead of inline onclick
+        const acknowledgeBtn = alertElement.querySelector('.acknowledge-btn');
+        const resolveBtn = alertElement.querySelector('.resolve-btn');
+        
+        if (acknowledgeBtn) {
+            SecureDOM.addEventListener(acknowledgeBtn, 'click', () => {
+                this.acknowledgeAlert(alert.alert_id);
+            });
+        }
+        
+        if (resolveBtn) {
+            SecureDOM.addEventListener(resolveBtn, 'click', () => {
+                this.resolveAlert(alert.alert_id);
+            });
+        }
         
         // Add to alerts container
         alertsContainer.insertBefore(alertElement, alertsContainer.firstChild);

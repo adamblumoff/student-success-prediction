@@ -125,18 +125,20 @@ async def detailed_health_check():
 
     # Authentication system check
     try:
-        from mvp.simple_auth import simple_auth
+        from mvp.security import secure_auth, security_config
         from fastapi.security import HTTPAuthorizationCredentials
         
-        # Test API key validation
-        test_key = os.getenv('MVP_API_KEY', 'dev-key-change-me')
+        # Test API key validation with production security
+        test_key = security_config.api_key
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=test_key)
-        auth_result = simple_auth(credentials)
+        auth_result = secure_auth(credentials)
         
         health_status["checks"]["authentication"] = {
             "status": "healthy",
+            "security_level": "production",
             "api_key_validation": "working",
-            "session_auth": "enabled"
+            "session_auth": "enabled",
+            "rate_limiting": "active"
         }
         
     except Exception as e:
