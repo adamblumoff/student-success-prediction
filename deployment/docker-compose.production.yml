@@ -1,0 +1,280 @@
+# Production Docker Compose Configuration
+# Secure, scalable deployment for Student Success Prediction System
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.production
+    container_name: student-success-app
+    restart: unless-stopped
+    
+    # Security configurations
+    user: "1000:1000"  # Non-root user
+    read_only: true    # Read-only filesystem
+    cap_drop:
+      - ALL           # Drop all capabilities
+    cap_add:
+      - NET_BIND_SERVICE  # Only allow binding to ports
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Environment variables (override with .env.production)
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+      - DATABASE_URL=${DATABASE_URL}
+      - MVP_API_KEY=${MVP_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - MAX_FILE_SIZE_MB=10
+      - API_RATE_LIMIT=30
+      - UPLOAD_RATE_LIMIT=10
+      - AUTH_RATE_LIMIT=5
+      - DB_POOL_SIZE=5
+      - DB_MAX_OVERFLOW=10
+      - DB_POOL_TIMEOUT=30
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+    
+    # Volumes (read-only except for necessary writes)
+    volumes:
+      - ../results/models:/app/results/models:ro  # Models read-only
+      - app_logs:/app/logs                        # Writable logs
+      - app_temp:/tmp                             # Temporary files
+    
+    # Network configuration
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - app_network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    depends_on:
+      - redis
+      - postgres
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: student-success-nginx
+    restart: unless-stopped
+    
+    # Security configurations
+    user: "101:101"  # nginx user
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+      - nginx_run:/var/run
+    
+    networks:
+      - app_network
+    
+    depends_on:
+      - app
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: student-success-db
+    restart: unless-stopped
+    
+    # Security configurations
+    user: "70:70"  # postgres user
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-student_success}
+      - POSTGRES_USER=${POSTGRES_USER:-app_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_run:/var/run/postgresql
+      - ../alembic/init_scripts:/docker-entrypoint-initdb.d:ro
+    
+    networks:
+      - app_network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app_user} -d ${POSTGRES_DB:-student_success}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: student-success-redis
+    restart: unless-stopped
+    
+    # Security configurations
+    user: "999:999"  # redis user
+    read_only: true
+    cap_drop:
+      - ALL
+    
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    
+    volumes:
+      - redis_data:/data
+      - redis_run:/var/run/redis
+    
+    networks:
+      - app_network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Optional: Log aggregation
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.8.0
+    container_name: student-success-logs
+    user: root
+    restart: unless-stopped
+    
+    volumes:
+      - ./logging/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - app_logs:/var/log/app:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    
+    networks:
+      - app_network
+    
+    depends_on:
+      - app
+    
+    profiles:
+      - monitoring
+
+  # Optional: Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: student-success-metrics
+    restart: unless-stopped
+    user: "65534:65534"  # nobody user
+    
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    
+    ports:
+      - "9090:9090"
+    
+    networks:
+      - app_network
+    
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+  app_temp:
+    driver: local
+  nginx_cache:
+    driver: local
+  nginx_run:
+    driver: local
+  postgres_run:
+    driver: local
+  redis_run:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

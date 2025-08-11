@@ -30,7 +30,14 @@ if str(Path(__file__).parent.parent.parent) not in sys.path:
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
-from mvp.simple_auth import simple_auth, simple_rate_limit, simple_file_validation
+from mvp.security import (
+    get_current_user_secure, 
+    rate_limiter, 
+    input_sanitizer, 
+    create_web_session,
+    revoke_web_session,
+    security_config
+)
 from mvp.database import get_db_session, save_predictions_batch
 from mvp.models import Institution, Student, Prediction, Intervention, AuditLog
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -64,58 +71,24 @@ def convert_student_id_to_int(student_id):
         else:
             return hash(student_id_str) % 10000  # Fallback to hash
 
-def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = None):
-    """Authentication dependency with secure session support"""
-    # Check for session-based authentication first
-    session_token = request.cookies.get('session_token')
-    if session_token:
-        try:
-            # Validate session token
-            expected_token = get_session_secret()
-            if session_token == expected_token:
-                return {"user": "web_user", "permissions": ["read", "write"]}
-        except Exception:
-            pass
-    
-    # For development/demo mode, allow requests from localhost without auth
-    # SECURITY: Development mode is OFF by default for production safety
-    if os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true':
-        client_host = request.client.host
-        if client_host in ['127.0.0.1', 'localhost', '::1']:
-            return {"user": "demo_user", "permissions": ["read", "write"]}
-    
-    # Fallback: Allow web browser requests to ensure UI loads properly
-    # This ensures the web interface works even if session authentication fails
-    user_agent = request.headers.get('user-agent', '').lower()
-    if any(browser in user_agent for browser in ['mozilla', 'chrome', 'safari', 'firefox', 'edge']):
-        return {"user": "browser_user", "permissions": ["read", "write"]}
-    
-    # Try to get credentials from Authorization header (for API access)
-    auth_header = request.headers.get('authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        token = auth_header.split(' ')[1]
-        from fastapi.security import HTTPAuthorizationCredentials
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        return simple_auth(credentials)
-    
-    # No valid authentication found
-    raise HTTPException(status_code=401, detail="Authentication required")
+# Removed deprecated get_current_user - using get_current_user_secure directly
 
 @router.post("/analyze")
 async def analyze_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Analyze uploaded CSV file and return risk predictions using K-12 model"""
     try:
-        # Simple rate limiting
-        simple_rate_limit(request, 10)
+        # Production-ready rate limiting
+        rate_limiter.check_rate_limit(request, 'file_upload')
         
-        # Simple file validation and processing
+        # Secure file validation and processing
         contents = await file.read()
-        simple_file_validation(contents, file.filename)
+        filename = input_sanitizer.sanitize_filename(file.filename)
+        input_sanitizer.validate_file_content(contents, filename)
         
         # Process CSV
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
@@ -258,15 +231,16 @@ async def analyze_student_data(
 async def analyze_detailed_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     intervention_system = Depends(get_intervention_system)
 ):
     """Detailed analysis with explainable AI predictions"""
     try:
-        simple_rate_limit(request, 5)
+        rate_limiter.check_rate_limit(request, 'file_upload')
         
         contents = await file.read()
-        simple_file_validation(contents, file.filename)
+        filename = input_sanitizer.sanitize_filename(file.filename)
+        input_sanitizer.validate_file_content(contents, filename)
         
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         if df.shape[1] < 2:
@@ -318,15 +292,16 @@ async def analyze_detailed_student_data(
 async def analyze_k12_gradebook(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Analyze K-12 gradebook CSV using ultra-advanced model"""
     try:
-        simple_rate_limit(request, 5)
+        rate_limiter.check_rate_limit(request, 'file_upload')
         
         contents = await file.read()
-        simple_file_validation(contents, file.filename)
+        filename = input_sanitizer.sanitize_filename(file.filename)
+        input_sanitizer.validate_file_content(contents, filename)
         
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         if df.shape[1] < 2:
@@ -401,7 +376,7 @@ async def analyze_k12_gradebook(
 
 @router.get("/sample")
 async def load_sample_data(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Load sample student data for demonstration using K-12 model"""
@@ -530,7 +505,7 @@ async def load_sample_data(
         })
 
 @router.get("/stats")
-async def get_simple_stats(current_user: dict = Depends(get_current_user)):
+async def get_simple_stats(current_user: dict = Depends(get_current_user_secure)):
     """Get simple analytics and system stats"""
     try:
         # Get database session
@@ -564,7 +539,7 @@ async def get_simple_stats(current_user: dict = Depends(get_current_user)):
 @router.get("/explain/{student_id}")
 async def explain_prediction(
     student_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     intervention_system = Depends(get_intervention_system)
 ):
     """Get detailed explanation for a specific student prediction"""
@@ -625,7 +600,7 @@ async def explain_prediction(
 
 @router.get("/insights")
 async def get_model_insights(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user_secure),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Get global model insights and feature importance for K-12 model"""
@@ -686,7 +661,7 @@ async def get_model_insights(
 
 
 @router.get("/success-stories")
-async def get_success_stories(current_user: dict = Depends(get_current_user)):
+async def get_success_stories(current_user: dict = Depends(get_current_user_secure)):
     """Get success stories and case studies"""
     try:
         # Sample success stories for demonstration
@@ -745,7 +720,7 @@ async def get_success_stories(current_user: dict = Depends(get_current_user)):
 
 # Demo endpoints
 @router.get("/demo/stats")
-async def demo_stats(current_user: dict = Depends(get_current_user)):
+async def demo_stats(current_user: dict = Depends(get_current_user_secure)):
     """Get demo statistics for presentations"""
     try:
         return JSONResponse({
@@ -786,7 +761,7 @@ async def demo_stats(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Error retrieving demo stats: {str(e)}")
 
 @router.get("/demo/simulate-new-student")
-async def simulate_new_student(current_user: dict = Depends(get_current_user)):
+async def simulate_new_student(current_user: dict = Depends(get_current_user_secure)):
     """Simulate a new student for demo purposes"""
     try:
         # Generate a random demo student
@@ -837,7 +812,7 @@ async def simulate_new_student(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Error simulating student: {str(e)}")
 
 @router.get("/demo/success-stories")
-async def demo_success_stories(current_user: dict = Depends(get_current_user)):
+async def demo_success_stories(current_user: dict = Depends(get_current_user_secure)):
     """Get success stories for demo presentations"""
     return await get_success_stories(current_user)
 
@@ -853,37 +828,44 @@ def get_session_secret():
 
 @router.post("/auth/web-login")
 async def web_login(request: Request):
-    """Secure web authentication endpoint for browser-based access"""
+    """Production-ready secure web authentication endpoint"""
     try:
-        # Get secure session token
-        session_token = get_session_secret()
+        # Rate limit authentication attempts
+        rate_limiter.check_rate_limit(request, 'auth_attempt')
         
-        # Create response with session cookie
+        # Create cryptographically secure session
+        session_token = create_web_session("web_user")
+        
+        # Create response with authentication success
         response = JSONResponse({
             'status': 'authenticated',
             'user': 'web_user',
-            'message': 'Authentication successful'
+            'message': 'Authentication successful',
+            'session_expires_in': 8 * 3600  # 8 hours
         })
         
-        # Set secure session cookie
+        # Set secure session cookie with production-ready settings
         is_https = request.url.scheme == "https"
         response.set_cookie(
             key="session_token",
             value=session_token,
-            httponly=True,  # Prevents JavaScript access
-            secure=is_https,  # Only use secure flag on HTTPS
-            samesite="lax", # CSRF protection
-            max_age=3600 * 24  # 24 hours
+            httponly=True,     # Prevents XSS access to cookie
+            secure=is_https,   # Only send over HTTPS in production
+            samesite="strict", # Strong CSRF protection
+            max_age=8 * 3600   # 8-hour sessions
         )
         
+        logger.info(f"Created secure web session for user from {request.client.host}")
         return response
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error in web login: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
 
 @router.get("/auth/status")
-async def auth_status(current_user: dict = Depends(get_current_user)):
+async def auth_status(current_user: dict = Depends(get_current_user_secure)):
     """Check current authentication status"""
     return JSONResponse({
         'authenticated': True,
