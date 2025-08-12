@@ -48,6 +48,14 @@ class BulkOperationsManager {
             }
         });
 
+        // Bulk assignment
+        selectionManager.on('bulkAssign', (interventionIds) => {
+            console.log('👥 Triggering bulk assignment for', interventionIds.length, 'interventions');
+            if (window.bulkAssignmentModal) {
+                window.bulkAssignmentModal.show(interventionIds);
+            }
+        });
+
         // Bulk deletion
         selectionManager.on('bulkDelete', (interventionIds) => {
             console.log('🗑️ Triggering bulk deletion for', interventionIds.length, 'interventions');

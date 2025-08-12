@@ -841,3 +841,120 @@
         border-width: 3px;
     }
 }
+
+/* ========== BULK ASSIGNMENT MODAL ========== */
+
+.bulk-assignment-modal {
+    max-width: 650px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Staff suggestions dropdown */
+.staff-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.staff-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+}
+
+.staff-suggestion:hover {
+    background: #f3f4f6;
+}
+
+.staff-suggestion i {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+/* Assignment form styling */
+.assignment-form .form-group {
+    position: relative;
+}
+
+.assignment-options {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.option-group {
+    margin-bottom: 12px;
+}
+
+.option-group:last-child {
+    margin-bottom: 0;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--selection-primary);
+}
+
+.checkmark {
+    font-weight: 500;
+}
+
+/* Assignment-specific button styling */
+.btn-primary {
+    background: var(--selection-primary);
+    color: white;
+    border: 1px solid var(--selection-primary);
+}
+
+.btn-primary:hover {
+    background: var(--selection-primary-light);
+    border-color: var(--selection-primary-light);
+}
+
+/* Responsive design for assignment modal */
+@media (max-width: 640px) {
+    .bulk-assignment-modal {
+        max-width: 95vw;
+        margin: 10px;
+    }
+    
+    .assignment-form .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .staff-suggestions {
+        max-height: 150px;
+    }
+    
+    .assignment-options {
+        padding: 12px;
+    }
+}
