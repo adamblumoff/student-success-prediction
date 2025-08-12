@@ -1,0 +1,843 @@
+/**
+ * Bulk Actions & Selection System CSS
+ * Styles for bulk intervention management UI components
+ */
+
+/* ========== SELECTION MODE STYLES ========== */
+
+.bulk-selection-mode {
+    --selection-primary: #4f46e5;
+    --selection-primary-light: #6366f1;
+    --selection-success: #10b981;
+    --selection-danger: #ef4444;
+    --selection-warning: #f59e0b;
+    --selection-overlay: rgba(79, 70, 229, 0.1);
+}
+
+.bulk-selection-mode .student-card,
+.bulk-selection-mode .intervention-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.bulk-selection-mode .student-card:hover,
+.bulk-selection-mode .intervention-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.bulk-selection-mode .student-card.selected,
+.bulk-selection-mode .intervention-card.selected {
+    background: var(--selection-overlay);
+    border: 2px solid var(--selection-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+}
+
+/* ========== SELECTION CHECKBOX ========== */
+
+.selection-checkbox {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    width: 24px;
+    height: 24px;
+}
+
+.selection-input {
+    position: absolute;
+    opacity: 0;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.selection-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.selection-indicator i {
+    font-size: 12px;
+    color: white;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease;
+}
+
+.selection-input:checked + .selection-indicator,
+.selection-indicator.checked {
+    background: var(--selection-primary);
+    border-color: var(--selection-primary);
+    transform: scale(1.1);
+}
+
+.selection-input:checked + .selection-indicator i,
+.selection-indicator.checked i {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.selection-indicator:hover {
+    border-color: var(--selection-primary-light);
+    transform: scale(1.05);
+}
+
+/* ========== FLOATING TOOLBAR ========== */
+
+.bulk-action-toolbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid #e5e7eb;
+    z-index: 1000;
+    min-width: 320px;
+    max-width: 90vw;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+}
+
+.bulk-action-toolbar.hidden {
+    display: none;
+}
+
+.bulk-action-toolbar.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toolbar-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+}
+
+.selection-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.selection-count {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-toggle {
+    display: flex;
+    align-items: center;
+}
+
+/* ========== TOOLBAR BUTTONS ========== */
+
+.bulk-action-toolbar .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.bulk-action-toolbar .btn i {
+    font-size: 12px;
+}
+
+.bulk-action-toolbar .btn-primary {
+    background: var(--selection-primary);
+    color: white;
+}
+
+.bulk-action-toolbar .btn-primary:hover {
+    background: var(--selection-primary-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.bulk-action-toolbar .btn-warning {
+    background: var(--selection-warning);
+    color: white;
+}
+
+.bulk-action-toolbar .btn-warning:hover {
+    background: #f97316;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.bulk-action-toolbar .btn-danger {
+    background: var(--selection-danger);
+    color: white;
+}
+
+.bulk-action-toolbar .btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.bulk-action-toolbar .btn-ghost {
+    background: transparent;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.bulk-action-toolbar .btn-ghost:hover {
+    background: #f9fafb;
+    color: #374151;
+    border-color: #9ca3af;
+}
+
+.bulk-action-toolbar .btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+@media (max-width: 768px) {
+    .bulk-action-toolbar {
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        transform: translateY(100px);
+        min-width: auto;
+        max-width: none;
+    }
+    
+    .bulk-action-toolbar.visible {
+        transform: translateY(0);
+    }
+    
+    .toolbar-content {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .selection-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .toolbar-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .toolbar-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .selection-checkbox {
+        top: 8px;
+        right: 8px;
+        width: 20px;
+        height: 20px;
+    }
+    
+    .selection-indicator {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .selection-indicator i {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .toolbar-actions .btn {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+    
+    .selection-count {
+        font-size: 12px;
+    }
+}
+
+/* ========== TAB ACTIONS ========== */
+.tab-actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    padding: 0 20px;
+}
+
+.nav-tabs .tabs-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* ========== BULK MODE SECTION ========== */
+.bulk-mode-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* ========== BULK MODE TOGGLE BUTTON ========== */
+
+.bulk-mode-toggle {
+    background: #f8f9fa;
+    color: #1f2937;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.bulk-mode-toggle:hover {
+    background: #e5e7eb;
+    border-color: var(--selection-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-mode-toggle.active {
+    background: var(--selection-success);
+    color: white;
+    border-color: var(--selection-success);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+}
+
+.bulk-mode-toggle i {
+    font-size: 0.9rem;
+}
+
+.bulk-mode-toggle span {
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tab-actions {
+        padding: 0 10px;
+    }
+    
+    .bulk-mode-toggle {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .bulk-mode-toggle .toggle-content i {
+        font-size: 1rem;
+    }
+    
+    .bulk-mode-toggle .toggle-text {
+        font-size: 0.75rem;
+    }
+    
+    .bulk-mode-toggle .toggle-hint {
+        font-size: 0.65rem;
+    }
+}
+
+/* ========== ANIMATION ENHANCEMENTS ========== */
+
+@keyframes selectPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.selection-indicator.checked {
+    animation: selectPulse 0.3s ease;
+}
+
+@keyframes toolbarSlideIn {
+    from {
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.bulk-action-toolbar.visible {
+    animation: toolbarSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+.selection-input:focus + .selection-indicator {
+    outline: 2px solid var(--selection-primary);
+    outline-offset: 2px;
+}
+
+.bulk-action-toolbar .btn:focus {
+    outline: 2px solid var(--selection-primary);
+    outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .bulk-action-toolbar,
+    .selection-indicator,
+    .student-card,
+    .intervention-card,
+    .bulk-mode-toggle {
+        transition: none;
+    }
+    
+    .selection-indicator.checked {
+        animation: none;
+    }
+    
+    .bulk-action-toolbar.visible {
+        animation: none;
+    }
+}
+
+/* ========== CONFIRMATION MODAL ========== */
+.confirmation-modal {
+    max-width: 500px;
+}
+
+.warning-message {
+    background: #fef3cd;
+    border: 1px solid #ffd700;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 12px 0;
+}
+
+.warning-message p {
+    margin: 8px 0;
+}
+
+.warning-message strong {
+    color: #dc3545;
+}
+
+.text-warning {
+    color: #f59e0b !important;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+    border: 1px solid #dc3545;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+/* ========== BULK INTERVENTION MODAL ========== */
+
+.bulk-intervention-modal {
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.selected-students-preview {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.selected-students-preview h4 {
+    margin: 0 0 12px 0;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.student-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.student-preview.success {
+    border-color: var(--selection-success);
+    background: #f0fdf4;
+}
+
+.student-preview.error {
+    border-color: var(--selection-danger);
+    background: #fef2f2;
+}
+
+.student-preview-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.student-preview-name {
+    font-weight: 500;
+    color: #374151;
+}
+
+.student-preview-id {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.student-preview-status {
+    margin-left: 8px;
+}
+
+.loading-students {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Form styling */
+.intervention-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.intervention-form .form-group {
+    margin-bottom: 16px;
+}
+
+.intervention-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+    font-size: 13px;
+}
+
+.intervention-form input,
+.intervention-form select,
+.intervention-form textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.intervention-form input:focus,
+.intervention-form select:focus,
+.intervention-form textarea:focus {
+    outline: none;
+    border-color: var(--selection-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Progress section */
+.bulk-progress-section {
+    text-align: center;
+    padding: 24px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.progress-header h4 {
+    margin: 0;
+    color: #374151;
+}
+
+.progress-stats {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--selection-primary);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-details {
+    margin-top: 16px;
+}
+
+.progress-message {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+/* Results section */
+.bulk-results-section {
+    padding: 20px;
+}
+
+.results-header h4 {
+    margin: 0 0 16px 0;
+    color: #374151;
+}
+
+.results-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.stat-item.success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.stat-item.error {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.stat-item.info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.stat-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.results-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.result-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-item.success {
+    background: #f0fdf4;
+}
+
+.result-item.error {
+    background: #fef2f2;
+}
+
+.result-icon {
+    margin-right: 12px;
+    width: 16px;
+    text-align: center;
+}
+
+.result-icon .fa-check {
+    color: var(--selection-success);
+}
+
+.result-icon .fa-times {
+    color: var(--selection-danger);
+}
+
+.result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-title {
+    font-weight: 500;
+    color: #374151;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.result-message {
+    font-size: 12px;
+}
+
+.result-message.success {
+    color: #065f46;
+}
+
+.result-message.error {
+    color: #991b1b;
+}
+
+/* Error states */
+.error-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    color: #991b1b;
+    font-weight: 500;
+}
+
+.error-details {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.error-message {
+    color: #374151;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.error-suggestion {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* Utility classes */
+.text-success { color: var(--selection-success); }
+.text-error { color: var(--selection-danger); }
+.text-muted { color: #9ca3af; }
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+    .bulk-intervention-modal {
+        max-width: 95vw;
+        margin: 10px;
+    }
+
+    .students-grid {
+        grid-template-columns: 1fr;
+        max-height: 100px;
+    }
+
+    .intervention-form .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .results-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat-number {
+        font-size: 16px;
+    }
+}
+
+/* ========== HIGH CONTRAST MODE ========== */
+
+@media (prefers-contrast: high) {
+    .selection-indicator {
+        border-width: 3px;
+    }
+    
+    .bulk-action-toolbar {
+        border-width: 2px;
+    }
+    
+    .bulk-selection-mode .student-card.selected,
+    .bulk-selection-mode .intervention-card.selected {
+        border-width: 3px;
+    }
+}

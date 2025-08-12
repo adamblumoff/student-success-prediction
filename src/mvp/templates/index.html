@@ -6,6 +6,7 @@
     <title>Student Success Predictor</title>
     <link rel="stylesheet" href="/static/css/modern-style.css">
     <link rel="stylesheet" href="/static/css/login.css">
+    <link rel="stylesheet" href="/static/css/bulk-actions.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -280,6 +281,12 @@
                                     <button class="filter-btn" data-filter="medium">Medium</button>
                                     <button class="filter-btn" data-filter="low">Low Risk</button>
                                 </div>
+                                <div class="bulk-mode-section">
+                                    <button class="bulk-mode-toggle" id="bulk-mode-toggle" title="Enable bulk selection to create interventions for multiple students">
+                                        <i class="fas fa-check-square"></i>
+                                        <span>Bulk Actions</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="sidebar-section">
@@ -533,6 +540,10 @@
     <script src="/static/js/components/insights.js"></script>
     <script src="/static/js/components/loading-overlay.js"></script>
     <script src="/static/js/components/login.js"></script>
+    
+    <!-- Bulk Selection System -->
+    <script src="/static/js/components/selection-manager.js"></script>
+    <script src="/static/js/components/bulk-intervention-modal.js"></script>
     
     <!-- Interventions Management -->
     <script src="/static/js/interventions.js"></script>

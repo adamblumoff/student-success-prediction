@@ -206,6 +206,7 @@ class LoginComponent extends Component {
         const userInfo = document.getElementById('user-info');
         const userName = document.getElementById('user-name');
         const logoutBtn = document.getElementById('logout-btn');
+        const bulkModeToggle = document.getElementById('bulk-mode-toggle');
 
         if (userInfo && userName) {
             userName.textContent = user.name || user.username;
@@ -216,6 +217,18 @@ class LoginComponent extends Component {
             logoutBtn.style.display = 'inline-block';
             // Add logout event listener
             logoutBtn.onclick = () => this.handleLogout();
+        }
+
+        // Bulk mode toggle is now embedded in the analyze tab content
+
+        if (bulkModeToggle) {
+            // Add bulk mode toggle event listener
+            bulkModeToggle.onclick = () => {
+                if (window.selectionManager) {
+                    window.selectionManager.toggleSelectionMode();
+                    bulkModeToggle.classList.toggle('active');
+                }
+            };
         }
     }
 

@@ -89,14 +89,14 @@
 
 .demo-credentials h4 {
     margin: 0 0 0.5rem 0;
-    color: #333;
+    color: black;
     font-size: 0.9rem;
 }
 
 .demo-credentials p {
     margin: 0.25rem 0;
     font-size: 0.8rem;
-    color: #666;
+    color: black;
 }
 
 /* Hide main app when showing login */
@@ -116,7 +116,7 @@
 /* User info in header */
 .user-info {
     margin-right: 1rem;
-    color: white;
+    color: black;
     font-weight: 500;
 }
 

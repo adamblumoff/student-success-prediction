@@ -106,6 +106,7 @@ class Analysis extends Component {
   renderStudentCard(student) {
     // Handle the original data format
     const studentId = student.student_id || student.id || 'Unknown';
+    const databaseId = student.id || student.database_id || studentId; // Use database ID for selections
     const risk = student.risk_score || student.success_probability || 0;
     const riskLevel = risk >= 0.7 ? 'high' : risk >= 0.4 ? 'medium' : 'low';
     const riskColor = riskLevel === 'high' ? 'var(--danger-500)' : 
@@ -115,7 +116,7 @@ class Analysis extends Component {
     const displayName = student.name || `Student ${studentId}`;
     
     return `
-      <div class="student-card" data-student-id="${studentId}">
+      <div class="student-card" data-student-id="${databaseId}" data-display-id="${studentId}">
         <div class="student-info">
           <div class="student-name">${displayName}</div>
           <div class="student-risk">

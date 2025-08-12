@@ -472,6 +472,40 @@ async function handleStatusUpdate(event, interventionId) {
         outcome_notes: formData.get('outcome_notes')
     };
     
+    // Handle cancellation with confirmation and deletion
+    if (data.status === 'cancelled') {
+        const confirmed = await showCancellationConfirmation();
+        if (!confirmed) {
+            return; // User cancelled the cancellation
+        }
+        
+        // Delete the intervention instead of updating status
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`/api/interventions/${interventionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                showNotification('Intervention cancelled and deleted permanently', 'success');
+                closeModal(form);
+                safeRefreshInterventions();
+            } else {
+                const error = await response.json();
+                showNotification(error.detail || 'Failed to delete intervention', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting intervention:', error);
+            showNotification('Error deleting intervention', 'error');
+        }
+        return;
+    }
+    
+    // Handle normal status updates
     try {
         const token = localStorage.getItem('auth_token');
         const response = await fetch(`/api/interventions/${interventionId}`, {
@@ -491,7 +525,7 @@ async function handleStatusUpdate(event, interventionId) {
             closeModal(form);
             
             // Refresh interventions list
-            safeRefreshInterventions(data.student_id);
+            safeRefreshInterventions();
         } else {
             const error = await response.json();
             showNotification(error.detail || 'Failed to update intervention', 'error');
@@ -523,6 +557,68 @@ function showNotification(message, type = 'info') {
         // Fallback to alert
         alert(message);
     }
+}
+
+function showCancellationConfirmation() {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal confirmation-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-exclamation-triangle text-warning"></i> Confirm Intervention Cancellation</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove(); arguments[0].resolve(false);">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-message">
+                        <p><strong>⚠️ Warning: This action cannot be undone!</strong></p>
+                        <p>Cancelling this intervention will <strong>permanently delete</strong> it from the database.</p>
+                        <p>Are you sure you want to proceed?</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-deletion">
+                        <i class="fas fa-times"></i>
+                        Keep Intervention
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirm-deletion">
+                        <i class="fas fa-trash"></i>
+                        Yes, Delete Permanently
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add event listeners
+        const cancelBtn = modal.querySelector('#cancel-deletion');
+        const confirmBtn = modal.querySelector('#confirm-deletion');
+        const closeBtn = modal.querySelector('.modal-close');
+        
+        cancelBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(true);
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                resolve(false);
+            }
+        });
+    });
 }
 
 // Store reference to analysis component for refreshing interventions
