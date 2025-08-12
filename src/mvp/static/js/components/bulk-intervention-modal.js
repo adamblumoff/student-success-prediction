@@ -520,10 +520,8 @@ class BulkInterventionModal {
     }
 }
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    window.bulkInterventionModal = new BulkInterventionModal();
-});
+// Global instance
+window.bulkInterventionModal = new BulkInterventionModal();
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
