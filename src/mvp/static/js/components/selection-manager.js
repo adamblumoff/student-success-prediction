@@ -277,6 +277,11 @@ class SelectionManager {
                         Update Status (<span class="intervention-count">0</span>)
                     </button>
                     
+                    <button class="btn btn-sm btn-primary" id="bulk-assign" style="display: none;">
+                        <i class="fas fa-user-plus"></i>
+                        Assign Staff (<span class="assign-count">0</span>)
+                    </button>
+                    
                     <button class="btn btn-sm btn-danger" id="bulk-delete" style="display: none;">
                         <i class="fas fa-trash"></i>
                         Delete (<span class="delete-count">0</span>)
@@ -337,6 +342,7 @@ class SelectionManager {
         // Update action buttons
         const bulkCreateBtn = toolbar.querySelector('#bulk-create-intervention');
         const bulkUpdateBtn = toolbar.querySelector('#bulk-update-status');
+        const bulkAssignBtn = toolbar.querySelector('#bulk-assign');
         const bulkDeleteBtn = toolbar.querySelector('#bulk-delete');
         
         if (bulkCreateBtn) {
@@ -349,6 +355,12 @@ class SelectionManager {
             bulkUpdateBtn.style.display = interventionCount > 0 ? 'flex' : 'none';
             const interventionCountSpan = bulkUpdateBtn.querySelector('.intervention-count');
             if (interventionCountSpan) interventionCountSpan.textContent = interventionCount;
+        }
+        
+        if (bulkAssignBtn) {
+            bulkAssignBtn.style.display = interventionCount > 0 ? 'flex' : 'none';
+            const assignCountSpan = bulkAssignBtn.querySelector('.assign-count');
+            if (assignCountSpan) assignCountSpan.textContent = interventionCount;
         }
         
         if (bulkDeleteBtn) {
@@ -371,6 +383,8 @@ class SelectionManager {
                 this.trigger('bulkCreateIntervention', Array.from(this.selectedStudents));
             } else if (e.target.id === 'bulk-update-status' || e.target.closest('#bulk-update-status')) {
                 this.trigger('bulkUpdateStatus', Array.from(this.selectedInterventions));
+            } else if (e.target.id === 'bulk-assign' || e.target.closest('#bulk-assign')) {
+                this.trigger('bulkAssign', Array.from(this.selectedInterventions));
             } else if (e.target.id === 'bulk-delete' || e.target.closest('#bulk-delete')) {
                 this.trigger('bulkDelete', Array.from(this.selectedInterventions));
             }
