@@ -146,6 +146,7 @@ class Analysis extends Component {
     }
     
     this.renderStudentDetail(student);
+    this.loadStudentInterventions(student);
   }
 
   renderStudentDetail(student) {
@@ -200,6 +201,19 @@ class Analysis extends Component {
             <ul class="action-list">
               ${this.generateRecommendations(student).map(rec => `<li>${rec}</li>`).join('')}
             </ul>
+          </div>
+          
+          <div class="detail-section">
+            <h4><i class="fas fa-hands-helping"></i> Interventions</h4>
+            <div class="interventions-header">
+              <button class="btn btn-success btn-small" onclick="createIntervention('${student.id || student.student_id}')">
+                <i class="fas fa-plus"></i>
+                Create Intervention
+              </button>
+            </div>
+            <div id="interventions-list-${studentId}" class="interventions-list">
+              <div class="loading-spinner">Loading interventions...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -267,5 +281,104 @@ class Analysis extends Component {
         <div class="stat-label">Need Intervention</div>
       </div>
     `;
+  }
+
+  async loadStudentInterventions(student) {
+    const studentId = student.id || student.student_id;
+    const listContainer = document.getElementById(`interventions-list-${studentId}`);
+    
+    if (!listContainer) return;
+    
+    try {
+      // Get authentication token
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/interventions/student/${studentId}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const interventions = await response.json();
+        this.renderInterventions(interventions, listContainer);
+      } else {
+        listContainer.innerHTML = '<p class="text-muted">No interventions found</p>';
+      }
+    } catch (error) {
+      console.error('Error loading interventions:', error);
+      listContainer.innerHTML = '<p class="text-danger">Error loading interventions</p>';
+    }
+  }
+
+  renderInterventions(interventions, container) {
+    if (interventions.length === 0) {
+      container.innerHTML = '<p class="text-muted">No interventions created yet</p>';
+      return;
+    }
+    
+    const html = interventions.map(intervention => this.renderInterventionCard(intervention)).join('');
+    container.innerHTML = html;
+  }
+
+  renderInterventionCard(intervention) {
+    const priorityColor = {
+      'low': 'var(--success-500)',
+      'medium': 'var(--warning-500)', 
+      'high': 'var(--danger-500)',
+      'critical': 'var(--danger-700)'
+    }[intervention.priority] || 'var(--neutral-500)';
+    
+    const statusColor = {
+      'pending': 'var(--warning-500)',
+      'in_progress': 'var(--primary-500)',
+      'completed': 'var(--success-500)',
+      'cancelled': 'var(--neutral-500)'
+    }[intervention.status] || 'var(--neutral-500)';
+    
+    const dueDateText = intervention.due_date ? 
+      `Due: ${new Date(intervention.due_date).toLocaleDateString()}` : '';
+    
+    return `
+      <div class="intervention-card" data-intervention-id="${intervention.id}">
+        <div class="intervention-header">
+          <h5 class="intervention-title">${intervention.title}</h5>
+          <div class="intervention-badges">
+            <span class="badge" style="background-color: ${priorityColor}">${intervention.priority}</span>
+            <span class="badge" style="background-color: ${statusColor}">${intervention.status.replace('_', ' ')}</span>
+          </div>
+        </div>
+        <div class="intervention-body">
+          <p class="intervention-type"><strong>${this.formatInterventionType(intervention.intervention_type)}</strong></p>
+          ${intervention.description ? `<p class="intervention-description">${intervention.description}</p>` : ''}
+          ${intervention.assigned_to ? `<p class="intervention-assigned">Assigned to: ${intervention.assigned_to}</p>` : ''}
+          ${dueDateText ? `<p class="intervention-due">${dueDateText}</p>` : ''}
+        </div>
+        <div class="intervention-actions">
+          <button class="btn btn-sm btn-outline" onclick="updateInterventionStatus(${intervention.id}, '${intervention.status}')">
+            <i class="fas fa-edit"></i>
+            Update Status
+          </button>
+          <button class="btn btn-sm btn-outline" onclick="viewInterventionDetails(${intervention.id})">
+            <i class="fas fa-eye"></i>
+            Details
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  formatInterventionType(type) {
+    const types = {
+      'academic_support': 'Academic Support',
+      'attendance_support': 'Attendance Support',
+      'behavioral_support': 'Behavioral Support',
+      'engagement_support': 'Engagement Support',
+      'family_engagement': 'Family Engagement',
+      'college_career': 'College & Career',
+      'health_wellness': 'Health & Wellness',
+      'technology_support': 'Technology Support'
+    };
+    return types[type] || type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 }
