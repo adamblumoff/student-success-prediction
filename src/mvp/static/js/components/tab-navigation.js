@@ -33,9 +33,12 @@ class TabNavigation extends Component {
       content.classList.toggle('active', content.id === `tab-${currentTab}`);
     });
 
+    // Bulk actions are now embedded in the analyze tab content
+
     this.updateProgressForTab(currentTab);
     this.updateTabStates(currentTab);
   }
+
 
   updateProgressForTab(tab) {
     const progressMap = {
