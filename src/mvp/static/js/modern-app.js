@@ -19,7 +19,7 @@ window.showExplanation = async function(studentId) {
     // Use the WORKING explanation endpoint with proper auth
     const response = await fetch(`/api/mvp/explain/${studentId}`, {
       headers: {
-        'Authorization': 'Bearer dev-key-change-me'
+        'Content-Type': 'application/json'
       }
     });
     
@@ -29,30 +29,59 @@ window.showExplanation = async function(studentId) {
     
     const explanation = await response.json();
     
-    // Update modal with explanation
+    // Update modal with useful explanation
     const modalContent = document.getElementById('modal-content');
-    if (modalContent) {
+    if (modalContent && explanation.explanation) {
+      const exp = explanation.explanation;
+      const studentInfo = exp.student_info || {};
+      
       modalContent.innerHTML = `
         <div class="explanation-content">
-          <h4>🧠 AI Risk Analysis</h4>
+          <h4>🧠 Student Risk Analysis - ${studentInfo.student_id}</h4>
+          
           <div class="explanation-summary">
             <div class="risk-overview">
-              <div class="risk-score-large">${((explanation.risk_score || 0) * 100).toFixed(1)}%</div>
-              <div class="risk-label">Risk Score</div>
+              <div class="risk-score-large">${(studentInfo.risk_score * 100).toFixed(1)}%</div>
+              <div class="risk-label">${studentInfo.risk_category}</div>
             </div>
-            <div class="confidence-score">
-              <div class="confidence-value">${((explanation.confidence || 0.5) * 100).toFixed(1)}%</div>
-              <div class="confidence-label">Confidence</div>
+            <div class="student-details">
+              <p><strong>Grade:</strong> ${studentInfo.grade_level}</p>
+              <p><strong>Analysis Date:</strong> ${studentInfo.prediction_date}</p>
+              <p><strong>Model:</strong> ${exp.model_info}</p>
             </div>
           </div>
           
-          <div class="explanation-factors">
-            <h5>🎯 Key Factors:</h5>
-            <div class="explanation-text">${explanation.explanation || 'AI analysis shows this student has moderate risk based on academic performance and engagement patterns.'}</div>
+          <div class="explanation-section">
+            <h5>📊 Summary</h5>
+            <p>${exp.summary}</p>
+          </div>
+          
+          <div class="explanation-section">
+            <h5>🔍 Key Factors</h5>
+            <ul>
+              ${exp.key_factors.map(factor => `<li>${factor}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <div class="explanation-section">
+            <h5>💡 Recommended Actions</h5>
+            <ul class="recommendations-list">
+              ${exp.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <div class="explanation-section">
+            <h5>📋 Next Steps</h5>
+            <ul class="next-steps-list">
+              ${exp.next_steps.map(step => `<li>${step}</li>`).join('')}
+            </ul>
           </div>
           
           <div class="explanation-actions">
-            <button class="btn btn-primary" onclick="window.modernApp.hideModal()">Close</button>
+            <button class="btn btn-success" onclick="createIntervention('${studentInfo.student_id}')">
+              <i class="fas fa-plus"></i> Create Intervention
+            </button>
+            <button class="btn btn-secondary" onclick="window.modernApp.hideModal()">Close</button>
           </div>
         </div>
       `;

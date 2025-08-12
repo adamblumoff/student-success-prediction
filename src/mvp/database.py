@@ -269,12 +269,22 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                         'enrollment_status': 'active'
                     })
             
-            # Batch insert new students
+            # Batch upsert new students (PostgreSQL ON CONFLICT)
             if students_to_create:
-                session.execute(
-                    Student.__table__.insert(),
-                    students_to_create
-                )
+                if db_config.database_url.startswith('postgresql'):
+                    # PostgreSQL upsert - avoid duplicates
+                    from sqlalchemy.dialects.postgresql import insert
+                    stmt = insert(Student.__table__).values(students_to_create)
+                    stmt = stmt.on_conflict_do_nothing(
+                        index_elements=['institution_id', 'student_id']
+                    )
+                    session.execute(stmt)
+                else:
+                    # SQLite - use regular insert for development
+                    session.execute(
+                        Student.__table__.insert(),
+                        students_to_create
+                    )
                 session.flush()
                 
                 # Update lookup with new students
@@ -329,12 +339,32 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                         **prediction_data
                     })
             
-            # Batch insert new predictions
+            # Batch upsert new predictions (PostgreSQL ON CONFLICT)
             if predictions_to_create:
-                session.execute(
-                    Prediction.__table__.insert(),
-                    predictions_to_create
-                )
+                if db_config.database_url.startswith('postgresql'):
+                    # PostgreSQL upsert - update existing predictions
+                    from sqlalchemy.dialects.postgresql import insert
+                    stmt = insert(Prediction.__table__).values(predictions_to_create)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=['student_id'],
+                        set_={
+                            'risk_score': stmt.excluded.risk_score,
+                            'risk_category': stmt.excluded.risk_category,
+                            'success_probability': stmt.excluded.success_probability,
+                            'session_id': stmt.excluded.session_id,
+                            'data_source': stmt.excluded.data_source,
+                            'features_used': stmt.excluded.features_used,
+                            'explanation': stmt.excluded.explanation,
+                            'created_at': text('CURRENT_TIMESTAMP')
+                        }
+                    )
+                    session.execute(stmt)
+                else:
+                    # SQLite - use regular insert for development
+                    session.execute(
+                        Prediction.__table__.insert(),
+                        predictions_to_create
+                    )
             
             # Batch update existing predictions
             if predictions_to_update:
@@ -377,34 +407,79 @@ def save_prediction(prediction_data: dict, session_id: str):
                 session.add(institution)
                 session.flush()
             
-            # Get or create student
+            # Upsert student (PostgreSQL ON CONFLICT)
             student_id_str = str(prediction_data['student_id'])
-            student = session.query(Student).filter(
-                Student.institution_id == institution.id,
-                Student.student_id == student_id_str
-            ).first()
             
-            if not student:
-                student = Student(
-                    institution_id=institution.id,
-                    student_id=student_id_str,
-                    enrollment_status='active'
+            if db_config.database_url.startswith('postgresql'):
+                # PostgreSQL upsert for student
+                from sqlalchemy.dialects.postgresql import insert
+                student_data = {
+                    'institution_id': institution.id,
+                    'student_id': student_id_str,
+                    'enrollment_status': 'active'
+                }
+                stmt = insert(Student.__table__).values(**student_data)
+                stmt = stmt.on_conflict_do_nothing(
+                    index_elements=['institution_id', 'student_id']
                 )
-                session.add(student)
+                session.execute(stmt)
                 session.flush()
+                
+                # Get the student (existing or newly created)
+                student = session.query(Student).filter(
+                    Student.institution_id == institution.id,
+                    Student.student_id == student_id_str
+                ).first()
+            else:
+                # SQLite - traditional get or create
+                student = session.query(Student).filter(
+                    Student.institution_id == institution.id,
+                    Student.student_id == student_id_str
+                ).first()
+                
+                if not student:
+                    student = Student(
+                        institution_id=institution.id,
+                        student_id=student_id_str,
+                        enrollment_status='active'
+                    )
+                    session.add(student)
+                    session.flush()
             
-            # Create prediction
-            prediction = Prediction(
-                institution_id=institution.id,
-                student_id=student.id,
-                risk_score=prediction_data['risk_score'],
-                risk_category=prediction_data['risk_category'],
-                session_id=session_id,
-                data_source='csv_upload',
-                features_used=json.dumps(prediction_data.get('features_data')),
-                explanation=json.dumps(prediction_data.get('explanation_data'))
-            )
-            session.add(prediction)
+            # Upsert prediction (PostgreSQL ON CONFLICT)
+            prediction_data_dict = {
+                'institution_id': institution.id,
+                'student_id': student.id,
+                'risk_score': prediction_data['risk_score'],
+                'risk_category': prediction_data['risk_category'],
+                'session_id': session_id,
+                'data_source': 'csv_upload',
+                'features_used': json.dumps(prediction_data.get('features_data')),
+                'explanation': json.dumps(prediction_data.get('explanation_data'))
+            }
+            
+            if db_config.database_url.startswith('postgresql'):
+                # PostgreSQL upsert for prediction
+                from sqlalchemy.dialects.postgresql import insert
+                stmt = insert(Prediction.__table__).values(**prediction_data_dict)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=['student_id'],
+                    set_={
+                        'risk_score': stmt.excluded.risk_score,
+                        'risk_category': stmt.excluded.risk_category,
+                        'session_id': stmt.excluded.session_id,
+                        'data_source': stmt.excluded.data_source,
+                        'features_used': stmt.excluded.features_used,
+                        'explanation': stmt.excluded.explanation,
+                        'created_at': text('CURRENT_TIMESTAMP')
+                    }
+                )
+                session.execute(stmt)
+            else:
+                # SQLite - traditional create
+                prediction = Prediction(**prediction_data_dict)
+                session.add(prediction)
+            
             session.commit()
             
     except Exception as e:

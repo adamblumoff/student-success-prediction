@@ -8,7 +8,7 @@ for production PostgreSQL deployment.
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -192,7 +192,7 @@ class AuditLog(Base):
     institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=False, index=True)
     
     # User information
-    user_id = Column(String(100), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # nullable for anonymous actions
     user_email = Column(String(255))
     user_role = Column(String(50))
     
@@ -220,6 +220,7 @@ class AuditLog(Base):
     
     # Relationships
     institution = relationship("Institution")
+    user = relationship("User", back_populates="audit_logs")
     
     # Indexes for performance and compliance queries
     __table_args__ = (
@@ -270,3 +271,69 @@ class ModelMetadata(Base):
     __table_args__ = (
         Index('ix_model_active', 'institution_id', 'model_type', 'is_active'),
     )
+
+class User(Base):
+    """User model for authentication and authorization."""
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=False, index=True)
+    
+    # Authentication
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    
+    # Profile information
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    role = Column(String(50), nullable=False, index=True)  # teacher, admin, district_admin, etc.
+    
+    # Account status
+    is_active = Column(Boolean, default=True, index=True)
+    is_verified = Column(Boolean, default=False)
+    last_login = Column(DateTime(timezone=True))
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    institution = relationship("Institution")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="user")
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    def __repr__(self):
+        return f"<User(username='{self.username}', role='{self.role}')>"
+
+class UserSession(Base):
+    """User session model for secure session management."""
+    __tablename__ = "user_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Session details
+    session_token = Column(String(255), unique=True, nullable=False, index=True)
+    ip_address = Column(String(45))  # Support IPv6
+    user_agent = Column(Text)
+    
+    # Session lifecycle
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    last_activity = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True, index=True)
+    
+    # Security
+    revoked_at = Column(DateTime(timezone=True))
+    revoked_reason = Column(String(100))  # logout, timeout, security, etc.
+    
+    # Relationships
+    user = relationship("User", back_populates="sessions")
+    
+    def __repr__(self):
+        return f"<UserSession(user_id={self.user_id}, active={self.is_active})>"

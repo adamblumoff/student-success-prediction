@@ -33,7 +33,12 @@ class StudentSuccessApp {
   }
 
   initializeComponents() {
-    // Initialize components only if their DOM elements exist
+    // Initialize login component first
+    if (document.querySelector('#login-container')) {
+      this.components.set('login', new LoginComponent('#login-container', this.appState));
+    }
+
+    // Initialize main app components only if their DOM elements exist
     if (document.querySelector('.nav-tabs')) {
       this.components.set('tabNavigation', new TabNavigation('.nav-tabs', this.appState));
     }
