@@ -128,6 +128,49 @@ async def get_student_interventions(
         logger.error(f"Error getting student interventions: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve interventions")
 
+@router.get("/{intervention_id}", response_model=InterventionResponse)
+async def get_intervention(
+    intervention_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get a specific intervention by ID"""
+    try:
+        # Find intervention by ID
+        intervention = db.query(Intervention).filter(
+            Intervention.id == intervention_id
+        ).first()
+        
+        if not intervention:
+            raise HTTPException(status_code=404, detail="Intervention not found")
+        
+        # Get student info for response
+        student = db.query(Student).filter(Student.id == intervention.student_id).first()
+        student_name = f"Student {student.student_id}" if student else "Unknown Student"
+        
+        return {
+            "id": intervention.id,
+            "student_id": intervention.student_id,
+            "student_name": student_name,
+            "intervention_type": intervention.intervention_type,
+            "title": intervention.title,
+            "description": intervention.description,
+            "priority": intervention.priority,
+            "status": intervention.status,
+            "assigned_to": intervention.assigned_to,
+            "scheduled_date": intervention.scheduled_date,
+            "due_date": intervention.due_date,
+            "completed_date": intervention.completed_date,
+            "outcome": intervention.outcome,
+            "outcome_notes": intervention.outcome_notes,
+            "created_at": intervention.created_at
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting intervention {intervention_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve intervention")
+
 @router.post("/", response_model=InterventionResponse)
 async def create_intervention(
     intervention_data: InterventionCreate,

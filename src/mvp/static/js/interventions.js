@@ -111,8 +111,27 @@ async function updateInterventionStatus(interventionId, currentStatus) {
 async function viewInterventionDetails(interventionId) {
     console.log('Viewing intervention details:', interventionId);
     
-    // Show details modal
-    showInterventionDetailsModal(interventionId);
+    try {
+        // Fetch intervention details from API
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`/api/interventions/${interventionId}`, {
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch intervention details: ${response.status}`);
+        }
+        
+        const intervention = await response.json();
+        showInterventionDetailsModal(intervention);
+        
+    } catch (error) {
+        console.error('Error fetching intervention details:', error);
+        showNotification('Error loading intervention details', 'error');
+    }
 }
 
 function showInterventionModal(studentId) {
@@ -265,6 +284,131 @@ function showStatusUpdateModal(interventionId, currentStatus) {
     if (currentStatus === 'completed') {
         outcomeGroup.style.display = 'block';
     }
+}
+
+function showInterventionDetailsModal(intervention) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    
+    // Format dates
+    const createdDate = intervention.created_at ? new Date(intervention.created_at).toLocaleDateString() : 'N/A';
+    const updatedDate = intervention.updated_at ? new Date(intervention.updated_at).toLocaleDateString() : 'N/A';
+    const dueDate = intervention.due_date ? new Date(intervention.due_date).toLocaleDateString() : 'Not set';
+    const completedDate = intervention.completed_date ? new Date(intervention.completed_date).toLocaleDateString() : 'N/A';
+    
+    // Format intervention type
+    const formattedType = intervention.intervention_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    // Get status and priority colors
+    const statusColor = {
+        'pending': 'var(--warning-500)',
+        'in_progress': 'var(--primary-500)',
+        'completed': 'var(--success-500)',
+        'cancelled': 'var(--neutral-500)'
+    }[intervention.status] || 'var(--neutral-500)';
+    
+    const priorityColor = {
+        'low': 'var(--success-500)',
+        'medium': 'var(--warning-500)', 
+        'high': 'var(--danger-500)',
+        'critical': 'var(--danger-700)'
+    }[intervention.priority] || 'var(--neutral-500)';
+    
+    modal.innerHTML = `
+        <div class="modal intervention-details-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Intervention Details</h3>
+                <button class="modal-close" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="intervention-details-content">
+                    <div class="detail-header">
+                        <h4>${intervention.title}</h4>
+                        <div class="status-badges">
+                            <span class="badge" style="background-color: ${statusColor}">
+                                ${intervention.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <span class="badge" style="background-color: ${priorityColor}">
+                                ${intervention.priority.toUpperCase()} PRIORITY
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Type:</label>
+                            <value>${formattedType}</value>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Student:</label>
+                            <value>${intervention.student_name || `ID: ${intervention.student_id}`}</value>
+                        </div>
+                        
+                        ${intervention.assigned_to ? `
+                        <div class="detail-item">
+                            <label>Assigned To:</label>
+                            <value>${intervention.assigned_to}</value>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-item">
+                            <label>Created:</label>
+                            <value>${createdDate}</value>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Last Updated:</label>
+                            <value>${updatedDate}</value>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <label>Due Date:</label>
+                            <value>${dueDate}</value>
+                        </div>
+                        
+                        ${intervention.status === 'completed' ? `
+                        <div class="detail-item">
+                            <label>Completed:</label>
+                            <value>${completedDate}</value>
+                        </div>
+                        ` : ''}
+                        
+                        ${intervention.outcome ? `
+                        <div class="detail-item">
+                            <label>Outcome:</label>
+                            <value>${intervention.outcome.replace('_', ' ').toUpperCase()}</value>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${intervention.description ? `
+                    <div class="detail-section">
+                        <label>Description:</label>
+                        <div class="description-text">${intervention.description}</div>
+                    </div>
+                    ` : ''}
+                    
+                    ${intervention.outcome_notes ? `
+                    <div class="detail-section">
+                        <label>Notes:</label>
+                        <div class="notes-text">${intervention.outcome_notes}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal(this)">Close</button>
+                <button class="btn btn-primary" onclick="closeModal(this); updateInterventionStatus(${intervention.id}, '${intervention.status}')">
+                    <i class="fas fa-edit"></i>
+                    Update Status
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
 }
 
 async function handleInterventionSubmit(event, studentId) {
