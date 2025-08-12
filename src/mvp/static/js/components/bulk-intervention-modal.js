@@ -19,6 +19,11 @@ class BulkInterventionModal {
         }
     }
 
+    // Alias for consistency with other bulk modals
+    show(studentIds) {
+        this.showModal(studentIds);
+    }
+
     showModal(studentIds) {
         if (!studentIds || studentIds.length === 0) {
             this.showNotification('No students selected for intervention creation', 'warning');
