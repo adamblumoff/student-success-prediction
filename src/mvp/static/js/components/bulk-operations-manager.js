@@ -35,24 +35,33 @@ class BulkOperationsManager {
         // Bulk intervention creation
         selectionManager.on('bulkCreateIntervention', (studentIds) => {
             console.log('🎯 Triggering bulk intervention creation for', studentIds.length, 'students');
-            if (window.bulkInterventionModal) {
+            if (window.bulkInterventionModal && typeof window.bulkInterventionModal.show === 'function') {
                 window.bulkInterventionModal.show(studentIds);
+            } else {
+                console.error('❌ Bulk intervention modal not available or show method missing');
+                this.showNotification('Bulk intervention modal not available. Please refresh the page.', 'error');
             }
         });
 
         // Bulk status update
         selectionManager.on('bulkUpdateStatus', (interventionIds) => {
             console.log('🔄 Triggering bulk status update for', interventionIds.length, 'interventions');
-            if (window.bulkStatusModal) {
+            if (window.bulkStatusModal && typeof window.bulkStatusModal.show === 'function') {
                 window.bulkStatusModal.show(interventionIds);
+            } else {
+                console.error('❌ Bulk status modal not available or show method missing');
+                this.showNotification('Bulk status modal not available. Please refresh the page.', 'error');
             }
         });
 
         // Bulk assignment
         selectionManager.on('bulkAssign', (interventionIds) => {
             console.log('👥 Triggering bulk assignment for', interventionIds.length, 'interventions');
-            if (window.bulkAssignmentModal) {
+            if (window.bulkAssignmentModal && typeof window.bulkAssignmentModal.show === 'function') {
                 window.bulkAssignmentModal.show(interventionIds);
+            } else {
+                console.error('❌ Bulk assignment modal not available or show method missing');
+                this.showNotification('Bulk assignment modal not available. Please refresh the page.', 'error');
             }
         });
 
