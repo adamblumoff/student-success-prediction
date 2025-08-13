@@ -29,11 +29,15 @@ curl http://localhost:8001/health
 
 - **🤖 AI-Powered Risk Prediction**: Identifies students at risk of academic failure using 31 engineered features
 - **📊 Explainable AI**: Provides detailed explanations for each prediction with risk factors and protective factors
+- **🎯 Comprehensive Intervention Management**: Full-featured intervention tracking with bulk operations
+  - **Individual & Bulk Creation**: Create interventions for single students or multiple students at once
+  - **Mixed Selection**: Select both students and interventions simultaneously for complex operations
+  - **Status Management**: Update, assign, and track intervention progress with real-time updates
+  - **Cancellation with Deletion**: Permanently remove cancelled interventions with confirmation
 - **📈 Real-Time Analytics**: Comprehensive dashboard with advanced analytics and ROI calculations
 - **🏫 Multi-Tenant Architecture**: Supports multiple school districts with data isolation
 - **📚 Universal Integration**: Canvas LMS, PowerSchool SIS, Google Classroom, and generic CSV formats
 - **🔔 Real-Time Notifications**: WebSocket-based alert system for at-risk students
-- **🎯 Intervention Tracking**: Workflow management for student interventions with outcome tracking
 - **🔒 FERPA Compliant**: Audit logging and security features for educational data privacy
 
 ## 📊 How It Works
@@ -42,7 +46,8 @@ curl http://localhost:8001/health
 2. **AI Analysis**: Machine learning models analyze 31 features across demographics, engagement, and performance  
 3. **Risk Prediction**: Students classified as High/Medium/Low risk with confidence scores
 4. **Explanations**: Detailed breakdown of risk factors and protective elements
-5. **Recommendations**: Actionable intervention strategies for each student
+5. **Intervention Management**: Create, track, and manage interventions with comprehensive bulk operations
+6. **Real-Time Updates**: All changes reflect immediately without page refreshes
 
 ## 🎯 Supported Data Formats
 
@@ -69,12 +74,29 @@ curl http://localhost:8001/health
 4. Active study days (11.2% importance)
 5. Registration timing (9.8% importance)
 
-## 💡 Intervention System
+## 💡 Intervention Management System
 
-The system provides personalized recommendations based on risk factors:
+### Individual Interventions
+Create targeted interventions with detailed tracking:
+- **8 Intervention Types**: Academic, Attendance, Behavioral, Engagement, Family, College/Career, Health, Technology
+- **Priority Levels**: Low, Medium, High, Critical with visual indicators
+- **Status Tracking**: Pending → In Progress → Completed/Cancelled
+- **Staff Assignment**: Assign interventions to specific team members
+- **Due Dates**: Set and track intervention deadlines
+- **Outcome Recording**: Document results and notes for completed interventions
 
+### Bulk Operations
+Efficiently manage multiple interventions:
+- **Bulk Creation**: Create interventions for multiple students simultaneously
+- **Mixed Selection**: Select both students and interventions at once for complex operations
+- **Bulk Status Updates**: Update multiple interventions' status, assignments, or outcomes
+- **Bulk Deletion**: Remove multiple interventions with confirmation
+- **Real-Time Updates**: All changes reflect immediately across the interface
+
+### Smart Recommendations
+AI-powered intervention suggestions based on risk factors:
 - **High Risk**: Academic support, one-on-one mentoring, study skills workshops
-- **Medium Risk**: Peer study groups, time management resources, regular check-ins
+- **Medium Risk**: Peer study groups, time management resources, regular check-ins  
 - **Low Risk**: Motivational resources, advanced learning opportunities
 
 ## 🛠️ Technical Details
@@ -107,9 +129,14 @@ See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed folder organizatio
 
 ### Web Interface
 1. Go to http://localhost:8001
-2. Click "Try with sample data" for a demo
-3. Or upload your own CSV file
-4. View risk predictions and click "Explain Prediction" for details
+2. Click "Try with sample data" for a demo or upload your own CSV file
+3. View risk predictions and click "Explain Prediction" for details
+4. **Create Interventions**: Click "Create Intervention" for individual students
+5. **Bulk Operations**: Enable "Bulk Actions" to:
+   - Select multiple students using checkboxes
+   - Create interventions for multiple students at once
+   - Update, assign, or delete multiple interventions
+   - Use mixed selection for complex operations
 
 ### API Usage (Advanced)
 ```python
