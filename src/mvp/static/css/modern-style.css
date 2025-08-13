@@ -1108,11 +1108,13 @@ body {
 }
 
 .btn-primary {
+  background: #2563eb; /* Fallback for browsers without CSS variable support */
   background: var(--primary-600);
   color: white;
 }
 
 .btn-primary:hover {
+  background: #1d4ed8; /* Fallback for browsers without CSS variable support */
   background: var(--primary-700);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
