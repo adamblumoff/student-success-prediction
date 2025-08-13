@@ -109,33 +109,62 @@ class AuditLogger:
                 compliance_data=compliance_data or {}
             )
             
-            # Insert into audit_logs table
+            # Insert into audit_logs table with database-specific column names
             event_data = event.to_dict()
-            session.execute(text("""
-                INSERT INTO audit_logs (
-                    institution_id, user_id, user_email, user_role, action,
-                    resource_type, resource_id, ip_address, user_agent, session_id,
-                    details, compliance_data, created_at
-                ) VALUES (
-                    :institution_id, :user_id, :user_email, :user_role, :action,
-                    :resource_type, :resource_id, :ip_address, :user_agent, :session_id,
-                    :details, :compliance_data, :created_at
-                )
-            """), {
-                'institution_id': event_data['institution_id'],
-                'user_id': event_data['user_id'],
-                'user_email': user_context.get('email') if user_context else None,
-                'user_role': user_context.get('role') if user_context else None,
-                'action': event_data['action'],
-                'resource_type': event_data['resource_type'],
-                'resource_id': event_data['resource_id'],
-                'ip_address': event_data['ip_address'],
-                'user_agent': event_data['user_agent'],
-                'session_id': event_data['session_id'],
-                'details': event_data['details'],
-                'compliance_data': event_data['compliance_data'],
-                'created_at': event_data['created_at']
-            })
+            bind = session.get_bind()
+            
+            if 'postgresql' in str(bind.url):
+                # PostgreSQL uses created_at column
+                session.execute(text("""
+                    INSERT INTO audit_logs (
+                        institution_id, user_id, user_email, user_role, action,
+                        resource_type, resource_id, ip_address, user_agent, session_id,
+                        details, compliance_data, created_at
+                    ) VALUES (
+                        :institution_id, :user_id, :user_email, :user_role, :action,
+                        :resource_type, :resource_id, :ip_address, :user_agent, :session_id,
+                        :details, :compliance_data, :created_at
+                    )
+                """), {
+                    'institution_id': event_data['institution_id'],
+                    'user_id': event_data['user_id'],
+                    'user_email': user_context.get('email') if user_context else None,
+                    'user_role': user_context.get('role') if user_context else None,
+                    'action': event_data['action'],
+                    'resource_type': event_data['resource_type'],
+                    'resource_id': event_data['resource_id'],
+                    'ip_address': event_data['ip_address'],
+                    'user_agent': event_data['user_agent'],
+                    'session_id': event_data['session_id'],
+                    'details': event_data['details'],
+                    'compliance_data': event_data['compliance_data'],
+                    'created_at': event_data['created_at']
+                })
+            else:
+                # SQLite uses timestamp column and doesn't have details/compliance_data columns
+                session.execute(text("""
+                    INSERT INTO audit_logs (
+                        institution_id, user_id, user_email, user_role, action,
+                        resource_type, resource_id, ip_address, user_agent, session_id,
+                        timestamp
+                    ) VALUES (
+                        :institution_id, :user_id, :user_email, :user_role, :action,
+                        :resource_type, :resource_id, :ip_address, :user_agent, :session_id,
+                        :timestamp
+                    )
+                """), {
+                    'institution_id': event_data['institution_id'],
+                    'user_id': event_data['user_id'],
+                    'user_email': user_context.get('email') if user_context else None,
+                    'user_role': user_context.get('role') if user_context else None,
+                    'action': event_data['action'],
+                    'resource_type': event_data['resource_type'],
+                    'resource_id': event_data['resource_id'],
+                    'ip_address': event_data['ip_address'],
+                    'user_agent': event_data['user_agent'],
+                    'session_id': event_data['session_id'],
+                    'timestamp': event_data['created_at']
+                })
             
             session.commit()
             
@@ -425,30 +454,67 @@ class AuditLogger:
     def get_audit_summary(self, session: Session, institution_id: int, days: int = 30) -> Dict[str, Any]:
         """Get audit summary for compliance reporting"""
         try:
-            result = session.execute(text("""
-                SELECT 
-                    action,
-                    resource_type,
-                    COUNT(*) as event_count,
-                    COUNT(DISTINCT user_id) as unique_users,
-                    MIN(created_at) as first_event,
-                    MAX(created_at) as last_event
-                FROM audit_logs 
-                WHERE institution_id = :institution_id 
-                AND created_at >= NOW() - INTERVAL '%s days'
-                GROUP BY action, resource_type
-                ORDER BY event_count DESC
-            """ % days), {"institution_id": institution_id})
+            # Detect database type and use appropriate SQL syntax
+            bind = session.get_bind()
+            if 'postgresql' in str(bind.url):
+                # PostgreSQL syntax with created_at column
+                sql = text("""
+                    SELECT 
+                        action,
+                        resource_type,
+                        COUNT(*) as event_count,
+                        COUNT(DISTINCT user_id) as unique_users,
+                        MIN(created_at) as first_event,
+                        MAX(created_at) as last_event
+                    FROM audit_logs 
+                    WHERE institution_id = :institution_id 
+                    AND created_at >= NOW() - INTERVAL '%s days'
+                    GROUP BY action, resource_type
+                    ORDER BY event_count DESC
+                """ % days)
+            else:
+                # SQLite syntax with timestamp column
+                sql = text("""
+                    SELECT 
+                        action,
+                        resource_type,
+                        COUNT(*) as event_count,
+                        COUNT(DISTINCT user_id) as unique_users,
+                        MIN(timestamp) as first_event,
+                        MAX(timestamp) as last_event
+                    FROM audit_logs 
+                    WHERE institution_id = :institution_id 
+                    AND timestamp >= datetime('now', '-%s days')
+                    GROUP BY action, resource_type
+                    ORDER BY event_count DESC
+                """ % days)
+            
+            result = session.execute(sql, {"institution_id": institution_id})
             
             events = []
             for row in result.fetchall():
+                # Handle different datetime formats between PostgreSQL and SQLite
+                first_event = row.first_event
+                last_event = row.last_event
+                
+                # Convert to ISO format if it's a datetime object, otherwise use as-is
+                if hasattr(first_event, 'isoformat'):
+                    first_event = first_event.isoformat()
+                elif first_event:
+                    first_event = str(first_event)
+                    
+                if hasattr(last_event, 'isoformat'):
+                    last_event = last_event.isoformat()
+                elif last_event:
+                    last_event = str(last_event)
+                
                 events.append({
                     'action': row.action,
                     'resource_type': row.resource_type,
                     'event_count': row.event_count,
                     'unique_users': row.unique_users,
-                    'first_event': row.first_event.isoformat() if row.first_event else None,
-                    'last_event': row.last_event.isoformat() if row.last_event else None
+                    'first_event': first_event,
+                    'last_event': last_event
                 })
             
             total_events = sum(event['event_count'] for event in events)
@@ -458,7 +524,7 @@ class AuditLogger:
                 'institution_id': institution_id,
                 'total_events': total_events,
                 'events_by_type': events,
-                'generated_at': datetime.utcnow()
+                'generated_at': datetime.utcnow().isoformat()
             }
             
         except Exception as e:
