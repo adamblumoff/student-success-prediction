@@ -475,6 +475,15 @@ body {
   margin-bottom: var(--space-6);
 }
 
+/* Ensure upload button is always visible and prominent */
+.upload-card .btn {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
 .upload-zone {
   border: 2px dashed var(--gray-300);
   border-radius: var(--radius-lg);
@@ -1141,6 +1150,9 @@ body {
 .btn-large {
   padding: var(--space-4) var(--space-8);
   font-size: var(--font-size-base);
+  /* Ensure upload button is always visible */
+  display: inline-flex !important;
+  visibility: visible !important;
 }
 
 .btn-block {
