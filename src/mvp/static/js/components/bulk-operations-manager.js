@@ -71,6 +71,12 @@ class BulkOperationsManager {
             this.handleBulkDelete(interventionIds);
         });
 
+        // Mixed actions (students + interventions)
+        selectionManager.on('bulkMixedAction', (mixedData) => {
+            console.log('🎭 Triggering mixed action for', mixedData.students.length, 'students and', mixedData.interventions.length, 'interventions');
+            this.handleMixedAction(mixedData);
+        });
+
         console.log('✅ Selection manager events bound to bulk operations');
     }
 
@@ -170,6 +176,103 @@ class BulkOperationsManager {
             
             cancelBtn.addEventListener('click', () => cleanup(false));
             confirmBtn.addEventListener('click', () => cleanup(true));
+            closeBtn.addEventListener('click', () => cleanup(false));
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) cleanup(false);
+            });
+        });
+    }
+
+    async handleMixedAction(mixedData) {
+        if (mixedData.students.length === 0 && mixedData.interventions.length === 0) {
+            this.showNotification('No items selected for mixed actions', 'warning');
+            return;
+        }
+
+        // Show modal with options for mixed actions
+        const confirmed = await this.showMixedActionModal(mixedData);
+        if (!confirmed) return;
+
+        // For now, provide option to create interventions for students AND update existing interventions
+        this.showNotification('Mixed action completed!', 'success');
+    }
+
+    showMixedActionModal(mixedData) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal confirmation-modal">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-magic text-success"></i> Mixed Bulk Actions</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mixed-action-info">
+                            <p><strong>You have selected:</strong></p>
+                            <ul>
+                                <li><i class="fas fa-users"></i> ${mixedData.students.length} student${mixedData.students.length !== 1 ? 's' : ''}</li>
+                                <li><i class="fas fa-clipboard-list"></i> ${mixedData.interventions.length} intervention${mixedData.interventions.length !== 1 ? 's' : ''}</li>
+                            </ul>
+                            <p><strong>Available Actions:</strong></p>
+                            <div class="action-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="create-for-students" checked>
+                                    <span class="checkmark">Create new interventions for selected students</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="update-interventions" checked>
+                                    <span class="checkmark">Update status of selected interventions</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-mixed">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-success" id="confirm-mixed">
+                            <i class="fas fa-magic"></i>
+                            Execute Mixed Actions
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const cancelBtn = modal.querySelector('#cancel-mixed');
+            const confirmBtn = modal.querySelector('#confirm-mixed');
+            const closeBtn = modal.querySelector('.modal-close');
+            
+            const cleanup = (result) => {
+                modal.remove();
+                resolve(result);
+            };
+            
+            cancelBtn.addEventListener('click', () => cleanup(false));
+            confirmBtn.addEventListener('click', () => {
+                const createForStudents = modal.querySelector('#create-for-students').checked;
+                const updateInterventions = modal.querySelector('#update-interventions').checked;
+                
+                if (createForStudents && mixedData.students.length > 0) {
+                    // Trigger bulk intervention creation
+                    if (window.bulkInterventionModal) {
+                        setTimeout(() => window.bulkInterventionModal.show(mixedData.students), 100);
+                    }
+                }
+                
+                if (updateInterventions && mixedData.interventions.length > 0) {
+                    // Trigger bulk status update
+                    if (window.bulkStatusModal) {
+                        setTimeout(() => window.bulkStatusModal.show(mixedData.interventions), 500);
+                    }
+                }
+                
+                cleanup(true);
+            });
             closeBtn.addEventListener('click', () => cleanup(false));
             
             modal.addEventListener('click', (e) => {

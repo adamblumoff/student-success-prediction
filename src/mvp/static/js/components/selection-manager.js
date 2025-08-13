@@ -290,6 +290,11 @@ class SelectionManager {
                         <i class="fas fa-trash"></i>
                         Delete (<span class="delete-count">0</span>)
                     </button>
+                    
+                    <button class="btn btn-sm btn-success" id="bulk-mixed-action" style="display: none;">
+                        <i class="fas fa-magic"></i>
+                        Mixed Actions (<span class="mixed-count">0</span>)
+                    </button>
                 </div>
                 
                 <div class="toolbar-toggle">
@@ -348,6 +353,7 @@ class SelectionManager {
         const bulkUpdateBtn = toolbar.querySelector('#bulk-update-status');
         const bulkAssignBtn = toolbar.querySelector('#bulk-assign');
         const bulkDeleteBtn = toolbar.querySelector('#bulk-delete');
+        const bulkMixedBtn = toolbar.querySelector('#bulk-mixed-action');
         
         if (bulkCreateBtn) {
             bulkCreateBtn.style.display = studentCount > 0 ? 'flex' : 'none';
@@ -372,6 +378,13 @@ class SelectionManager {
             const deleteCountSpan = bulkDeleteBtn.querySelector('.delete-count');
             if (deleteCountSpan) deleteCountSpan.textContent = interventionCount;
         }
+        
+        // Show mixed action button when both students and interventions are selected
+        if (bulkMixedBtn) {
+            bulkMixedBtn.style.display = (studentCount > 0 && interventionCount > 0) ? 'flex' : 'none';
+            const mixedCountSpan = bulkMixedBtn.querySelector('.mixed-count');
+            if (mixedCountSpan) mixedCountSpan.textContent = totalCount;
+        }
     }
 
     // ========== EVENT MANAGEMENT ==========
@@ -391,6 +404,11 @@ class SelectionManager {
                 this.trigger('bulkAssign', Array.from(this.selectedInterventions));
             } else if (e.target.id === 'bulk-delete' || e.target.closest('#bulk-delete')) {
                 this.trigger('bulkDelete', Array.from(this.selectedInterventions));
+            } else if (e.target.id === 'bulk-mixed-action' || e.target.closest('#bulk-mixed-action')) {
+                this.trigger('bulkMixedAction', {
+                    students: Array.from(this.selectedStudents),
+                    interventions: Array.from(this.selectedInterventions)
+                });
             }
         });
         
