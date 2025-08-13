@@ -110,8 +110,13 @@ class BulkOperationsManager {
                     window.selectionManager.clearInterventionSelection();
                 }
 
-                // Refresh the current view
+                // Refresh the current view with enhanced real-time updates
                 this.refreshCurrentView();
+                
+                // Trigger global intervention refresh
+                if (typeof safeRefreshInterventions === 'function') {
+                    safeRefreshInterventions();
+                }
             } else {
                 throw new Error(result.detail || 'Failed to delete interventions');
             }

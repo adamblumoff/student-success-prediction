@@ -74,21 +74,53 @@ function renderInterventionCard(intervention) {
     `;
 }
 
-// Helper function to safely refresh interventions
+// Helper function to safely refresh interventions with enhanced real-time updates
 function safeRefreshInterventions(studentId) {
     try {
+        console.log('🔄 Refreshing interventions in real-time...');
+        
+        // Method 1: Use analysis component if available
         const currentStudent = window.appState?.getState?.()?.selectedStudent;
         if (currentStudent && window.analysisComponent) {
+            console.log('📊 Refreshing via analysis component');
             window.analysisComponent.loadStudentInterventions(currentStudent);
-        } else {
-            // Fallback: reload the interventions for the current student
+        }
+        
+        // Method 2: Refresh specific container if studentId provided
+        if (studentId) {
             const listContainer = document.getElementById(`interventions-list-${studentId}`);
             if (listContainer) {
+                console.log(`📋 Refreshing interventions list for student ${studentId}`);
                 loadInterventionsForContainer(studentId, listContainer);
             }
         }
+        
+        // Method 3: Refresh all visible intervention containers
+        const allInterventionContainers = document.querySelectorAll('[id^="interventions-list-"]');
+        allInterventionContainers.forEach(container => {
+            const containerStudentId = container.id.replace('interventions-list-', '');
+            if (containerStudentId && containerStudentId !== studentId) {
+                console.log(`📋 Refreshing additional container for student ${containerStudentId}`);
+                loadInterventionsForContainer(parseInt(containerStudentId), container);
+            }
+        });
+        
+        // Method 4: Refresh any bulk selection checkboxes if in selection mode
+        if (window.selectionManager && window.selectionManager.isInSelectionMode()) {
+            console.log('🎯 Refreshing selection mode checkboxes');
+            setTimeout(() => {
+                window.selectionManager.addCheckboxesToCards();
+            }, 500); // Give time for new intervention cards to load
+        }
+        
+        // Method 5: Trigger a global refresh event for other components
+        window.dispatchEvent(new CustomEvent('interventionsUpdated', {
+            detail: { studentId, timestamp: Date.now() }
+        }));
+        
+        console.log('✅ Real-time intervention refresh completed');
     } catch (refreshError) {
-        console.log('Could not refresh interventions list:', refreshError);
+        console.log('⚠️ Could not refresh interventions list:', refreshError);
         // Still successful operation, just couldn't refresh UI
     }
 }

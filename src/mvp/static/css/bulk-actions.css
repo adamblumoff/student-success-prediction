@@ -46,6 +46,13 @@
     height: 24px;
 }
 
+/* Intervention cards: checkbox on bottom-right */
+.intervention-card .selection-checkbox {
+    top: auto;
+    bottom: 12px;
+    right: 12px;
+}
+
 .selection-input {
     position: absolute;
     opacity: 0;
@@ -928,14 +935,30 @@
 
 /* Assignment-specific button styling */
 .btn-primary {
-    background: var(--selection-primary);
-    color: white;
-    border: 1px solid var(--selection-primary);
+    background: var(--selection-primary) !important;
+    color: white !important;
+    border: 1px solid var(--selection-primary) !important;
 }
 
 .btn-primary:hover {
-    background: var(--selection-primary-light);
-    border-color: var(--selection-primary-light);
+    background: var(--selection-primary-light) !important;
+    border-color: var(--selection-primary-light) !important;
+}
+
+/* Ensure all update intervention buttons have solid backgrounds */
+.modal .btn-primary,
+.modal-footer .btn-primary,
+.status-modal .btn-primary {
+    background: var(--selection-primary) !important;
+    color: white !important;
+    border: 1px solid var(--selection-primary) !important;
+}
+
+.modal .btn-primary:hover,
+.modal-footer .btn-primary:hover,
+.status-modal .btn-primary:hover {
+    background: var(--selection-primary-light) !important;
+    border-color: var(--selection-primary-light) !important;
 }
 
 /* Responsive design for assignment modal */
