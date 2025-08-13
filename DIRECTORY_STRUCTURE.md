@@ -10,14 +10,25 @@ src/
 │   ├── mvp_api.py          # Main API entry point (modular)
 │   ├── api/                # Modular API endpoints
 │   │   ├── core.py         # Core MVP endpoints (/api/mvp/*)
+│   │   ├── interventions.py # Comprehensive intervention management (/api/interventions/*)
 │   │   ├── canvas_endpoints.py     # Canvas LMS (/api/lms/*)
 │   │   ├── powerschool_endpoints.py # PowerSchool SIS (/api/sis/*)
 │   │   ├── google_classroom_endpoints.py # Google Classroom (/api/google/*)
 │   │   └── combined_endpoints.py   # Combined integration (/api/integration/*)
 │   ├── database.py         # Database connection & ORM
-│   ├── models.py           # SQLAlchemy models
+│   ├── models.py           # SQLAlchemy models (Students, Interventions, etc.)
 │   ├── simple_auth.py      # Authentication system
 │   ├── static/             # Web assets (CSS, JS)
+│   │   ├── css/            
+│   │   │   ├── style.css   # Main application styles
+│   │   │   └── bulk-actions.css # Bulk intervention system styles
+│   │   ├── js/             
+│   │   │   ├── app.js      # Core application JavaScript
+│   │   │   ├── interventions.js # Intervention management functions
+│   │   │   └── components/ # Modular JavaScript components
+│   │   │       ├── selection-manager.js     # Bulk selection system
+│   │   │       ├── bulk-operations-manager.js # Bulk operations coordinator
+│   │   │       └── bulk-intervention-modal.js # Bulk intervention modals
 │   └── templates/          # HTML templates
 ├── models/                 # Machine Learning Models
 │   ├── intervention_system.py      # Original ML system
