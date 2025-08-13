@@ -374,6 +374,11 @@ class BulkInterventionModal {
                 `Successfully created ${result.successful} intervention${result.successful !== 1 ? 's' : ''}!`,
                 'success'
             );
+            
+            // Trigger real-time refresh of interventions after successful creation
+            if (typeof safeRefreshInterventions === 'function') {
+                setTimeout(() => safeRefreshInterventions(), 1000); // Brief delay to ensure UI updates
+            }
         }
 
             // Update student previews with results

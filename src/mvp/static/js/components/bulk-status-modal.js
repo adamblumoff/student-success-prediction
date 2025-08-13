@@ -320,6 +320,11 @@ class BulkStatusModal {
             if (response.ok) {
                 this.showResults(result);
                 this.showNotification(`Successfully updated ${result.successful} of ${result.total_requested} interventions`, 'success');
+                
+                // Trigger real-time refresh of interventions after successful update
+                if (typeof safeRefreshInterventions === 'function') {
+                    setTimeout(() => safeRefreshInterventions(), 1000); // Brief delay to ensure UI updates
+                }
             } else {
                 throw new Error(result.detail || 'Failed to update interventions');
             }
@@ -503,6 +508,11 @@ class BulkStatusModal {
         // Clear selections and exit selection mode
         if (window.selectionManager) {
             window.selectionManager.clearAllSelections();
+        }
+        
+        // Trigger real-time refresh of interventions
+        if (typeof safeRefreshInterventions === 'function') {
+            safeRefreshInterventions();
         }
         
         this.showNotification('Switched to AI Analysis tab. Interventions have been updated.', 'info');

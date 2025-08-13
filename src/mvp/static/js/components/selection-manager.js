@@ -171,7 +171,9 @@ class SelectionManager {
 
     addCheckboxesToCards() {
         // Add checkboxes to student cards
-        document.querySelectorAll('[data-student-id]').forEach(card => {
+        const studentCards = document.querySelectorAll('[data-student-id]');
+        console.log(`🎯 Adding checkboxes to ${studentCards.length} student cards`);
+        studentCards.forEach(card => {
             if (!card.querySelector('.selection-checkbox')) {
                 const checkbox = this.createSelectionCheckbox('student');
                 card.insertBefore(checkbox, card.firstChild);
@@ -179,7 +181,9 @@ class SelectionManager {
         });
 
         // Add checkboxes to intervention cards
-        document.querySelectorAll('[data-intervention-id]').forEach(card => {
+        const interventionCards = document.querySelectorAll('[data-intervention-id]');
+        console.log(`🎯 Adding checkboxes to ${interventionCards.length} intervention cards`);
+        interventionCards.forEach(card => {
             if (!card.querySelector('.selection-checkbox')) {
                 const checkbox = this.createSelectionCheckbox('intervention');
                 card.insertBefore(checkbox, card.firstChild);

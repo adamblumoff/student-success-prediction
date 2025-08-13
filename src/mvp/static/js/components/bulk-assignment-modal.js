@@ -413,6 +413,11 @@ class BulkAssignmentModal {
             if (response.ok) {
                 this.showResults(result);
                 this.showNotification(`Successfully assigned ${result.successful} of ${result.total_requested} interventions`, 'success');
+                
+                // Trigger real-time refresh of interventions after successful assignment
+                if (typeof safeRefreshInterventions === 'function') {
+                    setTimeout(() => safeRefreshInterventions(), 1000); // Brief delay to ensure UI updates
+                }
             } else {
                 throw new Error(result.detail || 'Failed to assign interventions');
             }
