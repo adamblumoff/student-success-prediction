@@ -17,6 +17,7 @@ class SelectionManager {
         this.hasShownBulkModeGuidance = localStorage.getItem('bulk_mode_guidance_shown') === 'true';
         this.createFloatingToolbar();
         this.bindEvents();
+        this.setupMutationObserver();
     }
 
     // ========== SELECTION STATE MANAGEMENT ==========
@@ -37,7 +38,22 @@ class SelectionManager {
     enterSelectionMode() {
         document.body.classList.add('bulk-selection-mode');
         this.showFloatingToolbar();
+        
+        // Add checkboxes immediately
         this.addCheckboxesToCards();
+        
+        // Add checkboxes again after a short delay to catch any dynamically loaded content
+        setTimeout(() => {
+            console.log('🔄 Adding checkboxes again after delay to catch dynamic content');
+            this.addCheckboxesToCards();
+        }, 100);
+        
+        // And once more after a longer delay for slower loading content
+        setTimeout(() => {
+            console.log('🔄 Final checkbox addition pass for slow-loading content');
+            this.addCheckboxesToCards();
+        }, 500);
+        
         this.updateFloatingToolbar();
         
         // Show guidance for first-time users
@@ -170,12 +186,21 @@ class SelectionManager {
         this.clearStudentSelection();
         this.clearInterventionSelection();
     }
+    
+    // Force refresh checkboxes (useful after bulk operations)
+    forceRefreshCheckboxes() {
+        if (this.selectionMode) {
+            console.log('🔄 Force refreshing checkboxes');
+            this.removeCheckboxesFromCards();
+            setTimeout(() => this.addCheckboxesToCards(), 50);
+        }
+    }
 
     // ========== UI VISUAL MANAGEMENT ==========
 
     addCheckboxesToCards() {
-        // Add checkboxes to student cards
-        const studentCards = document.querySelectorAll('[data-student-id]');
+        // Add checkboxes to student cards - include both student cards and cards within student sections
+        const studentCards = document.querySelectorAll('[data-student-id]:not([data-intervention-id])');
         console.log(`🎯 Adding checkboxes to ${studentCards.length} student cards`);
         console.log('🔍 Student cards found:', Array.from(studentCards).map(card => ({
             id: card.dataset.studentId,
@@ -193,13 +218,22 @@ class SelectionManager {
             }
         });
 
-        // Add checkboxes to intervention cards
+        // Add checkboxes to intervention cards - make sure to get intervention cards that might be nested
         const interventionCards = document.querySelectorAll('[data-intervention-id]');
         console.log(`🎯 Adding checkboxes to ${interventionCards.length} intervention cards`);
-        interventionCards.forEach(card => {
+        console.log('🔍 Intervention cards found:', Array.from(interventionCards).map(card => ({
+            id: card.dataset.interventionId,
+            hasCheckbox: !!card.querySelector('.selection-checkbox'),
+            className: card.className
+        })));
+        
+        interventionCards.forEach((card, index) => {
             if (!card.querySelector('.selection-checkbox')) {
                 const checkbox = this.createSelectionCheckbox('intervention');
                 card.insertBefore(checkbox, card.firstChild);
+                console.log(`✅ Added checkbox to intervention card ${index} (ID: ${card.dataset.interventionId})`);
+            } else {
+                console.log(`⚠️ Intervention card ${index} already has checkbox (ID: ${card.dataset.interventionId})`);
             }
         });
     }
@@ -232,10 +266,13 @@ class SelectionManager {
                 className: card.className
             } : 'No card found');
             
-            if (type === 'student' && card && card.dataset.studentId) {
+            // Determine actual selection type based on card data, not just checkbox type
+            if (card && card.dataset.studentId && !card.dataset.interventionId) {
+                // This is a student card
                 console.log(`🎓 Triggering student selection for ID: ${card.dataset.studentId}`);
                 this.toggleStudentSelection(parseInt(card.dataset.studentId));
-            } else if (type === 'intervention' && card && card.dataset.interventionId) {
+            } else if (card && card.dataset.interventionId) {
+                // This is an intervention card
                 console.log(`📋 Triggering intervention selection for ID: ${card.dataset.interventionId}`);
                 this.toggleInterventionSelection(parseInt(card.dataset.interventionId));
             } else {
@@ -413,6 +450,46 @@ class SelectionManager {
         }
     }
 
+    // ========== MUTATION OBSERVER ==========
+    
+    setupMutationObserver() {
+        // Watch for new cards being added to the DOM
+        this.observer = new MutationObserver((mutations) => {
+            if (!this.selectionMode) return;
+            
+            let shouldAddCheckboxes = false;
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Check if the added node or its children contain student/intervention cards
+                            const hasStudentCards = node.matches && node.matches('[data-student-id]') || 
+                                                  node.querySelectorAll && node.querySelectorAll('[data-student-id]').length > 0;
+                            const hasInterventionCards = node.matches && node.matches('[data-intervention-id]') || 
+                                                        node.querySelectorAll && node.querySelectorAll('[data-intervention-id]').length > 0;
+                            
+                            if (hasStudentCards || hasInterventionCards) {
+                                shouldAddCheckboxes = true;
+                                console.log('🔄 New cards detected, will add checkboxes');
+                            }
+                        }
+                    });
+                }
+            });
+            
+            if (shouldAddCheckboxes) {
+                // Delay slightly to ensure DOM is fully updated
+                setTimeout(() => this.addCheckboxesToCards(), 50);
+            }
+        });
+        
+        // Start observing
+        this.observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+
     // ========== EVENT MANAGEMENT ==========
 
     bindEvents() {
@@ -451,6 +528,14 @@ class SelectionManager {
                     e.preventDefault();
                     this.clearAllSelections();
                 }
+            }
+        });
+        
+        // Listen for intervention updates to refresh checkboxes
+        window.addEventListener('interventionsUpdated', () => {
+            if (this.selectionMode) {
+                console.log('🔄 Interventions updated, refreshing checkboxes');
+                setTimeout(() => this.addCheckboxesToCards(), 100);
             }
         });
     }
@@ -504,6 +589,13 @@ class SelectionManager {
         this.removeCheckboxesFromCards();
         document.body.classList.remove('bulk-selection-mode');
         this.callbacks.clear();
+        
+        // Cleanup mutation observer
+        if (this.observer) {
+            this.observer.disconnect();
+            this.observer = null;
+        }
+        
         console.log('🗑️ Selection Manager destroyed');
     }
 
