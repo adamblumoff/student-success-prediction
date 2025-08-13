@@ -16,6 +16,8 @@ import time
 
 from src.mvp.database import get_db_session
 from src.mvp.models import Intervention, Student, User, Institution
+from src.mvp.container import get_metrics_service
+from src.mvp.security import get_current_user_secure
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -568,88 +570,201 @@ async def validate_bulk_operation(
 @router.post("/bulk/create", response_model=BulkOperationResult)
 async def create_bulk_interventions(
     bulk_data: BulkInterventionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    metrics_service = Depends(get_metrics_service),
+    current_user: dict = Depends(get_current_user_secure)
 ):
-    """Create interventions for multiple students"""
+    """Create interventions for multiple students with production optimizations"""
+    from ..exceptions import DatabaseError, ValidationError, ErrorContext
+    from ..monitoring import app_metrics
+    
     start_time = time.time()
+    
+    try:
+        # Input validation
+        if len(bulk_data.student_ids) > 500:  # Production limit
+            raise ValidationError(
+                "Cannot create more than 500 interventions in a single batch",
+                context=ErrorContext(
+                    user_id=current_user.get('user'),
+                    student_count=len(bulk_data.student_ids)
+                )
+            )
+        
+        logger.info(f"Starting optimized bulk intervention creation for {len(bulk_data.student_ids)} students")
+        
+        # Get institution from first student (assume all in same institution)
+        first_student = db.query(Student).filter(
+            or_(
+                Student.id.in_([sid for sid in bulk_data.student_ids if isinstance(sid, int)]),
+                Student.student_id.in_([str(sid) for sid in bulk_data.student_ids])
+            )
+        ).first()
+        
+        if not first_student:
+            raise ValidationError("No valid students found for bulk operation")
+        
+        institution_id = first_student.institution_id
+        
+        # Use async service for optimized bulk processing
+        try:
+            from ..async_database import AsyncInterventionService
+            async_service = AsyncInterventionService()
+            
+            # Convert to format expected by async service
+            intervention_data_list = []
+            for student_id in bulk_data.student_ids:
+                intervention_data_list.append({
+                    'student_id': student_id,
+                    'intervention_type': bulk_data.intervention_type,
+                    'title': bulk_data.title,
+                    'description': bulk_data.description,
+                    'priority': bulk_data.priority,
+                    'assigned_to': bulk_data.assigned_to,
+                    'due_date': bulk_data.due_date
+                })
+            
+            # Use async bulk operation
+            result = await async_service.create_bulk_interventions(
+                intervention_data_list, institution_id
+            )
+            
+            # Convert async result to API format
+            execution_time = time.time() - start_time
+            
+            # Record metrics
+            metrics_service.increment('bulk_interventions_created', result['successful'])
+            metrics_service.timing('bulk_intervention_duration', execution_time * 1000)
+            app_metrics.record_prediction(execution_time * 1000, len(bulk_data.student_ids))
+            
+            return BulkOperationResult(
+                total_requested=result['total_requested'],
+                successful=result['successful'],
+                failed=result['failed'],
+                results=[
+                    BulkOperationItem(
+                        id=error['student_id'] if 'student_id' in error else i,
+                        success=False,
+                        error_message=error.get('error', 'Unknown error')
+                    )
+                    for i, error in enumerate(result.get('validation_errors', []))
+                ] + [
+                    BulkOperationItem(
+                        id=sid,
+                        success=True,
+                        error_message=None,
+                        item_data={'intervention_created': True}
+                    )
+                    for sid in bulk_data.student_ids[:result['successful']]
+                ],
+                execution_time=round(execution_time, 3),
+                operation_type="bulk_create_optimized"
+            )
+            
+        except ImportError:
+            # Fallback to synchronous operation if async not available
+            logger.warning("Async database not available, falling back to sync operation")
+            return await _create_bulk_interventions_sync(bulk_data, db, start_time)
+        
+    except ValidationError:
+        raise
+    except Exception as e:
+        logger.error(f"Error in optimized bulk intervention creation: {e}")
+        raise DatabaseError(
+            f"Bulk intervention creation failed: {str(e)}",
+            operation="bulk_create_interventions",
+            context=ErrorContext(
+                user_id=current_user.get('user'),
+                student_count=len(bulk_data.student_ids)
+            )
+        )
+
+async def _create_bulk_interventions_sync(
+    bulk_data: BulkInterventionCreate,
+    db: Session,
+    start_time: float
+) -> BulkOperationResult:
+    """Fallback synchronous bulk creation with optimizations"""
     results = []
     successful_count = 0
     
     try:
-        logger.info(f"Starting bulk intervention creation for {len(bulk_data.student_ids)} students")
+        # Batch fetch all students to reduce database queries
+        student_ids_int = [sid for sid in bulk_data.student_ids if isinstance(sid, int)]
+        student_ids_str = [str(sid) for sid in bulk_data.student_ids]
+        
+        existing_students = db.query(Student).filter(
+            or_(
+                Student.id.in_(student_ids_int),
+                Student.student_id.in_(student_ids_str)
+            )
+        ).all()
+        
+        # Create lookup maps
+        students_by_id = {s.id: s for s in existing_students}
+        students_by_string_id = {s.student_id: s for s in existing_students}
+        
+        # Prepare bulk interventions
+        interventions_to_create = []
         
         for student_id in bulk_data.student_ids:
-            try:
-                # Get student to verify they exist and get institution
-                # Try to find by database ID first, then by student_id string
-                student = None
-                
-                # If it's a valid integer, try database ID lookup
-                try:
-                    if isinstance(student_id, int) or str(student_id).isdigit():
-                        student = db.query(Student).filter(Student.id == int(student_id)).first()
-                except (ValueError, TypeError):
-                    pass
-                
-                # If not found by database ID, try student_id string lookup
-                if not student:
-                    student = db.query(Student).filter(Student.student_id == str(student_id)).first()
-                
-                if not student:
-                    results.append(BulkOperationItem(
-                        id=student_id,
-                        success=False,
-                        error_message=f"Student not found (searched by ID {student_id})"
-                    ))
-                    continue
-                
-                # Create intervention
-                intervention = Intervention(
-                    institution_id=student.institution_id,
-                    student_id=student.id,
-                    intervention_type=bulk_data.intervention_type,
-                    title=bulk_data.title,
-                    description=bulk_data.description,
-                    priority=bulk_data.priority,
-                    status="pending",
-                    assigned_to=bulk_data.assigned_to,
-                    due_date=bulk_data.due_date,
-                    created_at=datetime.now(),
-                    updated_at=datetime.now()
-                )
-                
-                db.add(intervention)
-                db.flush()  # Get the ID without committing
-                
-                results.append(BulkOperationItem(
-                    id=student_id,
-                    success=True,
-                    error_message=None,
-                    item_data={
-                        "intervention_id": intervention.id,
-                        "student_name": f"Student {student.student_id}",
-                        "intervention_title": intervention.title
-                    }
-                ))
-                successful_count += 1
-                
-            except Exception as item_error:
-                logger.error(f"Error creating intervention for student {student_id}: {item_error}")
+            # Find student using lookup maps
+            student = None
+            if isinstance(student_id, int) and student_id in students_by_id:
+                student = students_by_id[student_id]
+            elif str(student_id) in students_by_string_id:
+                student = students_by_string_id[str(student_id)]
+            
+            if not student:
                 results.append(BulkOperationItem(
                     id=student_id,
                     success=False,
-                    error_message=str(item_error)
+                    error_message=f"Student not found: {student_id}"
+                ))
+                continue
+            
+            # Prepare intervention data
+            intervention_data = {
+                'institution_id': student.institution_id,
+                'student_id': student.id,
+                'intervention_type': bulk_data.intervention_type,
+                'title': bulk_data.title,
+                'description': bulk_data.description,
+                'priority': bulk_data.priority,
+                'status': 'pending',
+                'assigned_to': bulk_data.assigned_to,
+                'due_date': bulk_data.due_date,
+                'created_at': datetime.now(),
+                'updated_at': datetime.now()
+            }
+            
+            interventions_to_create.append(intervention_data)
+            successful_count += 1
+        
+        # Bulk insert interventions
+        if interventions_to_create:
+            # Use SQLAlchemy bulk insert for better performance
+            db.execute(
+                Intervention.__table__.insert(),
+                interventions_to_create
+            )
+            db.commit()
+            
+            # Add success results
+            for i, intervention_data in enumerate(interventions_to_create):
+                results.append(BulkOperationItem(
+                    id=bulk_data.student_ids[i],
+                    success=True,
+                    error_message=None,
+                    item_data={
+                        'intervention_title': intervention_data['title'],
+                        'student_id': intervention_data['student_id']
+                    }
                 ))
         
-        # Commit all successful operations
-        if successful_count > 0:
-            db.commit()
-            logger.info(f"Successfully created {successful_count} interventions")
-        else:
-            db.rollback()
-            logger.warning("No interventions were created - rolling back transaction")
-        
         execution_time = time.time() - start_time
+        
+        logger.info(f"Sync bulk operation completed: {successful_count} interventions created")
         
         return BulkOperationResult(
             total_requested=len(bulk_data.student_ids),
@@ -657,13 +772,13 @@ async def create_bulk_interventions(
             failed=len(bulk_data.student_ids) - successful_count,
             results=results,
             execution_time=round(execution_time, 3),
-            operation_type="bulk_create"
+            operation_type="bulk_create_sync"
         )
         
     except Exception as e:
         db.rollback()
-        logger.error(f"Error in bulk intervention creation: {e}")
-        raise HTTPException(status_code=500, detail=f"Bulk operation failed: {str(e)}")
+        logger.error(f"Sync bulk intervention creation failed: {e}")
+        raise
 
 @router.put("/bulk/update", response_model=BulkOperationResult)
 async def update_bulk_interventions(

@@ -771,3 +771,4 @@ python3 scripts/validate_deployment.py
 4. **Before Deployment**: Ensure no development artifacts in production code
 
 This systematic approach maintains a clean, navigable repository that scales with the project's growth.
+- this product is made for teachers/adminstrators for k-12 schools and making their workflow easier
