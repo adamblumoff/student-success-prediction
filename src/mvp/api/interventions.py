@@ -695,38 +695,56 @@ async def update_bulk_interventions(
                 
                 # Update fields if provided
                 updated_fields = []
+                intervention_deleted = False
+                
                 if bulk_data.status is not None:
-                    intervention.status = bulk_data.status
-                    updated_fields.append("status")
-                    if bulk_data.status == "completed":
-                        intervention.completed_date = datetime.now()
-                        updated_fields.append("completed_date")
+                    # Handle cancellation by deleting the intervention
+                    if bulk_data.status == "cancelled":
+                        # Store intervention title before deletion
+                        intervention_title = intervention.title
+                        # Delete the intervention instead of updating status
+                        db.delete(intervention)
+                        updated_fields.append("deleted (cancelled)")
+                        intervention_deleted = True
+                        logger.info(f"Deleted intervention {intervention_id} due to cancellation")
+                    else:
+                        intervention.status = bulk_data.status
+                        updated_fields.append("status")
+                        if bulk_data.status == "completed":
+                            intervention.completed_date = datetime.now()
+                            updated_fields.append("completed_date")
                 
-                if bulk_data.outcome is not None:
-                    intervention.outcome = bulk_data.outcome
-                    updated_fields.append("outcome")
+                # Only update other fields if intervention wasn't deleted
+                if not intervention_deleted:
+                    if bulk_data.outcome is not None:
+                        intervention.outcome = bulk_data.outcome
+                        updated_fields.append("outcome")
+                        
+                    if bulk_data.outcome_notes is not None:
+                        intervention.outcome_notes = bulk_data.outcome_notes
+                        updated_fields.append("outcome_notes")
+                        
+                    if bulk_data.assigned_to is not None:
+                        intervention.assigned_to = bulk_data.assigned_to
+                        updated_fields.append("assigned_to")
+                        
+                    if bulk_data.priority is not None:
+                        intervention.priority = bulk_data.priority
+                        updated_fields.append("priority")
                     
-                if bulk_data.outcome_notes is not None:
-                    intervention.outcome_notes = bulk_data.outcome_notes
-                    updated_fields.append("outcome_notes")
-                    
-                if bulk_data.assigned_to is not None:
-                    intervention.assigned_to = bulk_data.assigned_to
-                    updated_fields.append("assigned_to")
-                    
-                if bulk_data.priority is not None:
-                    intervention.priority = bulk_data.priority
-                    updated_fields.append("priority")
-                
-                intervention.updated_at = datetime.now()
-                updated_fields.append("updated_at")
+                    intervention.updated_at = datetime.now()
+                    updated_fields.append("updated_at")
+                    intervention_title = intervention.title
+                else:
+                    # For deleted interventions, use the stored title
+                    pass
                 
                 results.append(BulkOperationItem(
                     id=intervention_id,
                     success=True,
                     error_message=None,
                     item_data={
-                        "intervention_title": intervention.title,
+                        "intervention_title": intervention_title,
                         "updated_fields": updated_fields
                     }
                 ))
