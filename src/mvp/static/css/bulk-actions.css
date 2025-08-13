@@ -1001,6 +1001,73 @@ button[type="submit"],
     border: 1px solid #4f46e5 !important;
 }
 
+/* Mixed Action Modal Styling */
+.mixed-action-info {
+    padding: 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+}
+
+.mixed-action-info ul {
+    margin: 12px 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.mixed-action-info li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #374151;
+}
+
+.mixed-action-info li i {
+    color: #6366f1;
+    width: 16px;
+}
+
+.action-options {
+    margin-top: 16px;
+}
+
+.action-options .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #374151;
+}
+
+.action-options .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #4f46e5;
+}
+
+.action-options .checkmark {
+    font-weight: 500;
+}
+
+/* Success button styling for mixed actions */
+.btn-success {
+    background: #10b981 !important;
+    color: white !important;
+    border: 1px solid #10b981 !important;
+}
+
+.btn-success:hover {
+    background: #059669 !important;
+    border-color: #059669 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
 /* Responsive design for assignment modal */
 @media (max-width: 640px) {
     .bulk-assignment-modal {
