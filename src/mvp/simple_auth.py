@@ -12,6 +12,7 @@ from typing import Dict, Any
 from collections import defaultdict, deque
 from fastapi import Depends
 from sqlalchemy.orm import Session
+import time
 
 # Rate limiting with time-based sliding windows
 _rate_limit_storage = defaultdict(lambda: deque())
@@ -104,10 +105,11 @@ def get_current_user_secure(
     # Perform authentication
     user_info = simple_auth(credentials)
     
-    # Set up database security context if database session provided
+    # Set up database security context and audit logging if database session provided
     if db is not None:
         try:
             from .database_security import db_security
+            from .audit_logger import audit_logger
             
             # Set institution context for row-level security
             success = db_security.set_institution_context(
@@ -119,6 +121,27 @@ def get_current_user_secure(
             
             if not success:
                 raise HTTPException(status_code=500, detail="Failed to establish secure database context")
+            
+            # Log successful authentication for audit trail
+            request_context = {
+                'ip_address': request.client.host if request.client else "unknown",
+                'user_agent': request.headers.get('user-agent', 'unknown'),
+                'session_id': f"session_{int(time.time())}"
+            }
+            
+            audit_logger.log_event(
+                session=db,
+                action="USER_AUTHENTICATION",
+                resource_type="authentication",
+                user_context=user_info,
+                request_context=request_context,
+                details={'authentication_method': 'api_key'},
+                compliance_data={
+                    'ferpa_compliance': True,
+                    'audit_category': 'authentication',
+                    'security_level': 'standard'
+                }
+            )
                 
         except ImportError:
             # Database security module not available (development mode)

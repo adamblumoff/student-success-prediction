@@ -40,6 +40,7 @@ from mvp.security import (
 )
 from mvp.database import get_db_session, save_predictions_batch
 from sqlalchemy.orm import Session
+from mvp.audit_logger import audit_logger
 
 # Database dependency function  
 def get_db() -> Session:
@@ -295,16 +296,160 @@ async def analyze_detailed_student_data(
         logger.error(f"Unexpected error in detailed analysis: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during detailed analysis")
 
+@router.get("/audit/summary")
+async def get_audit_summary(
+    request: Request,
+    days: int = 30,
+    current_user: dict = Depends(get_current_user_secure),
+    db: Session = Depends(get_db)
+):
+    """Get comprehensive audit summary for compliance reporting"""
+    try:
+        # Log access to audit data
+        request_context = {
+            'ip_address': request.client.host if request.client else "unknown",
+            'user_agent': request.headers.get('user-agent', 'unknown'),
+            'session_id': current_user.get('session_id', f"session_{int(time.time())}")
+        }
+        
+        audit_logger.log_event(
+            session=db,
+            action="AUDIT_REPORT_ACCESS",
+            resource_type="audit_logs",
+            user_context=current_user,
+            request_context=request_context,
+            details={'report_period_days': days},
+            compliance_data={
+                'audit_category': 'compliance_reporting',
+                'administrative_access': True
+            }
+        )
+        
+        # Get audit summary using the audit logger
+        summary = audit_logger.get_audit_summary(
+            session=db,
+            institution_id=current_user.get('institution_id', 1),
+            days=days
+        )
+        
+        return JSONResponse(summary)
+        
+    except Exception as e:
+        logger.error(f"Error generating audit summary: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate audit summary")
+
+@router.get("/audit/events")
+async def get_audit_events(
+    request: Request,
+    limit: int = 100,
+    offset: int = 0,
+    action_filter: str = None,
+    current_user: dict = Depends(get_current_user_secure),
+    db: Session = Depends(get_db)
+):
+    """Get detailed audit events for compliance review"""
+    try:
+        # Log access to detailed audit events
+        request_context = {
+            'ip_address': request.client.host if request.client else "unknown",
+            'user_agent': request.headers.get('user-agent', 'unknown'),
+            'session_id': current_user.get('session_id', f"session_{int(time.time())}")
+        }
+        
+        audit_logger.log_event(
+            session=db,
+            action="AUDIT_EVENTS_ACCESS",
+            resource_type="audit_logs",
+            user_context=current_user,
+            request_context=request_context,
+            details={'limit': limit, 'offset': offset, 'action_filter': action_filter},
+            compliance_data={
+                'audit_category': 'compliance_review',
+                'administrative_access': True
+            }
+        )
+        
+        # Build query for audit events
+        query = """
+            SELECT 
+                id, action, resource_type, resource_id, user_id, user_email,
+                ip_address, created_at, details, compliance_data
+            FROM audit_logs 
+            WHERE institution_id = :institution_id
+        """
+        params = {'institution_id': current_user.get('institution_id', 1)}
+        
+        if action_filter:
+            query += " AND action ILIKE :action_filter"
+            params['action_filter'] = f"%{action_filter}%"
+        
+        query += " ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+        params.update({'limit': limit, 'offset': offset})
+        
+        result = db.execute(text(query), params)
+        
+        events = []
+        for row in result.fetchall():
+            events.append({
+                'id': row.id,
+                'action': row.action,
+                'resource_type': row.resource_type,
+                'resource_id': row.resource_id,
+                'user_id': row.user_id,
+                'user_email': row.user_email,
+                'ip_address': row.ip_address,
+                'created_at': row.created_at.isoformat() if row.created_at else None,
+                'details': json.loads(row.details) if row.details else {},
+                'compliance_data': json.loads(row.compliance_data) if row.compliance_data else {}
+            })
+        
+        return JSONResponse({
+            'events': events,
+            'total_returned': len(events),
+            'limit': limit,
+            'offset': offset,
+            'action_filter': action_filter
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving audit events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve audit events")
+
 @router.post("/analyze-k12")
 async def analyze_k12_gradebook(
     request: Request,
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user_secure),
-    k12_ultra_predictor = Depends(get_k12_ultra_predictor)
+    k12_ultra_predictor = Depends(get_k12_ultra_predictor),
+    db: Session = Depends(get_db)
 ):
-    """Analyze K-12 gradebook CSV using ultra-advanced model"""
+    """Analyze K-12 gradebook CSV using ultra-advanced model with comprehensive audit logging"""
+    operation_start = time.time()
+    
     try:
         rate_limiter.check_rate_limit(request, 'file_upload')
+        
+        # Log file upload start
+        request_context = {
+            'ip_address': request.client.host if request.client else "unknown",
+            'user_agent': request.headers.get('user-agent', 'unknown'),
+            'session_id': current_user.get('session_id', f"session_{int(time.time())}")
+        }
+        
+        audit_logger.log_event(
+            session=db,
+            action="FILE_UPLOAD_START",
+            resource_type="gradebook_csv",
+            resource_id=file.filename,
+            user_context=current_user,
+            request_context=request_context,
+            details={'file_size_bytes': file.size, 'content_type': file.content_type},
+            compliance_data={
+                'ferpa_protected': True,
+                'audit_category': 'student_data_upload',
+                'educational_purpose': 'risk_assessment'
+            }
+        )
         
         contents = await file.read()
         filename = input_sanitizer.sanitize_filename(file.filename)
@@ -318,6 +463,15 @@ async def analyze_k12_gradebook(
             raise HTTPException(status_code=400, detail="CSV file is empty")
         
         logger.info(f"Processing K-12 gradebook: {file.filename} with {len(df)} students")
+        
+        # Log data processing start with student count
+        audit_logger.log_student_data_access(
+            session=db,
+            user_context=current_user,
+            action="STUDENT_DATA_ANALYSIS_START",
+            student_ids=[str(i) for i in range(len(df))],  # Use row indices for privacy
+            purpose="academic_risk_assessment"
+        )
         
         # Get ultra-advanced K-12 predictions
         predictions = k12_ultra_predictor.predict_from_gradebook(df)
@@ -351,6 +505,36 @@ async def analyze_k12_gradebook(
         
         logger.info(f"K-12 analysis complete: {total_students} students, {high_risk} high-risk")
         
+        # Log successful analysis completion
+        operation_duration = (time.time() - operation_start) * 1000  # milliseconds
+        
+        audit_logger.log_event(
+            session=db,
+            action="STUDENT_DATA_ANALYSIS_COMPLETE",
+            resource_type="k12_analysis",
+            resource_id=f"analysis_{int(time.time())}",
+            user_context=current_user,
+            request_context=request_context,
+            details={
+                'total_students': total_students,
+                'high_risk_count': high_risk,
+                'moderate_risk_count': moderate_risk,
+                'low_risk_count': low_risk,
+                'avg_gpa': avg_gpa,
+                'avg_attendance': avg_attendance,
+                'model_auc': summary['model_info'].get('auc_score', 0.815),
+                'operation_duration_ms': operation_duration,
+                'file_name': filename
+            },
+            compliance_data={
+                'ferpa_protected': True,
+                'audit_category': 'student_data_analysis',
+                'educational_purpose': 'early_intervention',
+                'risk_assessment_completed': True,
+                'student_count': total_students
+            }
+        )
+        
         return JSONResponse({
             'predictions': predictions,
             'summary': summary,
@@ -378,6 +562,32 @@ async def analyze_k12_gradebook(
         logger.error(f"Gradebook validation error: {e}")
         raise HTTPException(status_code=400, detail=f"Invalid gradebook format: {str(e)}")
     except Exception as e:
+        # Log error for audit trail
+        operation_duration = (time.time() - operation_start) * 1000
+        
+        try:
+            audit_logger.log_event(
+                session=db,
+                action="STUDENT_DATA_ANALYSIS_ERROR",
+                resource_type="k12_analysis",
+                user_context=current_user,
+                request_context=request_context,
+                details={
+                    'error_type': type(e).__name__,
+                    'error_message': str(e),
+                    'operation_duration_ms': operation_duration,
+                    'file_name': getattr(file, 'filename', 'unknown')
+                },
+                compliance_data={
+                    'ferpa_protected': True,
+                    'audit_category': 'system_error',
+                    'operation_failed': True
+                }
+            )
+        except:
+            # Don't fail on audit logging errors
+            pass
+            
         logger.error(f"Unexpected error in K-12 analysis: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during K-12 analysis")
 
