@@ -11,15 +11,10 @@ class BulkInterventionModal {
     }
 
     bindEvents() {
-        // Listen for bulk intervention creation requests
-        if (window.selectionManager) {
-            window.selectionManager.on('bulkCreateIntervention', (studentIds) => {
-                this.showModal(studentIds);
-            });
-        }
+        // Event binding handled by bulk-operations-manager.js to avoid duplicates
     }
 
-    // Alias for consistency with other bulk modals
+    // Alias for compatibility with bulk operations manager
     show(studentIds) {
         this.showModal(studentIds);
     }
