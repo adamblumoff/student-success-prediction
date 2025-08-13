@@ -160,6 +160,7 @@ async def analyze_student_data(
             
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
+                'name': prediction.get('name', f"Student {prediction['student_id']}"),  # Include student name
                 'risk_score': risk_prob,
                 'risk_category': risk_category,
                 'success_probability': success_prob,
@@ -457,6 +458,7 @@ async def load_sample_data(
             
             results.append({
                 'student_id': convert_student_id_to_int(prediction['student_id']),
+                'name': prediction.get('name', f"Student {prediction['student_id']}"),  # Include student name
                 'risk_score': risk_prob,
                 'risk_category': risk_category,
                 'success_probability': success_prob,
