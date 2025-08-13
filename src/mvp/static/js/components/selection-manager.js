@@ -72,7 +72,8 @@ class SelectionManager {
             totalSelected: this.selectedStudents.size
         });
         
-        console.log(`Student ${studentId} ${!wasSelected ? 'selected' : 'deselected'}`);
+        console.log(`🎓 Student ${studentId} ${!wasSelected ? 'selected' : 'deselected'}`);
+        console.log(`📊 Current selections: ${this.selectedStudents.size} students, ${this.selectedInterventions.size} interventions`);
     }
 
     selectAllStudents() {
@@ -130,6 +131,9 @@ class SelectionManager {
             selected: !wasSelected,
             totalSelected: this.selectedInterventions.size
         });
+        
+        console.log(`📋 Intervention ${interventionId} ${!wasSelected ? 'selected' : 'deselected'}`);
+        console.log(`📊 Current selections: ${this.selectedStudents.size} students, ${this.selectedInterventions.size} interventions`);
     }
 
     selectAllInterventions() {
@@ -173,10 +177,19 @@ class SelectionManager {
         // Add checkboxes to student cards
         const studentCards = document.querySelectorAll('[data-student-id]');
         console.log(`🎯 Adding checkboxes to ${studentCards.length} student cards`);
-        studentCards.forEach(card => {
+        console.log('🔍 Student cards found:', Array.from(studentCards).map(card => ({
+            id: card.dataset.studentId,
+            hasCheckbox: !!card.querySelector('.selection-checkbox'),
+            className: card.className
+        })));
+        
+        studentCards.forEach((card, index) => {
             if (!card.querySelector('.selection-checkbox')) {
                 const checkbox = this.createSelectionCheckbox('student');
                 card.insertBefore(checkbox, card.firstChild);
+                console.log(`✅ Added checkbox to student card ${index} (ID: ${card.dataset.studentId})`);
+            } else {
+                console.log(`⚠️ Student card ${index} already has checkbox (ID: ${card.dataset.studentId})`);
             }
         });
 
@@ -212,10 +225,21 @@ class SelectionManager {
             e.stopPropagation();
             const card = e.target.closest('[data-student-id], [data-intervention-id]');
             
-            if (type === 'student' && card.dataset.studentId) {
+            console.log(`🖱️ Checkbox clicked: type=${type}, card found:`, card);
+            console.log(`📋 Card data:`, card ? {
+                studentId: card.dataset.studentId,
+                interventionId: card.dataset.interventionId,
+                className: card.className
+            } : 'No card found');
+            
+            if (type === 'student' && card && card.dataset.studentId) {
+                console.log(`🎓 Triggering student selection for ID: ${card.dataset.studentId}`);
                 this.toggleStudentSelection(parseInt(card.dataset.studentId));
-            } else if (type === 'intervention' && card.dataset.interventionId) {
+            } else if (type === 'intervention' && card && card.dataset.interventionId) {
+                console.log(`📋 Triggering intervention selection for ID: ${card.dataset.interventionId}`);
                 this.toggleInterventionSelection(parseInt(card.dataset.interventionId));
+            } else {
+                console.error(`❌ Selection failed: type=${type}, card exists=${!!card}, studentId=${card?.dataset.studentId}, interventionId=${card?.dataset.interventionId}`);
             }
         });
         
@@ -381,7 +405,9 @@ class SelectionManager {
         
         // Show mixed action button when both students and interventions are selected
         if (bulkMixedBtn) {
-            bulkMixedBtn.style.display = (studentCount > 0 && interventionCount > 0) ? 'flex' : 'none';
+            const showMixed = (studentCount > 0 && interventionCount > 0);
+            console.log(`🎭 Mixed button logic: ${studentCount} students, ${interventionCount} interventions, show: ${showMixed}`);
+            bulkMixedBtn.style.display = showMixed ? 'flex' : 'none';
             const mixedCountSpan = bulkMixedBtn.querySelector('.mixed-count');
             if (mixedCountSpan) mixedCountSpan.textContent = totalCount;
         }
