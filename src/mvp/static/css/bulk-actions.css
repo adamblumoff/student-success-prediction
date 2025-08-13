@@ -144,7 +144,8 @@
     align-items: center;
     gap: 12px;
     min-width: 0;
-    flex: 1;
+    flex: 0 0 auto;
+    order: -1;
 }
 
 .selection-count {
@@ -327,7 +328,7 @@
 
 .bulk-mode-toggle {
     background: var(--selection-success);
-    color: white;
+    color: black;
     border: 2px solid var(--selection-success);
     border-radius: 8px;
     padding: 8px 12px;
@@ -347,13 +348,14 @@
 .bulk-mode-toggle:hover {
     background: #059669;
     border-color: #059669;
+    color: black;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .bulk-mode-toggle.active {
     background: #065f46;
-    color: white;
+    color: black;
     border-color: #065f46;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
 }
