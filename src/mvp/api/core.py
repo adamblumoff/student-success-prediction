@@ -38,14 +38,20 @@ from mvp.security import (
     revoke_web_session,
     security_config
 )
-from mvp.database import get_db_session, save_predictions_batch
+from mvp.database import get_db_session, get_session_factory, save_predictions_batch
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from mvp.audit_logger import audit_logger
 
 # Database dependency function  
-def get_db() -> Session:
-    with get_db_session() as session:
+def get_db():
+    """Dependency function to provide database session to FastAPI endpoints"""
+    session_factory = get_session_factory()
+    session = session_factory()
+    try:
         yield session
+    finally:
+        session.close()
 from mvp.models import Institution, Student, Prediction, Intervention, AuditLog
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import desc
@@ -593,11 +599,35 @@ async def analyze_k12_gradebook(
 
 @router.get("/sample")
 async def load_sample_data(
+    request: Request,
     current_user: dict = Depends(get_current_user_secure),
-    k12_ultra_predictor = Depends(get_k12_ultra_predictor)
+    k12_ultra_predictor = Depends(get_k12_ultra_predictor),
+    db: Session = Depends(get_db)
 ):
-    """Load sample student data for demonstration using K-12 model"""
+    """Load sample student data for demonstration using K-12 model with audit logging"""
     try:
+        # Log sample data access
+        request_context = {
+            'ip_address': request.client.host if request.client else "unknown",
+            'user_agent': request.headers.get('user-agent', 'unknown'),
+            'session_id': current_user.get('session_id', f"session_{int(time.time())}")
+        }
+        
+        audit_logger.log_event(
+            session=db,
+            action="SAMPLE_DATA_ACCESS",
+            resource_type="demo_data",
+            resource_id="k12_sample_dataset",
+            user_context=current_user,
+            request_context=request_context,
+            details={'sample_size': 5, 'data_type': 'k12_gradebook'},
+            compliance_data={
+                'ferpa_protected': False,  # Sample data is not real student data
+                'audit_category': 'demo_access',
+                'educational_purpose': 'system_demonstration'
+            }
+        )
+        
         # Create sample K-12 gradebook data
         sample_gradebook = pd.DataFrame({
             'Student': ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson', 'Eva Martinez'],
