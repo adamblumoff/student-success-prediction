@@ -150,6 +150,24 @@ class DatabaseConfig:
 # Global database configuration instance
 db_config = DatabaseConfig()
 
+# Initialize encryption middleware when database is configured
+def _initialize_encryption_on_startup():
+    """Initialize encryption middleware with database configuration"""
+    try:
+        from .encryption_middleware import encryption_middleware
+        from .encryption import encryption_manager
+        
+        if encryption_manager.enabled:
+            logger.info("🔒 Database encryption middleware initialized")
+        else:
+            logger.info("🔓 Database encryption disabled for development")
+            
+    except ImportError as e:
+        logger.warning(f"⚠️ Encryption modules not available: {e}")
+
+# Initialize encryption when module is imported
+_initialize_encryption_on_startup()
+
 def get_engine() -> Engine:
     """Get SQLAlchemy engine instance."""
     if not db_config.engine:
