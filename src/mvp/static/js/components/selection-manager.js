@@ -395,17 +395,18 @@ class SelectionManager {
         const interventionCount = this.selectedInterventions.size;
         const totalCount = studentCount + interventionCount;
         
-        // Update selection info
+        // Update selection info - simplified format
         const countElement = toolbar.querySelector('.selection-count');
         if (countElement) {
             if (totalCount === 0) {
                 countElement.textContent = 'No items selected';
             } else if (studentCount > 0 && interventionCount > 0) {
-                countElement.textContent = `${studentCount} students, ${interventionCount} interventions selected`;
+                // Mixed selection - show total count
+                countElement.textContent = `${totalCount} items selected`;
             } else if (studentCount > 0) {
-                countElement.textContent = `${studentCount} student${studentCount !== 1 ? 's' : ''} selected`;
+                countElement.textContent = `${studentCount} student${studentCount !== 1 ? 's' : ''}`;
             } else if (interventionCount > 0) {
-                countElement.textContent = `${interventionCount} intervention${interventionCount !== 1 ? 's' : ''} selected`;
+                countElement.textContent = `${interventionCount} selected`;
             }
         }
         
