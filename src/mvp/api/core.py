@@ -401,7 +401,7 @@ async def load_sample_data(
             'Science Grade': [91, 65, 79, 41, 87]
         })
         
-        # Check cache first
+        # Use cached data if available (performance optimization)
         if _demo_cache['sample_data'] is not None:
             predictions = _demo_cache['sample_data']
         else:
