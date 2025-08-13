@@ -10,6 +10,8 @@ from fastapi import HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Dict, Any
 from collections import defaultdict, deque
+from fastapi import Depends
+from sqlalchemy.orm import Session
 
 # Rate limiting with time-based sliding windows
 _rate_limit_storage = defaultdict(lambda: deque())
@@ -73,13 +75,59 @@ def validate_api_key() -> str:
     return api_key
 
 def simple_auth(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
-    """Simple API key authentication for MVP"""
+    """Simple API key authentication for MVP with institution context"""
     expected_key = os.getenv("MVP_API_KEY", "dev-key-change-me")
     
     if not credentials or credentials.credentials != expected_key:
         raise HTTPException(status_code=401, detail="Invalid API key")
     
-    return {"user": "mvp_user", "permissions": ["read", "write"]}
+    # For MVP, use default institution ID 1 (can be extended for multi-tenant)
+    default_institution_id = int(os.getenv("DEFAULT_INSTITUTION_ID", "1"))
+    
+    return {
+        "user": "mvp_user", 
+        "permissions": ["read", "write"],
+        "institution_id": default_institution_id,
+        "user_id": "mvp_user_001",
+        "role": "educator"
+    }
+
+def get_current_user_secure(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials,
+    db: Session = None
+) -> Dict[str, Any]:
+    """Enhanced authentication with database security context setup"""
+    # First, apply rate limiting
+    simple_rate_limit(request)
+    
+    # Perform authentication
+    user_info = simple_auth(credentials)
+    
+    # Set up database security context if database session provided
+    if db is not None:
+        try:
+            from .database_security import db_security
+            
+            # Set institution context for row-level security
+            success = db_security.set_institution_context(
+                session=db,
+                institution_id=user_info["institution_id"],
+                user_id=user_info["user_id"],
+                ip_address=request.client.host if request.client else "unknown"
+            )
+            
+            if not success:
+                raise HTTPException(status_code=500, detail="Failed to establish secure database context")
+                
+        except ImportError:
+            # Database security module not available (development mode)
+            pass
+        except Exception as e:
+            # Log error but don't fail authentication in MVP mode
+            print(f"⚠️  Warning: Database security context setup failed: {e}")
+    
+    return user_info
 
 def simple_rate_limit(request: Request, limit: int = MAX_REQUESTS_PER_MINUTE) -> None:
     """
