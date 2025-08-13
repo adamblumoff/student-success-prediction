@@ -945,20 +945,60 @@
     border-color: var(--selection-primary-light) !important;
 }
 
-/* Ensure all update intervention buttons have solid backgrounds */
+/* Ensure all update intervention buttons have solid backgrounds and are visible */
 .modal .btn-primary,
 .modal-footer .btn-primary,
-.status-modal .btn-primary {
-    background: var(--selection-primary) !important;
+.status-modal .btn-primary,
+.modal .btn[type="submit"],
+.modal-footer .btn[type="submit"] {
+    background: #4f46e5 !important;
     color: white !important;
-    border: 1px solid var(--selection-primary) !important;
+    border: 1px solid #4f46e5 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
 }
 
 .modal .btn-primary:hover,
 .modal-footer .btn-primary:hover,
-.status-modal .btn-primary:hover {
-    background: var(--selection-primary-light) !important;
-    border-color: var(--selection-primary-light) !important;
+.status-modal .btn-primary:hover,
+.modal .btn[type="submit"]:hover,
+.modal-footer .btn[type="submit"]:hover {
+    background: #6366f1 !important;
+    border-color: #6366f1 !important;
+    display: inline-flex !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* Force modal buttons to always be visible, overriding any hiding rules */
+.modal button,
+.modal .btn,
+.modal-footer button,
+.modal-footer .btn {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Special handling for the status update button */
+button[type="submit"],
+.btn[type="submit"],
+.modal button[type="submit"],
+.modal .btn[type="submit"] {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #4f46e5 !important;
+    color: white !important;
+    border: 1px solid #4f46e5 !important;
 }
 
 /* Responsive design for assignment modal */
