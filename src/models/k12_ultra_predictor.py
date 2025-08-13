@@ -400,7 +400,7 @@ class K12UltraPredictor:
                 # Create result
                 result = {
                     'student_id': student_row.get('student_id', student_row.get('id', f'student_{idx}')),
-                    'name': student_row.get('name', student_row.get('student_name', 'Unknown')),
+                    'name': student_row.get('name', student_row.get('student_name', student_row.get('Student', 'Unknown'))),
                     'grade_level': int(student_features.get('grade_level', 9)),
                     'current_gpa': float(student_features.get('current_gpa', 2.5)),
                     'attendance_rate': float(student_features.get('attendance_rate', 0.95)),
@@ -422,7 +422,7 @@ class K12UltraPredictor:
             for i, (idx, row) in enumerate(gradebook_df.iterrows()):
                 results.append({
                     'student_id': row.get('student_id', f'student_{i}'),
-                    'name': row.get('name', 'Unknown'),
+                    'name': row.get('name', row.get('student_name', row.get('Student', 'Unknown'))),
                     'grade_level': 9,
                     'current_gpa': 2.5,
                     'attendance_rate': 0.95,
