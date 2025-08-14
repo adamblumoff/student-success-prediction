@@ -12,26 +12,33 @@ import tempfile
 from unittest.mock import patch, MagicMock
 import json
 
-# Set up test environment
-os.environ['TESTING'] = 'true'
-os.environ['ENVIRONMENT'] = 'test'
-os.environ['ENABLE_DATABASE_ENCRYPTION'] = 'true'
-
 # Add project root to path
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.mvp.encryption import (
-    EncryptionManager, 
-    encryption_manager,
-    encrypt_student_data,
-    decrypt_student_data,
-    encrypt_user_data,
-    decrypt_user_data,
-    check_encryption_health,
-    ENCRYPTED_FIELDS
-)
+# Set up test environment (moved inside test fixtures)
+# os.environ['TESTING'] = 'true'
+# os.environ['ENVIRONMENT'] = 'test'
+
+# Encryption imports are done inside test functions to avoid module-level initialization
+# from src.mvp.encryption import ...
+
+@pytest.fixture(autouse=True)
+def clean_test_environment():
+    """Ensure clean test environment for each test"""
+    # Store original environment
+    original_env = dict(os.environ)
+    
+    # Set base test environment
+    os.environ['TESTING'] = 'true'
+    os.environ['ENVIRONMENT'] = 'test'
+    
+    yield
+    
+    # Restore original environment
+    os.environ.clear()
+    os.environ.update(original_env)
 
 class TestEncryptionManager:
     """Test core encryption manager functionality"""
@@ -41,6 +48,8 @@ class TestEncryptionManager:
         """Create encryption manager for testing"""
         # Force enable encryption for tests
         with patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'}):
+            # Import inside fixture to avoid module-level initialization
+            from src.mvp.encryption import EncryptionManager
             return EncryptionManager()
     
     def test_encryption_initialization(self, test_encryption_manager):
@@ -107,12 +116,14 @@ class TestEncryptionStatus:
     
     def test_encryption_health_check(self):
         """Test encryption health check function"""
+        from src.mvp.encryption import check_encryption_health
         health = check_encryption_health()
         assert isinstance(health, bool)
     
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_encryption_status_enabled(self):
         """Test encryption status when enabled"""
+        from src.mvp.encryption import EncryptionManager
         manager = EncryptionManager()
         status = manager.get_encryption_status()
         
@@ -124,6 +135,7 @@ class TestEncryptionStatus:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'false'})
     def test_encryption_status_disabled(self):
         """Test encryption status when disabled"""
+        from src.mvp.encryption import EncryptionManager
         manager = EncryptionManager()
         status = manager.get_encryption_status()
         
@@ -164,6 +176,7 @@ class TestModelDataEncryption:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_student_data_encryption(self, sample_student_data):
         """Test student data encryption"""
+        from src.mvp.encryption import encrypt_student_data
         encrypted_data = encrypt_student_data(sample_student_data)
         
         # Check that sensitive fields are encrypted
@@ -182,6 +195,7 @@ class TestModelDataEncryption:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_student_data_decryption(self, sample_student_data):
         """Test student data decryption"""
+        from src.mvp.encryption import encrypt_student_data, decrypt_student_data
         encrypted_data = encrypt_student_data(sample_student_data)
         decrypted_data = decrypt_student_data(encrypted_data)
         
@@ -192,6 +206,7 @@ class TestModelDataEncryption:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_user_data_encryption(self, sample_user_data):
         """Test user data encryption"""
+        from src.mvp.encryption import encrypt_user_data
         encrypted_data = encrypt_user_data(sample_user_data)
         
         # Check that sensitive fields are encrypted
@@ -210,6 +225,7 @@ class TestModelDataEncryption:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'false'})
     def test_encryption_disabled_passthrough(self, sample_student_data):
         """Test that data passes through unchanged when encryption disabled"""
+        from src.mvp.encryption import encrypt_student_data
         # Need to mock the encryption manager to be disabled
         with patch('src.mvp.encryption.encryption_manager') as mock_manager:
             mock_manager.enabled = False
@@ -226,6 +242,7 @@ class TestEncryptionConfiguration:
     
     def test_encrypted_fields_configuration(self):
         """Test that encrypted fields are properly configured"""
+        from src.mvp.encryption import ENCRYPTED_FIELDS
         assert 'students' in ENCRYPTED_FIELDS
         assert 'users' in ENCRYPTED_FIELDS
         
@@ -247,6 +264,7 @@ class TestEncryptionConfiguration:
     def test_custom_encryption_key(self):
         """Test using custom encryption key"""
         with patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'}):
+            from src.mvp.encryption import EncryptionManager
             manager = EncryptionManager()
             assert manager.enabled == True
     
@@ -254,12 +272,14 @@ class TestEncryptionConfiguration:
     def test_production_requires_encryption_key(self):
         """Test that production environment requires encryption key"""
         with patch.dict(os.environ, {'DATABASE_ENCRYPTION_KEY': '', 'ENABLE_DATABASE_ENCRYPTION': ''}):
+            from src.mvp.encryption import EncryptionManager
             with pytest.raises(ValueError, match="Critical.*initialization failed"):
                 EncryptionManager()
     
     def test_development_mode_configuration(self):
         """Test encryption configuration in development mode"""
         with patch.dict(os.environ, {'ENVIRONMENT': 'development', 'ENABLE_DATABASE_ENCRYPTION': 'false'}):
+            from src.mvp.encryption import EncryptionManager
             manager = EncryptionManager()
             assert manager.enabled == False
 
@@ -271,12 +291,14 @@ class TestEncryptionSecurity:
         """Test that encryption uses strong keys"""
         # Test with weak key should fail during initialization
         with patch.dict(os.environ, {'DATABASE_ENCRYPTION_KEY': 'weak', 'ENVIRONMENT': 'production'}):
+            from src.mvp.encryption import EncryptionManager
             with pytest.raises(ValueError, match="Critical.*initialization failed"):
                 EncryptionManager()
     
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_different_data_different_ciphertext(self):
         """Test that different data produces different ciphertext"""
+        from src.mvp.encryption import EncryptionManager
         manager = EncryptionManager()
         
         data1 = "test1@example.com"
@@ -292,6 +314,7 @@ class TestEncryptionSecurity:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_tampered_data_detection(self):
         """Test that tampered encrypted data is detected"""
+        from src.mvp.encryption import EncryptionManager
         manager = EncryptionManager()
         
         original_data = "secure@example.com"
@@ -311,6 +334,7 @@ class TestPerformance:
     def test_encryption_performance(self):
         """Test encryption performance for typical data sizes"""
         import time
+        from src.mvp.encryption import EncryptionManager
         
         manager = EncryptionManager()
         test_data = "performance.test@school.edu"
@@ -336,6 +360,7 @@ class TestPerformance:
     @patch.dict(os.environ, {'ENABLE_DATABASE_ENCRYPTION': 'true'})
     def test_large_data_encryption(self):
         """Test encryption of larger data sizes"""
+        from src.mvp.encryption import EncryptionManager
         manager = EncryptionManager()
         
         # Test with a larger string (1KB)
