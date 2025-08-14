@@ -277,6 +277,63 @@ async def get_all_interventions(
         logger.error(f"Error getting all interventions: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve interventions")
 
+# ========== SPECIFIC ROUTES (must come before parameterized routes) ==========
+
+@router.get("/types")
+async def get_intervention_types():
+    """Get available intervention types"""
+    types = [
+        {"value": "academic_support", "label": "Academic Support", "description": "Tutoring, study groups, academic coaching"},
+        {"value": "attendance_support", "label": "Attendance Support", "description": "Attendance monitoring, family engagement"},
+        {"value": "behavioral_support", "label": "Behavioral Support", "description": "Counseling, behavior plans, conflict resolution"},
+        {"value": "engagement_support", "label": "Engagement Support", "description": "Extracurricular activities, peer mentoring"},
+        {"value": "family_engagement", "label": "Family Engagement", "description": "Parent conferences, home visits, family support"},
+        {"value": "college_career", "label": "College & Career", "description": "College prep, career counseling, internships"},
+        {"value": "health_wellness", "label": "Health & Wellness", "description": "Mental health support, wellness programs"},
+        {"value": "technology_support", "label": "Technology Support", "description": "Device access, digital literacy support"}
+    ]
+    return types
+
+@router.get("/dashboard")
+async def get_interventions_dashboard(
+    db: Session = Depends(get_db),
+    institution_id: Optional[int] = None
+):
+    """Get intervention dashboard statistics"""
+    try:
+        # For now, get all interventions (later filter by institution/user access)
+        query = db.query(Intervention)
+        if institution_id:
+            query = query.filter(Intervention.institution_id == institution_id)
+        
+        interventions = query.all()
+        
+        # Calculate statistics
+        total = len(interventions)
+        pending = len([i for i in interventions if i.status == "pending"])
+        in_progress = len([i for i in interventions if i.status == "in_progress"])
+        completed = len([i for i in interventions if i.status == "completed"])
+        
+        # Priority breakdown
+        high_priority = len([i for i in interventions if i.priority in ["high", "critical"]])
+        overdue = len([i for i in interventions if i.due_date and i.due_date < datetime.now() and i.status not in ["completed", "cancelled"]])
+        
+        return {
+            "total": total,
+            "pending": pending,
+            "in_progress": in_progress,
+            "completed": completed,
+            "high_priority": high_priority,
+            "overdue": overdue,
+            "completion_rate": round((completed / total * 100) if total > 0 else 0, 1)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting interventions dashboard: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
+
+# ========== PARAMETERIZED ROUTES ==========
+
 @router.get("/{intervention_id}", response_model=InterventionResponse)
 async def get_intervention(
     intervention_id: int,
@@ -459,59 +516,6 @@ async def delete_intervention(
     except Exception as e:
         logger.error(f"Error deleting intervention: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete intervention")
-
-@router.get("/types")
-async def get_intervention_types():
-    """Get available intervention types"""
-    types = [
-        {"value": "academic_support", "label": "Academic Support", "description": "Tutoring, study groups, academic coaching"},
-        {"value": "attendance_support", "label": "Attendance Support", "description": "Attendance monitoring, family engagement"},
-        {"value": "behavioral_support", "label": "Behavioral Support", "description": "Counseling, behavior plans, conflict resolution"},
-        {"value": "engagement_support", "label": "Engagement Support", "description": "Extracurricular activities, peer mentoring"},
-        {"value": "family_engagement", "label": "Family Engagement", "description": "Parent conferences, home visits, family support"},
-        {"value": "college_career", "label": "College & Career", "description": "College prep, career counseling, internships"},
-        {"value": "health_wellness", "label": "Health & Wellness", "description": "Mental health support, wellness programs"},
-        {"value": "technology_support", "label": "Technology Support", "description": "Device access, digital literacy support"}
-    ]
-    return types
-
-@router.get("/dashboard")
-async def get_interventions_dashboard(
-    db: Session = Depends(get_db),
-    institution_id: Optional[int] = None
-):
-    """Get intervention dashboard statistics"""
-    try:
-        # For now, get all interventions (later filter by institution/user access)
-        query = db.query(Intervention)
-        if institution_id:
-            query = query.filter(Intervention.institution_id == institution_id)
-        
-        interventions = query.all()
-        
-        # Calculate statistics
-        total = len(interventions)
-        pending = len([i for i in interventions if i.status == "pending"])
-        in_progress = len([i for i in interventions if i.status == "in_progress"])
-        completed = len([i for i in interventions if i.status == "completed"])
-        
-        # Priority breakdown
-        high_priority = len([i for i in interventions if i.priority in ["high", "critical"]])
-        overdue = len([i for i in interventions if i.due_date and i.due_date < datetime.now() and i.status not in ["completed", "cancelled"]])
-        
-        return {
-            "total": total,
-            "pending": pending,
-            "in_progress": in_progress,
-            "completed": completed,
-            "high_priority": high_priority,
-            "overdue": overdue,
-            "completion_rate": round((completed / total * 100) if total > 0 else 0, 1)
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting interventions dashboard: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
 
 # ========== BULK OPERATION ENDPOINTS ==========
 

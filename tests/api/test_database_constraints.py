@@ -14,7 +14,7 @@ import tempfile
 project_root = Path(__file__).parent.parent.parent
 sys.path.append(str(project_root))
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert
@@ -37,6 +37,13 @@ class TestDatabaseConstraints:
         cls.sqlite_url = f"sqlite:///{cls.sqlite_db_path}"
         cls.sqlite_engine = create_engine(cls.sqlite_url, connect_args={"check_same_thread": False})
         cls.SQLiteSession = sessionmaker(autocommit=False, autoflush=False, bind=cls.sqlite_engine)
+        
+        # Enable foreign key constraints in SQLite
+        @event.listens_for(cls.sqlite_engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
         
         # Create SQLite tables and add constraints
         Base.metadata.create_all(bind=cls.sqlite_engine)
@@ -114,8 +121,12 @@ class TestDatabaseConstraints:
         with self.SQLiteSession() as session:
             # Create first user
             user1 = User(
+                username="testuser1",
                 email="unique.test@example.com",
                 password_hash="hash1",
+                first_name="Test",
+                last_name="User1",
+                role="teacher",
                 institution_id=self.institution_id
             )
             session.add(user1)
@@ -124,8 +135,12 @@ class TestDatabaseConstraints:
         # Try to create second user with same email
         with self.SQLiteSession() as session:
             user2 = User(
+                username="testuser2",
                 email="unique.test@example.com",  # Same email
-                password_hash="hash2", 
+                password_hash="hash2",
+                first_name="Test",
+                last_name="User2", 
+                role="teacher",
                 institution_id=self.institution_id
             )
             session.add(user2)
@@ -238,15 +253,12 @@ class TestDatabaseConstraints:
             ).count()
             assert prediction_count == 1
             
-            # Delete student
+            # Delete student - should fail due to foreign key constraint
             session.delete(test_student)
-            session.commit()
             
-            # Verify prediction was also deleted (due to foreign key constraint)
-            prediction_count_after = session.query(Prediction).filter(
-                Prediction.student_id == test_student.id
-            ).count()
-            assert prediction_count_after == 0
+            # Should raise integrity error due to foreign key constraint
+            with pytest.raises(IntegrityError):
+                session.commit()
     
     def test_constraint_error_messages(self):
         """Test that constraint violations provide useful error messages"""

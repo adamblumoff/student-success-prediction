@@ -20,7 +20,7 @@ os.environ['ENVIRONMENT'] = 'test'
 os.environ['MVP_API_KEY'] = 'test-api-key-secure-32-chars-min'
 
 from src.mvp.mvp_api import app
-from src.mvp.security import security_config, rate_limiter, error_handler
+from src.mvp.security import security_config, rate_limiter
 
 @pytest.fixture
 def client():
@@ -180,7 +180,7 @@ class TestEndpointSecurity:
     
     def test_health_endpoint_no_auth(self, client):
         """Test health endpoint doesn't require auth"""
-        response = client.get("/api/health/health")
+        response = client.get("/health")
         assert response.status_code == 200
     
     def test_upload_endpoints_require_auth(self, client):
@@ -265,14 +265,15 @@ class TestSessionSecurity:
             # Should validate session properly
             assert response.status_code in [200, 401]
 
-@pytest.mark.asyncio
 class TestAsyncSecurity:
     """Test async endpoint security"""
     
-    async def test_async_endpoint_auth(self):
+    def test_async_endpoint_auth(self):
         """Test async endpoints maintain security"""
-        async with TestClient(app) as client:
-            response = await client.get("/api/mvp/stats")
+        # For async tests with FastAPI, we can still use the regular TestClient
+        # since it handles async operations internally
+        with TestClient(app) as client:
+            response = client.get("/api/mvp/stats")
             assert response.status_code == 401
 
 if __name__ == "__main__":
