@@ -293,6 +293,11 @@ function showStatusUpdateModal(interventionId, currentStatus) {
                         <i class="fas fa-save"></i>
                         Update Status
                     </button>
+                    <button type="button" id="delete-completed-btn" class="btn btn-danger" style="display: none;" 
+                            onclick="handleCompletedInterventionDeletion('${interventionId}')">
+                        <i class="fas fa-trash"></i>
+                        Delete Completed
+                    </button>
                 </div>
             </form>
         </div>
@@ -300,21 +305,25 @@ function showStatusUpdateModal(interventionId, currentStatus) {
     
     document.body.appendChild(modal);
     
-    // Show outcome field if status is completed
+    // Show outcome field and delete button if status is completed
     const statusSelect = modal.querySelector('#status-select');
     const outcomeGroup = modal.querySelector('#outcome-group');
+    const deleteBtn = modal.querySelector('#delete-completed-btn');
     
     statusSelect.addEventListener('change', function() {
         if (this.value === 'completed') {
             outcomeGroup.style.display = 'block';
+            deleteBtn.style.display = 'inline-flex';
         } else {
             outcomeGroup.style.display = 'none';
+            deleteBtn.style.display = 'none';
         }
     });
     
     // Trigger initial check
     if (currentStatus === 'completed') {
         outcomeGroup.style.display = 'block';
+        deleteBtn.style.display = 'inline-flex';
     }
 }
 
@@ -568,6 +577,45 @@ async function handleStatusUpdate(event, interventionId) {
     }
 }
 
+async function handleCompletedInterventionDeletion(interventionId) {
+    console.log('Handling completed intervention deletion:', interventionId);
+    
+    // Show confirmation dialog
+    const confirmed = await showCompletedDeletionConfirmation();
+    if (!confirmed) {
+        return; // User cancelled the deletion
+    }
+    
+    // Delete the completed intervention
+    try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`/api/interventions/${interventionId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            showNotification('Completed intervention deleted successfully', 'success');
+            
+            // Close the status update modal
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) modal.remove();
+            
+            // Refresh interventions list
+            safeRefreshInterventions();
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Failed to delete completed intervention', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting completed intervention:', error);
+        showNotification('Error deleting completed intervention', 'error');
+    }
+}
+
 function closeModal(element) {
     const modal = element.closest('.modal-overlay');
     if (modal) {
@@ -634,6 +682,69 @@ function showCancellationConfirmation() {
         });
         
         confirmBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(true);
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+                resolve(false);
+            }
+        });
+    });
+}
+
+function showCompletedDeletionConfirmation() {
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal confirmation-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-check-circle text-success"></i> Delete Completed Intervention</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove(); arguments[0].resolve(false);">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-message">
+                        <p><strong>🗂️ Archive Completed Intervention</strong></p>
+                        <p>This intervention has been completed successfully. You can delete it to clean up your intervention list.</p>
+                        <p><strong>⚠️ Note:</strong> This action <strong>permanently removes</strong> the intervention from the database.</p>
+                        <p>Are you sure you want to delete this completed intervention?</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="keep-completed">
+                        <i class="fas fa-archive"></i>
+                        Keep for Records
+                    </button>
+                    <button type="button" class="btn btn-danger" id="delete-completed">
+                        <i class="fas fa-trash"></i>
+                        Yes, Delete Permanently
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add event listeners
+        const keepBtn = modal.querySelector('#keep-completed');
+        const deleteBtn = modal.querySelector('#delete-completed');
+        const closeBtn = modal.querySelector('.modal-close');
+        
+        keepBtn.addEventListener('click', () => {
+            modal.remove();
+            resolve(false);
+        });
+        
+        deleteBtn.addEventListener('click', () => {
             modal.remove();
             resolve(true);
         });
