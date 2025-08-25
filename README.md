@@ -4,210 +4,66 @@ An AI-powered platform that helps K-12 educators identify at-risk students early
 
 ## 🚀 Quick Start
 
-### Development (SQLite)
 ```bash
-# Start with automatic SQLite fallback
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the application
 python3 run_mvp.py
 
-# Open your browser to http://localhost:8001
+# Open browser to http://localhost:8001
+# Default API key: dev-key-change-me
 ```
 
-### Production (Docker)
-```bash
-# ⚠️  IMPORTANT: Review security checklist before production deployment
-# See docs/PRODUCTION_READINESS_ANALYSIS.md for critical security fixes
+## ✨ What It Does
 
-# Copy and configure environment
-cp .env.production .env
-nano .env  # Update DATABASE_URL and API keys
-
-# Deploy with Docker
-./deploy.sh --environment production
-
-# Verify deployment
-curl http://localhost:8001/health
-```
-
-## 🛡️ Production Readiness Status
-
-**Current Status:** 80% ready for single K-12 district deployment  
-**Last Assessment:** December 2024  
-
-### ✅ Strengths
-- Comprehensive ML model (81.5% AUC)
-- FERPA-compliant encryption system
-- Extensive test coverage (116 tests passing)
-- Production-ready Docker deployment
-
-### ⚠️ Critical Issues (Must Fix Before Production)
-- **Security**: Default database credentials, hardcoded demo passwords
-- **Compliance**: Encryption disabled by default
-- **Testing**: 24 failing security tests
-- **See**: `docs/PRODUCTION_READINESS_ANALYSIS.md` for complete details
-
-## ✨ Features
-
-- **🤖 AI-Powered Risk Prediction**: Identifies students at risk of academic failure using 31 engineered features
-- **📊 Explainable AI**: Provides detailed explanations for each prediction with risk factors and protective factors
-- **🎯 Comprehensive Intervention Management**: Full-featured intervention tracking with bulk operations
-  - **Individual & Bulk Creation**: Create interventions for single students or multiple students at once
-  - **Mixed Selection**: Select both students and interventions simultaneously for complex operations
-  - **Status Management**: Update, assign, and track intervention progress with real-time updates
-  - **Cancellation with Deletion**: Permanently remove cancelled interventions with confirmation
-- **📈 Real-Time Analytics**: Comprehensive dashboard with advanced analytics and ROI calculations
-- **🏫 Multi-Tenant Architecture**: Supports multiple school districts with data isolation
-- **📚 Universal Integration**: Canvas LMS, PowerSchool SIS, Google Classroom, and generic CSV formats
-- **🔔 Real-Time Notifications**: WebSocket-based alert system for at-risk students
-- **🔒 FERPA Compliant**: Audit logging and security features for educational data privacy
+- **🤖 AI Risk Prediction**: Identifies students at risk using 81.5% AUC K-12 specialized model
+- **📊 Explainable AI**: Shows why students are at risk with detailed explanations
+- **🎯 Intervention Management**: Create and track interventions with bulk operations
+- **📈 Real-Time Dashboard**: Live analytics and progress monitoring
+- **📚 Multi-Platform**: Works with Canvas, PowerSchool, Google Classroom, and CSV files
 
 ## 📊 How It Works
 
-1. **Upload Data**: CSV file with student information (ID, scores, engagement metrics)
-2. **AI Analysis**: Machine learning models analyze 31 features across demographics, engagement, and performance  
-3. **Risk Prediction**: Students classified as High/Medium/Low risk with confidence scores
-4. **Explanations**: Detailed breakdown of risk factors and protective elements
-5. **Intervention Management**: Create, track, and manage interventions with comprehensive bulk operations
-6. **Real-Time Updates**: All changes reflect immediately without page refreshes
+1. **Upload**: CSV gradebook or use sample data
+2. **Analyze**: AI processes student data and predicts risk levels
+3. **Explain**: Click "Explain Prediction" to see detailed risk factors
+4. **Intervene**: Create targeted interventions for at-risk students
+5. **Track**: Monitor progress with real-time updates
 
-## 🎯 Supported Data Formats
+## 🎯 Key Features
 
-- **Canvas LMS**: Direct CSV exports from Canvas gradebooks
-- **Generic CSV**: Any CSV with student ID and performance/engagement data
-- **Sample Data**: Built-in demo data for testing
+### Individual & Bulk Operations
+- Create interventions for single or multiple students
+- Update status, assign staff, track outcomes
+- Mixed selection (students + interventions)
+- Real-time updates without page refresh
 
-### Required CSV Columns (minimum):
-- Student ID or identifier
-- At least one score/grade column  
-- Any engagement metrics (optional but improves accuracy)
+### AI Insights
+- High/Medium/Low risk categories
+- Risk and protective factor identification
+- Confidence scoring for each prediction
+- Grade-appropriate explanations (K-5, 6-8, 9-12)
 
-## 🧠 Machine Learning Models
+### Integration Support
+- Canvas LMS gradebook exports
+- PowerSchool SIS data
+- Google Classroom integration
+- Generic CSV format support
 
-- **Binary Classification**: 89.4% AUC for Pass/Fail prediction
-- **Multi-class Classification**: 77% F1-Score for detailed outcomes
-- **Feature Engineering**: 31 carefully crafted features
-- **Real-time Speed**: Predictions in under 100ms
+## 🛠️ Technical Stack
 
-### Top Predictive Features:
-1. Early assignment scores (22.3% importance)
-2. Platform engagement clicks (18.7% importance) 
-3. Previous course attempts (12.4% importance)
-4. Active study days (11.2% importance)
-5. Registration timing (9.8% importance)
+- **Backend**: Python/FastAPI with PostgreSQL
+- **Frontend**: JavaScript with modular components
+- **ML**: Neural Network (81.5% AUC) with explainable AI
+- **Testing**: 125+ tests covering components and API
 
-## 💡 Intervention Management System
+## 📚 Documentation
 
-### Individual Interventions
-Create targeted interventions with detailed tracking:
-- **8 Intervention Types**: Academic, Attendance, Behavioral, Engagement, Family, College/Career, Health, Technology
-- **Priority Levels**: Low, Medium, High, Critical with visual indicators
-- **Status Tracking**: Pending → In Progress → Completed/Cancelled
-- **Staff Assignment**: Assign interventions to specific team members
-- **Due Dates**: Set and track intervention deadlines
-- **Outcome Recording**: Document results and notes for completed interventions
-
-### Bulk Operations
-Efficiently manage multiple interventions:
-- **Bulk Creation**: Create interventions for multiple students simultaneously
-- **Mixed Selection**: Select both students and interventions at once for complex operations
-- **Bulk Status Updates**: Update multiple interventions' status, assignments, or outcomes
-- **Bulk Deletion**: Remove multiple interventions with confirmation
-- **Real-Time Updates**: All changes reflect immediately across the interface
-
-### Smart Recommendations
-AI-powered intervention suggestions based on risk factors:
-- **High Risk**: Academic support, one-on-one mentoring, study skills workshops
-- **Medium Risk**: Peer study groups, time management resources, regular check-ins  
-- **Low Risk**: Motivational resources, advanced learning opportunities
-
-## 🛠️ Technical Details
-
-### Requirements
-```bash
-pip install -r requirements.txt
-```
-
-### Architecture
-- **Frontend**: HTML/CSS/JavaScript web interface with explainable AI components
-- **Backend**: FastAPI with PostgreSQL/SQLite hybrid database layer
-- **ML Models**: XGBoost with comprehensive feature engineering
-- **Database**: Production PostgreSQL with development SQLite fallback
-- **Security**: API key authentication, rate limiting, and audit logging
-
-### Project Structure
-```
-├── src/mvp/              # Core application
-├── alembic/              # Database migrations
-├── deployment/           # Deployment tools
-├── docs/                 # Documentation
-├── results/models/       # Trained ML models
-└── run_mvp.py           # Application entry point
-```
-
-See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed folder organization.
-
-## 📈 Usage Examples
-
-### Web Interface
-1. Go to http://localhost:8001
-2. Click "Try with sample data" for a demo or upload your own CSV file
-3. View risk predictions and click "Explain Prediction" for details
-4. **Create Interventions**: Click "Create Intervention" for individual students
-5. **Bulk Operations**: Enable "Bulk Actions" to:
-   - Select multiple students using checkboxes
-   - Create interventions for multiple students at once
-   - Update, assign, or delete multiple interventions
-   - Use mixed selection for complex operations
-
-### API Usage (Advanced)
-```python
-import requests
-
-# Upload and analyze CSV
-files = {'file': open('student_data.csv', 'rb')}
-response = requests.post(
-    'http://localhost:8001/api/mvp/analyze',
-    files=files,
-    headers={'Authorization': 'Bearer dev-key-change-me'}
-)
-
-results = response.json()
-print(f"High risk students: {results['summary']['high_risk']}")
-```
-
-## 🔍 Understanding Results
-
-### Risk Categories
-- **High Risk (>70%)**: Needs immediate intervention
-- **Medium Risk (40-70%)**: Monitor closely, provide support
-- **Low Risk (<40%)**: On track for success
-
-### Explanation Features
-- **Risk Factors**: Specific areas of concern for each student
-- **Protective Factors**: Strengths that support success
-- **Confidence Score**: How certain the AI is about the prediction
-- **Recommendations**: Specific actions educators can take
-
-## 🎓 Educational Use Cases
-
-- **Early Warning Systems**: Identify struggling students before it's too late
-- **Resource Allocation**: Focus support on students who need it most  
-- **Intervention Planning**: Data-driven strategies for student support
-- **Academic Analytics**: Understand patterns in student success
-
-## 🔐 Security & Privacy
-
-- Simple API key authentication
-- File upload validation (CSV only, 10MB max)
-- No sensitive data stored permanently
-- Rate limiting to prevent abuse
-
-## 📄 Data Sources
-
-Built using the Open University Learning Analytics Dataset (OULAD):
-- 32,593 students across multiple courses
-- Demographics, VLE interactions, and assessment data
-- Proven benchmark for educational ML research
+- **[CLAUDE.md](CLAUDE.md)**: Complete development guide
+- **[docs/](docs/)**: Technical documentation and guides
+- **[PRODUCTION_READINESS_ANALYSIS.md](PRODUCTION_READINESS_ANALYSIS.md)**: Security checklist
 
 ---
 
-**🎯 Ready to help students succeed with AI-powered insights!**
+**Ready to help students succeed with AI-powered insights!** 🎯
