@@ -428,12 +428,43 @@ class Analysis extends Component {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          student_data: {
-            student_id: studentId,
-            grade_level: 9,
-            risk_category: riskLevel
-          },
-          question: `What are 3 immediate actions a teacher can take this week for this ${riskLevel.toLowerCase()} student? Keep it concise and actionable.`
+          student_data: (() => {
+            // Get comprehensive student data from app state
+            const currentStudent = this.appState.getState().selectedStudent;
+            const risk = currentStudent?.risk_score || currentStudent?.success_probability || 0.5;
+            
+            return {
+              student_id: studentId,
+              grade_level: currentStudent?.grade_level || 9,
+              risk_category: riskLevel,
+              risk_score: risk,
+              success_probability: currentStudent?.success_probability || (1 - risk),
+              needs_intervention: currentStudent?.needs_intervention || risk > 0.5,
+              name: currentStudent?.name || `Student ${studentId}`,
+              // Additional context if available
+              gpa: currentStudent?.gpa,
+              attendance_rate: currentStudent?.attendance_rate,
+              behavioral_incidents: currentStudent?.behavioral_incidents,
+              socioeconomic_status: currentStudent?.socioeconomic_status,
+              special_programs: currentStudent?.special_programs,
+              interventions_count: currentStudent?.interventions?.length || 0
+            };
+          })(),
+          question: `STUDENT CONTEXT: ${riskLevel} student (ID: ${studentId}) in grade level education.
+
+QUICK INSIGHTS REQUEST:
+Provide 3 IMMEDIATE, specific actions a teacher can implement THIS WEEK:
+
+1. One action focused on ACADEMIC support (specific to risk level)
+2. One action focused on ENGAGEMENT/RELATIONSHIP building  
+3. One action focused on MONITORING/ASSESSMENT
+
+For each action, provide:
+- Specific implementation steps (2-3 sentences max)
+- Expected time commitment
+- Success indicators to look for
+
+Keep response under 300 words, structured and actionable for busy teachers.`
         })
       });
 

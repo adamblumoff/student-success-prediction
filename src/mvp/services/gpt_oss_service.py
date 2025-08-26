@@ -280,17 +280,23 @@ Based on your analysis, provide specific recommendations for the educator."""
                 # Responses API format - extract text from structured response
                 generated_text = ""
                 try:
-                    # Handle structured response objects
+                    # Handle structured response objects - GPT-5-nano returns reasoning + message items
                     if isinstance(response.output, list):
                         for item in response.output:
-                            if hasattr(item, 'content') and item.content:
+                            # Look for message items (contain actual text content)
+                            if hasattr(item, 'type') and item.type == 'message':
+                                if hasattr(item, 'content') and item.content:
+                                    # Content is a list of ResponseOutputText objects
+                                    for content_item in item.content:
+                                        if hasattr(content_item, 'text'):
+                                            generated_text += content_item.text + "\n"
+                            # Fallback: check for direct text content in any item
+                            elif hasattr(item, 'content') and item.content:
                                 for content_item in item.content:
                                     if hasattr(content_item, 'text'):
                                         generated_text += content_item.text + "\n"
                             elif hasattr(item, 'text'):
                                 generated_text += item.text + "\n"
-                            else:
-                                generated_text += str(item) + "\n"
                     else:
                         generated_text = str(response.output)
                     

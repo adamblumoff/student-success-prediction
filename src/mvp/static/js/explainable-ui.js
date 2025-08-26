@@ -221,12 +221,18 @@ class ExplainableUI {
                 const staticResult = await staticResponse.json();
                 staticExplanation = staticResult.explanation;
                 
-                // Extract student data for GPT
+                // Extract comprehensive student data for GPT
                 studentData = {
                     student_id: normalizedId,
                     grade_level: staticResult.explanation?.student_info?.grade_level || 9,
                     risk_score: staticResult.explanation?.risk_score || 0.5,
-                    risk_category: staticResult.explanation?.risk_category || 'Medium Risk'
+                    risk_category: staticResult.explanation?.risk_category || 'Medium Risk',
+                    success_probability: staticResult.explanation?.success_probability || (1 - (staticResult.explanation?.risk_score || 0.5)),
+                    needs_intervention: staticResult.explanation?.needs_intervention || (staticResult.explanation?.risk_score || 0.5) > 0.5,
+                    confidence_score: staticResult.explanation?.confidence || 0.75,
+                    key_factors: staticResult.explanation?.key_factors || [],
+                    recommendations: staticResult.explanation?.recommendations || [],
+                    model_info: staticResult.explanation?.model_info || 'K-12 Prediction Model'
                 };
             } else {
                 console.warn('Static explanation not available, using basic student data');
@@ -234,7 +240,10 @@ class ExplainableUI {
                     student_id: normalizedId,
                     grade_level: 9,
                     gpa: 2.5,
-                    attendance_rate: 0.8
+                    attendance_rate: 0.8,
+                    risk_category: 'Medium Risk',
+                    risk_score: 0.5,
+                    needs_intervention: true
                 };
             }
 
@@ -248,7 +257,29 @@ class ExplainableUI {
                 },
                 body: JSON.stringify({
                     student_data: studentData,
-                    question: `Provide detailed analysis and specific intervention recommendations for this ${studentData.risk_category.toLowerCase()} student. Focus on actionable strategies teachers can implement immediately.`
+                    question: `Analyze this ${studentData.risk_category.toLowerCase()} student comprehensively:
+
+STUDENT PROFILE:
+- ID: ${studentData.student_id}
+- Grade: ${studentData.grade_level}
+- Risk Score: ${Math.round(studentData.risk_score * 100)}%
+- Success Probability: ${Math.round(studentData.success_probability * 100)}%
+- Needs Intervention: ${studentData.needs_intervention ? 'Yes' : 'No'}
+- Model Confidence: ${Math.round(studentData.confidence_score * 100)}%
+- Existing Risk Factors: ${studentData.key_factors.length > 0 ? studentData.key_factors.join(', ') : 'To be determined through assessment'}
+- Current Recommendations: ${studentData.recommendations.length > 0 ? studentData.recommendations.join('; ') : 'Need updated guidance'}
+
+ANALYSIS REQUEST:
+Provide a comprehensive educational analysis including:
+1. Detailed risk factor assessment with specific indicators
+2. Evidence-based intervention strategies with implementation timelines
+3. Multi-tiered support approach (Tier 1, 2, 3 interventions)
+4. Family engagement recommendations
+5. Progress monitoring metrics
+6. Early warning signs to watch for
+7. Success indicators to celebrate
+
+Focus on actionable, research-backed strategies that teachers and school teams can implement within the next 2 weeks.`
                 })
             });
 
