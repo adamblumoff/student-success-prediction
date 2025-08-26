@@ -193,11 +193,6 @@ class Analysis extends Component {
           <div class="detail-section">
             <h4><i class="fas fa-brain"></i> AI Analysis</h4>
             <p>This student shows ${riskLevel.toLowerCase()} patterns based on machine learning analysis of academic and engagement factors.</p>
-            <br>
-            <button class="btn btn-primary btn-small" onclick="showExplanation('${studentId}')">
-              <i class="fas fa-search-plus"></i>
-              View Detailed GPT-Enhanced Explanation
-            </button>
           </div>
           
           <div class="detail-section gpt-insights" id="gpt-insights-${studentId}">
@@ -452,19 +447,18 @@ class Analysis extends Component {
           })(),
           question: `STUDENT CONTEXT: ${riskLevel} student (ID: ${studentId}) in grade level education.
 
-QUICK INSIGHTS REQUEST:
-Provide 3 IMMEDIATE, specific actions a teacher can implement THIS WEEK:
+Provide 3 IMMEDIATE actions a teacher can implement THIS WEEK:
 
-1. One action focused on ACADEMIC support (specific to risk level)
-2. One action focused on ENGAGEMENT/RELATIONSHIP building  
-3. One action focused on MONITORING/ASSESSMENT
+1. ACADEMIC SUPPORT:
+[Specific steps | Time needed | Success indicators]
 
-For each action, provide:
-- Specific implementation steps (2-3 sentences max)
-- Expected time commitment
-- Success indicators to look for
+2. ENGAGEMENT/RELATIONSHIP:
+[Specific steps | Time needed | Success indicators]
 
-Keep response under 300 words, structured and actionable for busy teachers.`
+3. MONITORING/ASSESSMENT:
+[Specific steps | Time needed | Success indicators]
+
+Format each action concisely. No introductory text - start directly with the numbered actions.`
         })
       });
 
