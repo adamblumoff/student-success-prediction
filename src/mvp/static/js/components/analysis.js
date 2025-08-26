@@ -151,6 +151,12 @@ class Analysis extends Component {
     
     this.renderStudentDetail(student);
     this.loadStudentInterventions(student);
+    
+    // Auto-load Quick AI Insights
+    const studentId = student.student_id || student.id || 'Unknown';
+    const risk = student.risk_score || student.success_probability || 0;
+    const riskLevel = risk >= 0.7 ? 'High Risk' : risk >= 0.4 ? 'Medium Risk' : 'Low Risk';
+    this.loadQuickInsights(studentId, riskLevel);
   }
 
   renderStudentDetail(student) {
@@ -198,11 +204,17 @@ class Analysis extends Component {
           <div class="detail-section gpt-insights" id="gpt-insights-${studentId}">
             <h4><i class="fas fa-lightbulb"></i> Quick AI Insights</h4>
             <div class="gpt-insights-content">
-              <div class="loading-placeholder">
-                <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')">
-                  <i class="fas fa-brain"></i>
-                  Generate Quick Insights
-                </button>
+              <div class="loading-state" style="text-align: center; padding: 20px;">
+                <div class="spinner" style="
+                  border: 3px solid #f3f3f3;
+                  border-top: 3px solid #3498db;
+                  border-radius: 50%;
+                  width: 30px;
+                  height: 30px;
+                  animation: spin 1s linear infinite;
+                  margin: 0 auto 15px;
+                "></div>
+                <div style="color: #666; font-size: 14px;">🧠 Loading AI insights...</div>
               </div>
             </div>
           </div>
