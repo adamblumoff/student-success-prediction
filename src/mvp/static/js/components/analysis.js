@@ -406,9 +406,16 @@ class Analysis extends Component {
     const contentDiv = container.querySelector('.gpt-insights-content');
     if (!contentDiv) return;
     
-    // Check if we have cached insights
-    const cacheKey = `quick-insights-${studentId}-${riskLevel}`;
+    // Generate data hash for cache invalidation
+    const currentStudent = this.appState.getState().selectedStudent;
+    const dataHash = this.generateDataHash(currentStudent);
+    
+    // Check if we have cached insights with current data
+    const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
     const cached = sessionStorage.getItem(cacheKey);
+    
+    // Clean old cache entries for this student (different data hashes)
+    this.cleanOldCacheEntries(studentId, riskLevel, dataHash);
     
     if (cached) {
       console.log('✅ Displaying cached insights for student', studentId);
@@ -446,6 +453,44 @@ ${data.insights}
     // If no cached insights, keep the button (default HTML already shows button)
   }
 
+  generateDataHash(student) {
+    // Create hash based on data that affects AI insights
+    const relevantData = {
+      interventions_count: student?.interventions?.length || 0,
+      gpa: student?.gpa || 0,
+      attendance_rate: student?.attendance_rate || 0,
+      behavioral_incidents: student?.behavioral_incidents || 0,
+      risk_score: student?.risk_score || student?.success_probability || 0
+    };
+    
+    // Simple hash function (you could use a more sophisticated one)
+    const dataString = JSON.stringify(relevantData);
+    let hash = 0;
+    for (let i = 0; i < dataString.length; i++) {
+      const char = dataString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
+  }
+  
+  cleanOldCacheEntries(studentId, riskLevel, currentDataHash) {
+    // Remove old cache entries for this student with different data hashes
+    const keysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith(`quick-insights-${studentId}-${riskLevel}-`) && 
+          !key.endsWith(`-${currentDataHash}`)) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    keysToRemove.forEach(key => {
+      sessionStorage.removeItem(key);
+      console.log('🗑️ Removed outdated cache entry:', key);
+    });
+  }
+
   async loadQuickInsights(studentId, riskLevel) {
     const container = document.getElementById(`gpt-insights-${studentId}`);
     if (!container) {
@@ -459,7 +504,10 @@ ${data.insights}
       return;
     }
     
-    const cacheKey = `quick-insights-${studentId}-${riskLevel}`;
+    // Generate data hash for current student state
+    const currentStudent = this.appState.getState().selectedStudent;
+    const dataHash = this.generateDataHash(currentStudent);
+    const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
     
     // Show loading state
     contentDiv.innerHTML = `
