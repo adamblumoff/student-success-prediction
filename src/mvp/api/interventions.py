@@ -603,7 +603,23 @@ async def create_bulk_interventions(
         ).first()
         
         if not first_student:
-            raise ValidationError("No valid students found for bulk operation")
+            # No valid students found - return proper response instead of error
+            logger.info("No valid students found in early validation, returning empty result")
+            return BulkOperationResult(
+                total_requested=len(bulk_data.student_ids),
+                successful=0,
+                failed=len(bulk_data.student_ids),
+                results=[
+                    BulkOperationItem(
+                        id=student_id,
+                        success=False,
+                        error_message="Student not found"
+                    )
+                    for student_id in bulk_data.student_ids
+                ],
+                execution_time=round(time.time() - start_time, 3),
+                operation_type="bulk_create_sync"
+            )
         
         institution_id = first_student.institution_id
         
@@ -717,7 +733,11 @@ async def _create_bulk_interventions_sync(
     results = []
     successful_count = 0
     
+    # Use atomic transaction for all database operations
     try:
+        # Start transaction - everything within this try block is atomic
+        logger.info(f"Starting atomic bulk intervention creation for {len(bulk_data.student_ids)} students")
+        
         # Batch fetch all students to reduce database queries
         student_ids_int = [sid for sid in bulk_data.student_ids if isinstance(sid, int)]
         student_ids_str = [str(sid) for sid in bulk_data.student_ids]
@@ -729,24 +749,13 @@ async def _create_bulk_interventions_sync(
             )
         ).all()
         
-        logger.info(f"DEBUG SYNC: Found {len(existing_students)} students")
-        logger.info(f"DEBUG SYNC: student_ids_int: {student_ids_int}")
-        logger.info(f"DEBUG SYNC: student_ids_str: {student_ids_str}")
-        for student in existing_students:
-            logger.info(f"DEBUG SYNC: Student found - id={student.id}, student_id={student.student_id}")
-        
         # Create lookup maps
         students_by_id = {s.id: s for s in existing_students}
         students_by_string_id = {s.student_id: s for s in existing_students}
         
-        logger.info(f"DEBUG SYNC: students_by_id keys: {list(students_by_id.keys())}")
-        logger.info(f"DEBUG SYNC: students_by_string_id keys: {list(students_by_string_id.keys())}")
-        
-        # Prepare bulk interventions
-        interventions_to_create = []
-        
+        # Pre-validate ALL students before any database modifications
+        valid_student_data = []
         for student_id in bulk_data.student_ids:
-            # Find student using lookup maps
             student = None
             if isinstance(student_id, int) and student_id in students_by_id:
                 student = students_by_id[student_id]
@@ -761,44 +770,72 @@ async def _create_bulk_interventions_sync(
                 ))
                 continue
             
-            # Prepare intervention data
-            intervention_data = {
-                'institution_id': student.institution_id,
-                'student_id': student.id,
-                'intervention_type': bulk_data.intervention_type,
-                'title': bulk_data.title,
-                'description': bulk_data.description,
-                'priority': bulk_data.priority,
-                'status': 'pending',
-                'assigned_to': bulk_data.assigned_to,
-                'due_date': bulk_data.due_date,
-                'created_at': datetime.now(),
-                'updated_at': datetime.now()
-            }
-            
-            interventions_to_create.append(intervention_data)
-            successful_count += 1
+            valid_student_data.append((student_id, student))
         
-        # Bulk insert interventions
-        if interventions_to_create:
-            # Use SQLAlchemy bulk insert for better performance
-            db.execute(
-                Intervention.__table__.insert(),
-                interventions_to_create
-            )
+        # Only proceed if at least one valid student exists
+        if not valid_student_data:
+            logger.warning("No valid students found for bulk intervention creation")
+            # Commit empty transaction (no changes made)
             db.commit()
+        else:
+            # Prepare bulk interventions for ALL valid students at once
+            interventions_to_create = []
             
-            # Add success results
-            for i, intervention_data in enumerate(interventions_to_create):
-                results.append(BulkOperationItem(
-                    id=bulk_data.student_ids[i],
-                    success=True,
-                    error_message=None,
-                    item_data={
-                        'intervention_title': intervention_data['title'],
-                        'student_id': intervention_data['student_id']
-                    }
-                ))
+            for student_id, student in valid_student_data:
+                intervention_data = {
+                    'institution_id': student.institution_id,
+                    'student_id': student.id,
+                    'intervention_type': bulk_data.intervention_type,
+                    'title': bulk_data.title,
+                    'description': bulk_data.description,
+                    'priority': bulk_data.priority,
+                    'status': 'pending',
+                    'assigned_to': bulk_data.assigned_to,
+                    'due_date': bulk_data.due_date,
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now()
+                }
+                interventions_to_create.append(intervention_data)
+            
+            # ATOMIC BULK INSERT - Either all succeed or all fail
+            try:
+                db.execute(
+                    Intervention.__table__.insert(),
+                    interventions_to_create
+                )
+                
+                # Only commit if ALL insertions succeed
+                db.commit()
+                successful_count = len(interventions_to_create)
+                
+                # Add success results only after successful commit
+                for student_id, student in valid_student_data:
+                    results.append(BulkOperationItem(
+                        id=student_id,
+                        success=True,
+                        error_message=None,
+                        item_data={
+                            'intervention_title': bulk_data.title,
+                            'student_id': student.id
+                        }
+                    ))
+                
+                logger.info(f"✅ Atomic bulk operation successful: {successful_count} interventions created")
+                
+            except Exception as insert_error:
+                # Rollback ALL changes if any insertion fails
+                db.rollback()
+                logger.error(f"❌ Bulk insert failed, rolling back all changes: {insert_error}")
+                
+                # Mark all valid students as failed due to atomic operation failure
+                for student_id, _ in valid_student_data:
+                    # Update existing results to reflect failure
+                    for result in results:
+                        if result.id == student_id and result.success is not False:
+                            result.success = False
+                            result.error_message = f"Bulk operation failed (atomic rollback): {str(insert_error)}"
+                
+                successful_count = 0
         
         execution_time = time.time() - start_time
         

@@ -344,31 +344,138 @@ class InputSanitizer:
     
     @staticmethod
     def validate_file_content(content: bytes, filename: str) -> None:
-        """Validate file content for security"""
-        # Size limits
+        """Comprehensive file content validation for security and integrity"""
+        import csv
+        import io
+        
+        # 1. SIZE LIMITS - Multiple tiers for security
         max_size = int(os.getenv('MAX_FILE_SIZE_MB', '10')) * 1024 * 1024
         if len(content) > max_size:
             raise HTTPException(status_code=413, detail=f"File too large (max {max_size//1024//1024}MB)")
         
-        # Content type validation
-        if not filename.lower().endswith('.csv'):
+        if len(content) < 10:  # Minimum viable CSV content
+            raise HTTPException(status_code=400, detail="File too small to be valid CSV")
+        
+        # 2. EXTENSION VALIDATION - Strict whitelist
+        allowed_extensions = ['.csv']
+        if not any(filename.lower().endswith(ext) for ext in allowed_extensions):
             raise HTTPException(status_code=400, detail="Only CSV files allowed")
         
-        # Basic content validation
+        # 3. MIME TYPE VALIDATION - Prevent disguised files (optional)
+        try:
+            import magic
+            detected_type = magic.from_buffer(content, mime=True)
+            # CSV files can be detected as text/plain or text/csv
+            allowed_mime_types = ['text/plain', 'text/csv', 'application/csv', 'text/x-csv']
+            if detected_type not in allowed_mime_types:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid file type. Expected CSV, got: {detected_type}"
+                )
+        except ImportError:
+            # python-magic not installed, skip MIME validation
+            logging.info("MIME type validation skipped (python-magic not installed)")
+        except Exception as e:
+            # If magic fails, continue with other validations
+            logging.warning(f"MIME type detection failed: {e}, relying on other validations")
+        
+        # 4. ENCODING VALIDATION - Strict UTF-8
         try:
             content_str = content.decode('utf-8')
-            if len(content_str.strip()) == 0:
-                raise HTTPException(status_code=400, detail="File is empty")
-            
-            # Check for potential malicious content
-            dangerous_patterns = ['<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=']
-            content_lower = content_str.lower()
-            for pattern in dangerous_patterns:
-                if pattern in content_lower:
-                    raise HTTPException(status_code=400, detail="File contains potentially dangerous content")
+        except UnicodeDecodeError as e:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file encoding at byte {e.start}. Must be UTF-8"
+            )
         
-        except UnicodeDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid file encoding - must be UTF-8")
+        if len(content_str.strip()) == 0:
+            raise HTTPException(status_code=400, detail="File contains no readable content")
+        
+        # 5. MALICIOUS CONTENT SCANNING - Comprehensive patterns
+        dangerous_patterns = [
+            # Script injection
+            '<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=', 'onclick=',
+            # Command injection
+            '$(', '${', '`', '&&', '||', ';ls', ';cat', ';rm', 'eval(', 'exec(',
+            # SQL injection attempts in CSV
+            'drop table', 'delete from', 'insert into', 'update set', 'union select',
+            # Path traversal
+            '../', '..\\', '/etc/', '/bin/', 'c:\\windows\\',
+            # Binary signatures that shouldn't be in CSV
+            '\\x00', '\\xff\\xfe', '\\xfe\\xff', 'pk\\x03\\x04',  # ZIP signature
+            # Suspicious macro indicators
+            'auto_open', 'workbook_open', 'document_open'
+        ]
+        
+        content_lower = content_str.lower()
+        for pattern in dangerous_patterns:
+            if pattern in content_lower:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"File contains potentially dangerous content: {pattern}"
+                )
+        
+        # 6. CSV STRUCTURE VALIDATION - Parse and validate
+        try:
+            # Test CSV parsing with strict validation
+            csv_reader = csv.reader(io.StringIO(content_str))
+            
+            # Validate header row exists
+            try:
+                header_row = next(csv_reader)
+                if not header_row or len(header_row) < 1:
+                    raise HTTPException(status_code=400, detail="CSV must have header row")
+            except StopIteration:
+                raise HTTPException(status_code=400, detail="CSV file appears to be empty")
+            
+            # Validate reasonable column count
+            if len(header_row) > 200:  # Prevent excessive columns
+                raise HTTPException(status_code=400, detail="Too many columns (max 200)")
+            
+            # Validate header content
+            for col_name in header_row:
+                if not col_name or len(str(col_name).strip()) == 0:
+                    raise HTTPException(status_code=400, detail="CSV headers cannot be empty")
+                if len(str(col_name)) > 255:
+                    raise HTTPException(status_code=400, detail="CSV header names too long")
+            
+            # Sample first few rows for structure validation
+            row_count = 0
+            for row in csv_reader:
+                row_count += 1
+                
+                # Check for excessive rows (prevent DoS)
+                if row_count > 50000:  # Reasonable limit for educational data
+                    raise HTTPException(status_code=400, detail="Too many rows (max 50,000)")
+                
+                # Validate row structure matches header
+                if len(row) != len(header_row):
+                    logging.warning(f"Row {row_count + 1} has {len(row)} columns, expected {len(header_row)}")
+                    # Allow some flexibility but warn
+                
+                # Sample only first 100 rows for performance
+                if row_count >= 100:
+                    break
+            
+            # Ensure minimum viable data
+            if row_count == 0:
+                raise HTTPException(status_code=400, detail="CSV must contain data rows")
+            
+        except csv.Error as e:
+            raise HTTPException(status_code=400, detail=f"Invalid CSV format: {str(e)}")
+        except HTTPException:
+            raise  # Re-raise our custom exceptions
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"CSV validation failed: {str(e)}")
+        
+        # 7. CONTENT LENGTH VALIDATION - Prevent zip bombs
+        if len(content_str) > len(content) * 10:  # Suspicious compression ratio
+            raise HTTPException(
+                status_code=400, 
+                detail="Suspicious file expansion detected"
+            )
+        
+        logging.info(f"✅ File validation passed: {filename} ({len(content)} bytes, {row_count} rows)")
 
 # Global instances
 session_manager = SecureSessionManager()

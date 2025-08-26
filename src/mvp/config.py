@@ -333,20 +333,34 @@ class ConfigurationLoader:
         # Primary database URL
         database_url = os.getenv('DATABASE_URL')
         
-        # Component-based fallback
+        # Component-based fallback (no hardcoded credentials)
         if not database_url:
-            db_host = os.getenv('DB_HOST', 'localhost')
+            db_host = os.getenv('DB_HOST')
             db_port = os.getenv('DB_PORT', '5432')
             db_name = os.getenv('DB_NAME', 'student_success')
-            db_user = os.getenv('DB_USER', 'postgres')
-            db_password = os.getenv('DB_PASSWORD', 'postgres')
+            db_user = os.getenv('DB_USER')
+            db_password = os.getenv('DB_PASSWORD')
             
-            if db_host != 'localhost' or db_password != 'postgres':
+            # Check if we have complete PostgreSQL configuration
+            if db_host and db_user and db_password:
+                # Only create PostgreSQL URL if all credentials are explicitly provided
                 database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+                logging.info("Using PostgreSQL database from environment variables")
             else:
-                # SQLite fallback for development
+                # SQLite fallback for development only
+                missing_vars = []
+                if not db_host:
+                    missing_vars.append('DB_HOST')
+                if not db_user:
+                    missing_vars.append('DB_USER')
+                if not db_password:
+                    missing_vars.append('DB_PASSWORD')
+                
+                if os.getenv('ENVIRONMENT') == 'production':
+                    raise ValueError(f"❌ SECURITY ERROR: Production requires PostgreSQL credentials. Missing: {', '.join(missing_vars)}")
+                
                 database_url = "sqlite:///./mvp_data.db"
-                logging.warning("No PostgreSQL configuration found, falling back to SQLite")
+                logging.warning(f"PostgreSQL credentials missing ({', '.join(missing_vars)}), falling back to SQLite for development")
         
         return DatabaseConfig(
             url=database_url,
