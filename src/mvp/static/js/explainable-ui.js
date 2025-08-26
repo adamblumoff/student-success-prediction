@@ -162,37 +162,126 @@ class ExplainableUI {
         `).join('');
     }
 
+    showLoadingModal(studentId, message = 'Loading...') {
+        const modal = document.getElementById('student-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-student-name');
+
+        modalTitle.textContent = `Student ${studentId}`;
+        modalBody.innerHTML = `
+            <div class="loading-container" style="text-align: center; padding: 40px;">
+                <div class="loading-spinner" style="margin-bottom: 20px;">
+                    <div class="spinner" style="
+                        border: 4px solid #f3f3f3;
+                        border-top: 4px solid #3498db;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        animation: spin 2s linear infinite;
+                        margin: 0 auto;
+                    "></div>
+                </div>
+                <div class="loading-message" style="color: #666; font-size: 16px;">
+                    🧠 ${message}
+                </div>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        // Show the modal
+        modal.style.display = 'block';
+    }
+
     async showStudentExplanation(studentId) {
-        console.log(`Showing explanation for student ${studentId}`);
+        console.log(`🧠 Showing GPT-enhanced explanation for student ${studentId}`);
         try {
             // Ensure studentId is properly formatted (convert to integer if needed)
             const normalizedId = parseInt(studentId) || studentId;
             console.log(`Normalized student ID: ${normalizedId}`);
             
-            const response = await fetch(`/api/mvp/explain/${normalizedId}`, {
+            // Show loading indicator
+            this.showLoadingModal(studentId, 'Generating AI-powered analysis...');
+            
+            // First, get basic student data for GPT analysis
+            const staticResponse = await fetch(`/api/mvp/explain/${normalizedId}`, {
                 headers: {
-                    'Authorization': 'Bearer dev-key-change-me'
+                    'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'
                 }
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                console.log('Explanation result:', result);
-                this.currentExplanation = result.explanation;
+            let studentData = {};
+            let staticExplanation = null;
+            
+            if (staticResponse.ok) {
+                const staticResult = await staticResponse.json();
+                staticExplanation = staticResult.explanation;
+                
+                // Extract student data for GPT
+                studentData = {
+                    student_id: normalizedId,
+                    grade_level: staticResult.explanation?.student_info?.grade_level || 9,
+                    risk_score: staticResult.explanation?.risk_score || 0.5,
+                    risk_category: staticResult.explanation?.risk_category || 'Medium Risk'
+                };
+            } else {
+                console.warn('Static explanation not available, using basic student data');
+                studentData = {
+                    student_id: normalizedId,
+                    grade_level: 9,
+                    gpa: 2.5,
+                    attendance_rate: 0.8
+                };
+            }
+
+            // Now get GPT-enhanced analysis
+            console.log('🤖 Calling GPT-5-nano for enhanced analysis...');
+            const gptResponse = await fetch('/api/gpt/quick-insight', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    student_data: studentData,
+                    question: `Provide detailed analysis and specific intervention recommendations for this ${studentData.risk_category.toLowerCase()} student. Focus on actionable strategies teachers can implement immediately.`
+                })
+            });
+
+            if (gptResponse.ok) {
+                const gptResult = await gptResponse.json();
+                console.log('✅ GPT analysis completed:', gptResult);
+                
+                // Combine static data with GPT insights
+                this.currentExplanation = {
+                    ...staticExplanation,
+                    gpt_analysis: gptResult.insight,
+                    gpt_enhanced: true,
+                    processing_time: gptResult.processing_time_seconds
+                };
+                
                 this.renderStudentExplanation(studentId);
             } else {
-                console.error('Failed to load student explanation:', response.status, response.statusText);
-                // Try to get the error message from the response
-                try {
-                    const errorData = await response.json();
-                    alert(`Failed to load explanation: ${errorData.detail || 'Unknown error'} (${response.status})`);
-                } catch {
-                    alert(`Failed to load detailed explanation for this student (${response.status})`);
-                }
+                console.error('❌ GPT analysis failed, falling back to static explanation');
+                // Fallback to static explanation
+                this.currentExplanation = staticExplanation;
+                this.renderStudentExplanation(studentId);
             }
+            
         } catch (error) {
             console.error('Error loading student explanation:', error);
-            alert('Error loading student explanation: ' + error.message);
+            // Fallback to basic explanation
+            this.currentExplanation = {
+                summary: 'Analysis temporarily unavailable',
+                key_factors: ['Please try again in a moment'],
+                recommendations: ['Contact your administrator if this persists'],
+                student_info: { student_id: studentId }
+            };
+            this.renderStudentExplanation(studentId);
         }
     }
 
@@ -225,13 +314,38 @@ class ExplainableUI {
                     </div>
                 </div>
 
-                <!-- AI Explanation -->
+                <!-- GPT-Enhanced AI Analysis -->
+                ${explanation.gpt_enhanced && explanation.gpt_analysis ? `
+                <div class="explanation-section gpt-enhanced">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>🧠 GPT-5-nano Analysis</h4>
+                        <div class="gpt-badge" style="background: #10b981; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
+                            ⚡ ${explanation.processing_time ? `${explanation.processing_time.toFixed(1)}s` : 'AI-Powered'}
+                        </div>
+                    </div>
+                    <div class="gpt-analysis-content" style="
+                        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+                        border-left: 4px solid #10b981;
+                        padding: 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        line-height: 1.6;
+                        white-space: pre-wrap;
+                        max-height: 400px;
+                        overflow-y: auto;
+                    ">
+                        ${explanation.gpt_analysis}
+                    </div>
+                </div>
+                ` : `
+                <!-- Traditional AI Explanation -->
                 <div class="explanation-section">
                     <h4>🤖 AI Explanation</h4>
                     <div class="explanation-narrative">
-                        ${explanation.explanation}
+                        ${explanation.explanation || explanation.summary || 'Analysis not available'}
                     </div>
                 </div>
+                `}
 
                 <!-- Risk Factors -->
                 ${explanation.risk_factors && explanation.risk_factors.length > 0 ? `
