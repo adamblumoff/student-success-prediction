@@ -227,6 +227,22 @@ class LoginComponent extends Component {
                 if (window.selectionManager) {
                     window.selectionManager.toggleSelectionMode();
                     bulkModeToggle.classList.toggle('active');
+                    
+                    // Update button text and icon based on new state
+                    const icon = bulkModeToggle.querySelector('i');
+                    const span = bulkModeToggle.querySelector('span');
+                    
+                    if (window.selectionManager.selectionMode) {
+                        // Bulk mode is now ON
+                        icon.className = 'fas fa-times-square';
+                        span.textContent = 'Turn Off Bulk Actions';
+                        bulkModeToggle.title = 'Disable bulk selection mode';
+                    } else {
+                        // Bulk mode is now OFF
+                        icon.className = 'fas fa-check-square';
+                        span.textContent = 'Turn On Bulk Actions';
+                        bulkModeToggle.title = 'Enable bulk selection to create interventions for multiple students';
+                    }
                 }
             };
         }

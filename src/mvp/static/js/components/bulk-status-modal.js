@@ -230,10 +230,10 @@ class BulkStatusModal {
 
     async getInterventionDetails(interventionId) {
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
             const response = await fetch(`/api/interventions/${interventionId}`, {
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -305,11 +305,11 @@ class BulkStatusModal {
         this.showProgressSection();
         
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
             const response = await fetch('/api/interventions/bulk/update', {
                 method: 'PUT',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(updateData)

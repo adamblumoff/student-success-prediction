@@ -265,10 +265,9 @@ class BulkInterventionModal {
             const response = await fetch('/api/interventions/bulk/create', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-key'}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(bulkData)
+                body: JSON.stringify({ bulk_data: bulkData })
             });
 
             if (!response.ok) {

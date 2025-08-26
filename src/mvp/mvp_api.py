@@ -138,6 +138,14 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Initialize container on startup
+from .container import initialize_container
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on app startup."""
+    initialize_container()
+
 # Add middleware in correct order (last added = first executed)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
