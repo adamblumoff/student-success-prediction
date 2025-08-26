@@ -472,6 +472,76 @@ ${data.insights}
     return Math.abs(hash).toString(16);
   }
   
+  async buildPersonalizedPrompt(studentId, riskLevel) {
+    // Get comprehensive student data to analyze their specific situation
+    const studentData = await this.getComprehensiveStudentData(studentId, riskLevel);
+    
+    // Analyze student's specific needs and existing interventions
+    const hasInterventions = studentData.interventions_count > 0;
+    const hasActiveInterventions = studentData.active_interventions_count > 0;
+    const lowGPA = (studentData.gpa || 0) < 2.5;
+    const lowAttendance = (studentData.attendance_rate || 0) < 0.85;
+    const highBehavioralIssues = (studentData.behavioral_incidents || 0) > 2;
+    const highRisk = studentData.risk_score >= 0.7;
+    
+    // Build context-aware prompt
+    let prompt = `STUDENT ANALYSIS REQUEST for ${riskLevel} student (ID: ${studentId}):
+
+CURRENT SITUATION ANALYSIS:`;
+
+    if (hasInterventions) {
+      prompt += `
+- EXISTING INTERVENTIONS: ${studentData.recent_intervention_details || 'Details not available'}
+- ACTIVE INTERVENTIONS: ${studentData.active_interventions_count || 0}
+- INTERVENTION STATUS: ${studentData.recent_intervention_statuses || 'Unknown'}`;
+    } else {
+      prompt += `
+- NO CURRENT INTERVENTIONS - Fresh start needed`;
+    }
+
+    prompt += `
+- ACADEMIC STATUS: GPA ${studentData.gpa || 'Unknown'}, Attendance ${((studentData.attendance_rate || 0) * 100).toFixed(0)}%`;
+    
+    if (studentData.behavioral_incidents) {
+      prompt += `
+- BEHAVIORAL: ${studentData.behavioral_incidents} incidents recorded`;
+    }
+
+    // Tailored instruction based on student profile
+    prompt += `
+
+TASK: Provide exactly 3 PERSONALIZED, actionable recommendations for THIS specific student.`;
+
+    if (hasActiveInterventions) {
+      prompt += ` DO NOT duplicate existing active interventions. Build upon or complement current efforts.`;
+    }
+
+    // Specific guidance based on student needs
+    if (lowGPA && lowAttendance) {
+      prompt += ` Focus on both academic recovery AND attendance improvement strategies.`;
+    } else if (lowGPA) {
+      prompt += ` Prioritize academic skill-building and learning support strategies.`;
+    } else if (lowAttendance) {
+      prompt += ` Focus on engagement, connection, and attendance motivation strategies.`;
+    } else if (highBehavioralIssues) {
+      prompt += ` Include behavioral support and self-regulation strategies.`;
+    } else if (highRisk) {
+      prompt += ` Focus on early intervention and prevention strategies.`;
+    }
+
+    prompt += `
+
+FORMAT: Start directly with numbered recommendations. Each should include:
+- What to do (specific action)
+- Why it's needed for THIS student
+- How to implement (2-3 concrete steps)
+- Timeline (this week/next 2 weeks)
+
+Make each recommendation unique to this student's specific data and situation.`;
+
+    return prompt;
+  }
+
   async getComprehensiveStudentData(studentId, riskLevel) {
     // Get basic student data from app state
     const currentStudent = this.appState.getState().selectedStudent;
@@ -594,20 +664,7 @@ ${data.insights}
         },
         body: JSON.stringify({
           student_data: await this.getComprehensiveStudentData(studentId, riskLevel),
-          question: `STUDENT CONTEXT: ${riskLevel} student (ID: ${studentId}) in grade level education.
-
-Provide 3 IMMEDIATE actions a teacher can implement THIS WEEK:
-
-1. ACADEMIC SUPPORT:
-[Specific steps | Time needed | Success indicators]
-
-2. ENGAGEMENT/RELATIONSHIP:
-[Specific steps | Time needed | Success indicators]
-
-3. MONITORING/ASSESSMENT:
-[Specific steps | Time needed | Success indicators]
-
-Format each action concisely. No introductory text - start directly with the numbered actions.`
+          question: await this.buildPersonalizedPrompt(studentId, riskLevel)
         })
       });
 
