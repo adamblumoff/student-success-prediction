@@ -62,9 +62,7 @@ data/raw/*.csv
 # Environment variables (all env files except examples)
 .env
 .env.*
-.env.example
-!.env.security
-!.env.*.template
+
 
 # Temporary files
 tmp/
