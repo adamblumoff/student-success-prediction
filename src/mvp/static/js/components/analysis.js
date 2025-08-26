@@ -423,11 +423,12 @@ class Analysis extends Component {
         ">
           <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
-              <i class="fas fa-lightbulb"></i> Quick AI Recommendations (Cached)
+              <i class="fas fa-lightbulb"></i> Quick AI Recommendations
             </span>
-            <span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
-              💾 Cached
-            </span>
+            <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')" 
+                    style="font-size: 11px; padding: 2px 8px;">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
           </div>
           <div class="insights-text" style="
             font-size: 13px;
