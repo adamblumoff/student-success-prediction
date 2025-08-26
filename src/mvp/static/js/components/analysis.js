@@ -395,9 +395,54 @@ class Analysis extends Component {
 
   async loadQuickInsights(studentId, riskLevel) {
     const container = document.getElementById(`gpt-insights-${studentId}`);
-    if (!container) return;
+    if (!container) {
+      console.error('❌ Container not found:', `gpt-insights-${studentId}`);
+      return;
+    }
     
     const contentDiv = container.querySelector('.gpt-insights-content');
+    if (!contentDiv) {
+      console.error('❌ Content div not found in container');
+      return;
+    }
+    
+    // Check cache first
+    const cacheKey = `quick-insights-${studentId}-${riskLevel}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    
+    if (cached) {
+      console.log('✅ Using cached insights for student', studentId);
+      const data = JSON.parse(cached);
+      contentDiv.innerHTML = `
+        <div class="gpt-quick-insights" style="
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border-left: 3px solid #0ea5e9;
+          padding: 15px;
+          border-radius: 6px;
+          margin-top: 10px;
+        ">
+          <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
+              <i class="fas fa-lightbulb"></i> Quick AI Recommendations (Cached)
+            </span>
+            <span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
+              💾 Cached
+            </span>
+          </div>
+          <div class="insights-text" style="
+            font-size: 13px;
+            line-height: 1.4;
+            color: #374151;
+            white-space: pre-line;
+            max-height: 150px;
+            overflow-y: auto;
+          ">
+${data.insights}
+          </div>
+        </div>
+      `;
+      return;
+    }
     
     // Show loading state
     contentDiv.innerHTML = `
@@ -502,7 +547,13 @@ ${actionableInsights}
           </div>
         `;
         
-        console.log('✅ Quick insights loaded for student', studentId);
+        // Cache the result
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          insights: actionableInsights,
+          timestamp: Date.now()
+        }));
+        
+        console.log('✅ Quick insights loaded and cached for student', studentId);
       } else {
         throw new Error('Failed to get insights');
       }
