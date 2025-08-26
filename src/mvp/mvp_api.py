@@ -130,6 +130,7 @@ from src.mvp.api.google_classroom_v2 import router as google_classroom_router
 from src.mvp.api.combined_endpoints import router as combined_router
 from src.mvp.api.notifications_endpoints import router as notifications_router
 from src.mvp.api.health import router as health_router
+from src.mvp.api.gpt_enhanced_endpoints import router as gpt_enhanced_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -177,6 +178,7 @@ app.include_router(powerschool_router, prefix="/api/sis/powerschool", tags=["Pow
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
 app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
+app.include_router(gpt_enhanced_router, prefix="/api/gpt", tags=["GPT-Enhanced AI Analysis"])
 app.include_router(health_router, prefix="", tags=["Health & Monitoring"])
 
 @app.get("/", response_class=HTMLResponse)
