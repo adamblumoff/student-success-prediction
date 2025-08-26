@@ -493,11 +493,11 @@ Format each action concisely. No introductory text - start directly with the num
               font-size: 13px;
               line-height: 1.4;
               color: #374151;
-              white-space: pre-wrap;
+              white-space: pre-line;
               max-height: 150px;
               overflow-y: auto;
             ">
-              ${actionableInsights}
+${actionableInsights}
             </div>
           </div>
         `;
