@@ -196,28 +196,20 @@ class Analysis extends Component {
         </div>
         
         <div class="detail-sections">
-          <div class="detail-section">
-            <h4><i class="fas fa-brain"></i> AI Analysis</h4>
-            <p>This student shows ${riskLevel.toLowerCase()} patterns based on machine learning analysis of academic and engagement factors.</p>
-          </div>
-          
           <div class="detail-section gpt-insights" id="gpt-insights-${studentId}">
             <h4><i class="fas fa-lightbulb"></i> Quick AI Insights</h4>
             <div class="gpt-insights-content">
               <div class="loading-placeholder">
-                <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')">
+                <button class="btn btn-primary btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')" 
+                        style="background: linear-gradient(135deg, #87ceeb 0%, #4fc3f7 100%); 
+                               border: 1px solid #4fc3f7; 
+                               color: white; 
+                               box-shadow: 0 2px 4px rgba(79, 195, 247, 0.3);">
                   <i class="fas fa-brain"></i>
                   Generate Quick Insights
                 </button>
               </div>
             </div>
-          </div>
-          
-          <div class="detail-section">
-            <h4><i class="fas fa-bullseye"></i> Recommended Actions</h4>
-            <ul class="action-list">
-              ${this.generateRecommendations(student).map(rec => `<li>${rec}</li>`).join('')}
-            </ul>
           </div>
           
           <div class="detail-section">
