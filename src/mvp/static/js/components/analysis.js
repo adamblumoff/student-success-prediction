@@ -10,6 +10,9 @@ class Analysis extends Component {
     this.searchInput = document.getElementById('student-search');
     this.filterButtons = document.querySelectorAll('.filter-btn');
     
+    // Make this component globally accessible for onclick handlers
+    window.analysisComponent = this;
+    
     if (this.searchInput) {
       this.bindEvent(this.searchInput, 'input', this.handleSearch);
     }
@@ -193,8 +196,20 @@ class Analysis extends Component {
             <br>
             <button class="btn btn-primary btn-small" onclick="showExplanation('${studentId}')">
               <i class="fas fa-search-plus"></i>
-              View Detailed Explanation
+              View Detailed GPT-Enhanced Explanation
             </button>
+          </div>
+          
+          <div class="detail-section gpt-insights" id="gpt-insights-${studentId}">
+            <h4><i class="fas fa-lightbulb"></i> Quick AI Insights</h4>
+            <div class="gpt-insights-content">
+              <div class="loading-placeholder">
+                <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')">
+                  <i class="fas fa-brain"></i>
+                  Generate Quick Insights
+                </button>
+              </div>
+            </div>
           </div>
           
           <div class="detail-section">
@@ -381,5 +396,96 @@ class Analysis extends Component {
       'technology_support': 'Technology Support'
     };
     return types[type] || type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  async loadQuickInsights(studentId, riskLevel) {
+    const container = document.getElementById(`gpt-insights-${studentId}`);
+    if (!container) return;
+    
+    const contentDiv = container.querySelector('.gpt-insights-content');
+    
+    // Show loading state
+    contentDiv.innerHTML = `
+      <div class="loading-state" style="text-align: center; padding: 20px;">
+        <div class="spinner" style="
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #3498db;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 15px;
+        "></div>
+        <div style="color: #666; font-size: 14px;">🧠 Generating quick insights...</div>
+      </div>
+    `;
+    
+    try {
+      const response = await fetch('/api/gpt/quick-insight', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_data: {
+            student_id: studentId,
+            grade_level: 9,
+            risk_category: riskLevel
+          },
+          question: `What are 3 immediate actions a teacher can take this week for this ${riskLevel.toLowerCase()} student? Keep it concise and actionable.`
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const insights = result.insight || 'No insights available';
+        
+        // Extract key points from GPT response (first few lines usually contain actionable items)
+        const lines = insights.split('\n').filter(line => line.trim()).slice(0, 8);
+        const actionableInsights = lines.join('\n');
+        
+        contentDiv.innerHTML = `
+          <div class="gpt-quick-insights" style="
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-left: 3px solid #0ea5e9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+          ">
+            <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
+                <i class="fas fa-lightbulb"></i> Quick AI Recommendations
+              </span>
+              <span style="background: #0ea5e9; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
+                ⚡ ${result.processing_time_seconds?.toFixed(1)}s
+              </span>
+            </div>
+            <div class="insights-text" style="
+              font-size: 13px;
+              line-height: 1.4;
+              color: #374151;
+              white-space: pre-wrap;
+              max-height: 150px;
+              overflow-y: auto;
+            ">
+              ${actionableInsights}
+            </div>
+          </div>
+        `;
+        
+        console.log('✅ Quick insights loaded for student', studentId);
+      } else {
+        throw new Error('Failed to get insights');
+      }
+    } catch (error) {
+      console.error('❌ Error loading quick insights:', error);
+      contentDiv.innerHTML = `
+        <div style="padding: 15px; color: #666; font-size: 14px; text-align: center;">
+          <i class="fas fa-exclamation-triangle"></i>
+          Quick insights temporarily unavailable. Try the detailed explanation button above.
+        </div>
+      `;
+    }
   }
 }
