@@ -466,8 +466,11 @@ Format each action concisely. No introductory text - start directly with the num
         const result = await response.json();
         const insights = result.insight || 'No insights available';
         
-        // Extract key points from GPT response (first few lines usually contain actionable items)
-        const lines = insights.split('\n').filter(line => line.trim()).slice(0, 8);
+        // Extract key points from GPT response and clean formatting
+        const lines = insights.split('\n')
+          .filter(line => line.trim()) // Remove empty lines
+          .map(line => line.trim()) // Remove leading/trailing spaces
+          .slice(0, 8);
         const actionableInsights = lines.join('\n');
         
         contentDiv.innerHTML = `

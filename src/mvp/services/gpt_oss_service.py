@@ -289,14 +289,14 @@ Based on your analysis, provide specific recommendations for the educator."""
                                     # Content is a list of ResponseOutputText objects
                                     for content_item in item.content:
                                         if hasattr(content_item, 'text'):
-                                            generated_text += content_item.text + "\n"
+                                            generated_text += content_item.text.strip() + "\n"
                             # Fallback: check for direct text content in any item
                             elif hasattr(item, 'content') and item.content:
                                 for content_item in item.content:
                                     if hasattr(content_item, 'text'):
-                                        generated_text += content_item.text + "\n"
+                                        generated_text += content_item.text.strip() + "\n"
                             elif hasattr(item, 'text'):
-                                generated_text += item.text + "\n"
+                                generated_text += item.text.strip() + "\n"
                     else:
                         generated_text = str(response.output)
                     
