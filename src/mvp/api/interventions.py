@@ -594,12 +594,7 @@ async def create_bulk_interventions(
         
         logger.info(f"Starting optimized bulk intervention creation for {len(bulk_data.student_ids)} students")
         
-        # Debug logging
-        int_ids = [sid for sid in bulk_data.student_ids if isinstance(sid, int)]
-        str_ids = [str(sid) for sid in bulk_data.student_ids]
-        logger.info(f"DEBUG: Searching for students with id.in({int_ids}) OR student_id.in({str_ids})")
-        
-        # Get institution from first student (assume all in same institution)
+        # Get institution from first student (assume all in same institution)  
         first_student = db.query(Student).filter(
             or_(
                 Student.id.in_([sid for sid in bulk_data.student_ids if isinstance(sid, int)]),
@@ -607,33 +602,58 @@ async def create_bulk_interventions(
             )
         ).first()
         
-        logger.info(f"DEBUG: Query result - first_student: {first_student}")
-        
         if not first_student:
-            # Additional debugging - let's see what students actually exist
-            all_students = db.query(Student).limit(5).all()
-            logger.info(f"DEBUG: First 5 students in database: {[(s.id, s.student_id) for s in all_students]}")
             raise ValidationError("No valid students found for bulk operation")
         
         institution_id = first_student.institution_id
         
-        # Use async service for optimized bulk processing
-        try:
+        # Use simplified sync implementation (async is causing issues)
+        return await _create_bulk_interventions_sync(bulk_data, db, start_time)
+        
+        # DISABLED: Use async service for optimized bulk processing
+        if False:
             from ..async_database import AsyncInterventionService
             async_service = AsyncInterventionService()
+            logger.info("DEBUG: Successfully imported AsyncInterventionService")
+            
+            # Get actual database student IDs (not display IDs)
+            student_lookup = {}
+            students = db.query(Student).filter(
+                or_(
+                    Student.id.in_([sid for sid in bulk_data.student_ids if isinstance(sid, int)]),
+                    Student.student_id.in_([str(sid) for sid in bulk_data.student_ids])
+                )
+            ).all()
+            
+            logger.info(f"DEBUG: Found {len(students)} students in database lookup")
+            for student in students:
+                logger.info(f"DEBUG: Student found - id={student.id}, student_id={student.student_id}")
+            
+            # Map input IDs to actual database IDs
+            for student in students:
+                # Handle both cases: input could be database ID or display student_id
+                for input_id in bulk_data.student_ids:
+                    if (isinstance(input_id, int) and student.id == input_id) or \
+                       (str(input_id) == str(student.student_id)):
+                        student_lookup[input_id] = student.id
+                        logger.info(f"DEBUG: Mapped input_id {input_id} to database_id {student.id}")
+            
+            logger.info(f"DEBUG: Student lookup map: {student_lookup}")
             
             # Convert to format expected by async service
             intervention_data_list = []
-            for student_id in bulk_data.student_ids:
-                intervention_data_list.append({
-                    'student_id': student_id,
-                    'intervention_type': bulk_data.intervention_type,
-                    'title': bulk_data.title,
-                    'description': bulk_data.description,
-                    'priority': bulk_data.priority,
-                    'assigned_to': bulk_data.assigned_to,
-                    'due_date': bulk_data.due_date
-                })
+            for input_student_id in bulk_data.student_ids:
+                if input_student_id in student_lookup:
+                    actual_db_id = student_lookup[input_student_id]
+                    intervention_data_list.append({
+                        'student_id': actual_db_id,  # Use actual database ID
+                        'intervention_type': bulk_data.intervention_type,
+                        'title': bulk_data.title,
+                        'description': bulk_data.description,
+                        'priority': bulk_data.priority,
+                        'assigned_to': bulk_data.assigned_to,
+                        'due_date': bulk_data.due_date
+                    })
             
             # Use async bulk operation
             result = await async_service.create_bulk_interventions(
@@ -674,11 +694,6 @@ async def create_bulk_interventions(
                 execution_time=round(execution_time, 3),
                 operation_type="bulk_create_optimized"
             )
-            
-        except ImportError:
-            # Fallback to synchronous operation if async not available
-            logger.warning("Async database not available, falling back to sync operation")
-            return await _create_bulk_interventions_sync(bulk_data, db, start_time)
         
     except ValidationError:
         raise
@@ -714,9 +729,18 @@ async def _create_bulk_interventions_sync(
             )
         ).all()
         
+        logger.info(f"DEBUG SYNC: Found {len(existing_students)} students")
+        logger.info(f"DEBUG SYNC: student_ids_int: {student_ids_int}")
+        logger.info(f"DEBUG SYNC: student_ids_str: {student_ids_str}")
+        for student in existing_students:
+            logger.info(f"DEBUG SYNC: Student found - id={student.id}, student_id={student.student_id}")
+        
         # Create lookup maps
         students_by_id = {s.id: s for s in existing_students}
         students_by_string_id = {s.student_id: s for s in existing_students}
+        
+        logger.info(f"DEBUG SYNC: students_by_id keys: {list(students_by_id.keys())}")
+        logger.info(f"DEBUG SYNC: students_by_string_id keys: {list(students_by_string_id.keys())}")
         
         # Prepare bulk interventions
         interventions_to_create = []

@@ -628,6 +628,49 @@ async def load_sample_data(
             }
         )
         
+        # Ensure sample students exist in database
+        from src.mvp.models import Student, Institution
+        
+        # Get or create demo institution
+        demo_institution = db.query(Institution).filter(
+            Institution.name == "Demo Educational District"
+        ).first()
+        
+        if not demo_institution:
+            demo_institution = Institution(
+                name="Demo Educational District",
+                code="DEMO",
+                type="K-12 District",
+                active=True
+            )
+            db.add(demo_institution)
+            db.commit()
+            db.refresh(demo_institution)
+        
+        # Create sample students if they don't exist
+        sample_student_data = [
+            {'student_id': '1001', 'name': 'Alice Johnson'},
+            {'student_id': '1002', 'name': 'Bob Smith'},
+            {'student_id': '1003', 'name': 'Carol Davis'},
+            {'student_id': '1004', 'name': 'David Wilson'},
+            {'student_id': '1005', 'name': 'Eva Martinez'},
+        ]
+        
+        for student_data in sample_student_data:
+            existing_student = db.query(Student).filter(
+                Student.student_id == student_data['student_id']
+            ).first()
+            
+            if not existing_student:
+                new_student = Student(
+                    institution_id=demo_institution.id,
+                    student_id=student_data['student_id'],
+                    enrollment_status='active'
+                )
+                db.add(new_student)
+        
+        db.commit()
+        
         # Create sample K-12 gradebook data
         sample_gradebook = pd.DataFrame({
             'Student': ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson', 'Eva Martinez'],

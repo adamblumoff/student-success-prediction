@@ -267,7 +267,7 @@ class BulkInterventionModal {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ bulk_data: bulkData })
+                body: JSON.stringify(bulkData)
             });
 
             if (!response.ok) {
