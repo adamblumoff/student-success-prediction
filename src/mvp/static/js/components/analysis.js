@@ -135,7 +135,7 @@ class Analysis extends Component {
     `;
   }
 
-  updateStudentDetail(student) {
+  async updateStudentDetail(student) {
     if (!this.studentDetail) return;
     
     if (!student) {
@@ -156,7 +156,7 @@ class Analysis extends Component {
     const studentId = student.student_id || student.id || 'Unknown';
     const risk = student.risk_score || student.success_probability || 0;
     const riskLevel = risk >= 0.7 ? 'High Risk' : risk >= 0.4 ? 'Medium Risk' : 'Low Risk';
-    this.checkCachedInsights(studentId, riskLevel);
+    await this.checkCachedInsights(studentId, riskLevel);
   }
 
   renderStudentDetail(student) {
@@ -399,7 +399,7 @@ class Analysis extends Component {
     return types[type] || type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
-  checkCachedInsights(studentId, riskLevel) {
+  async checkCachedInsights(studentId, riskLevel) {
     const container = document.getElementById(`gpt-insights-${studentId}`);
     if (!container) return;
     
@@ -408,7 +408,7 @@ class Analysis extends Component {
     
     // Generate data hash for cache invalidation
     const currentStudent = this.appState.getState().selectedStudent;
-    const dataHash = this.generateDataHash(currentStudent);
+    const dataHash = await this.generateDataHash(studentId, currentStudent);
     
     // Check if we have cached insights with current data
     const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
@@ -453,14 +453,20 @@ ${data.insights}
     // If no cached insights, keep the button (default HTML already shows button)
   }
 
-  generateDataHash(student) {
+  async generateDataHash(studentId, currentStudent) {
+    // Get comprehensive student data including interventions
+    const studentData = await this.getComprehensiveStudentData(studentId, 'Medium Risk'); // Risk level doesn't affect data hash
+    
     // Create hash based on data that affects AI insights
     const relevantData = {
-      interventions_count: student?.interventions?.length || 0,
-      gpa: student?.gpa || 0,
-      attendance_rate: student?.attendance_rate || 0,
-      behavioral_incidents: student?.behavioral_incidents || 0,
-      risk_score: student?.risk_score || student?.success_probability || 0
+      interventions_count: studentData.interventions_count || 0,
+      active_interventions_count: studentData.active_interventions_count || 0,
+      recent_intervention_types: studentData.recent_intervention_types || '',
+      recent_intervention_statuses: studentData.recent_intervention_statuses || '',
+      gpa: studentData.gpa || 0,
+      attendance_rate: studentData.attendance_rate || 0,
+      behavioral_incidents: studentData.behavioral_incidents || 0,
+      risk_score: studentData.risk_score || 0
     };
     
     // Simple hash function (you could use a more sophisticated one)
@@ -474,6 +480,68 @@ ${data.insights}
     return Math.abs(hash).toString(16);
   }
   
+  async getComprehensiveStudentData(studentId, riskLevel) {
+    // Get basic student data from app state
+    const currentStudent = this.appState.getState().selectedStudent;
+    const risk = currentStudent?.risk_score || currentStudent?.success_probability || 0.5;
+    
+    // Fetch current interventions for this student
+    let interventions = [];
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/interventions/student/${studentId}`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        interventions = await response.json();
+      }
+    } catch (error) {
+      console.warn('Could not fetch interventions for GPT context:', error);
+    }
+    
+    // Build comprehensive student data object
+    const studentData = {
+      student_id: studentId,
+      grade_level: currentStudent?.grade_level || 9,
+      risk_category: riskLevel,
+      risk_score: risk,
+      success_probability: currentStudent?.success_probability || (1 - risk),
+      needs_intervention: currentStudent?.needs_intervention || risk > 0.5,
+      name: currentStudent?.name || `Student ${studentId}`,
+      // Academic metrics
+      gpa: currentStudent?.gpa,
+      attendance_rate: currentStudent?.attendance_rate,
+      behavioral_incidents: currentStudent?.behavioral_incidents,
+      socioeconomic_status: currentStudent?.socioeconomic_status,
+      special_programs: currentStudent?.special_programs,
+      // Intervention details
+      interventions_count: interventions.length,
+    };
+    
+    // Add detailed intervention context if available
+    if (interventions.length > 0) {
+      const activeInterventions = interventions.filter(i => i.status !== 'completed');
+      const recentInterventions = interventions.slice(0, 5); // Last 5 interventions
+      
+      studentData.active_interventions_count = activeInterventions.length;
+      studentData.recent_intervention_types = recentInterventions.map(i => i.intervention_type || i.title).join(', ');
+      studentData.recent_intervention_statuses = recentInterventions.map(i => i.status).join(', ');
+      
+      // Include intervention descriptions for context
+      if (recentInterventions.length > 0) {
+        studentData.recent_intervention_details = recentInterventions.map(i => 
+          `${i.intervention_type || i.title}: ${i.status} - ${i.description || 'No details'}`
+        ).join('; ');
+      }
+    }
+    
+    return studentData;
+  }
+
   cleanOldCacheEntries(studentId, riskLevel, currentDataHash) {
     // Remove old cache entries for this student with different data hashes
     const keysToRemove = [];
@@ -506,7 +574,7 @@ ${data.insights}
     
     // Generate data hash for current student state
     const currentStudent = this.appState.getState().selectedStudent;
-    const dataHash = this.generateDataHash(currentStudent);
+    const dataHash = await this.generateDataHash(studentId, currentStudent);
     const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
     
     // Show loading state
@@ -533,28 +601,7 @@ ${data.insights}
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          student_data: (() => {
-            // Get comprehensive student data from app state
-            const currentStudent = this.appState.getState().selectedStudent;
-            const risk = currentStudent?.risk_score || currentStudent?.success_probability || 0.5;
-            
-            return {
-              student_id: studentId,
-              grade_level: currentStudent?.grade_level || 9,
-              risk_category: riskLevel,
-              risk_score: risk,
-              success_probability: currentStudent?.success_probability || (1 - risk),
-              needs_intervention: currentStudent?.needs_intervention || risk > 0.5,
-              name: currentStudent?.name || `Student ${studentId}`,
-              // Additional context if available
-              gpa: currentStudent?.gpa,
-              attendance_rate: currentStudent?.attendance_rate,
-              behavioral_incidents: currentStudent?.behavioral_incidents,
-              socioeconomic_status: currentStudent?.socioeconomic_status,
-              special_programs: currentStudent?.special_programs,
-              interventions_count: currentStudent?.interventions?.length || 0
-            };
-          })(),
+          student_data: await this.getComprehensiveStudentData(studentId, riskLevel),
           question: `STUDENT CONTEXT: ${riskLevel} student (ID: ${studentId}) in grade level education.
 
 Provide 3 IMMEDIATE actions a teacher can implement THIS WEEK:
