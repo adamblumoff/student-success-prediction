@@ -412,6 +412,10 @@ class Analysis extends Component {
     if (cached) {
       console.log('✅ Displaying cached insights for student', studentId);
       const data = JSON.parse(cached);
+      
+      // Use formatted recommendations if available, otherwise fall back to raw insights
+      const displayContent = data.formattedRecommendations || data.insights;
+      
       contentDiv.innerHTML = `
         <div class="gpt-quick-insights" style="
           background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -420,24 +424,31 @@ class Analysis extends Component {
           border-radius: 6px;
           margin-top: 10px;
         ">
-          <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
-              <i class="fas fa-lightbulb"></i> Quick AI Recommendations
-            </span>
+          <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
+                <i class="fas fa-lightbulb"></i> Quick AI Recommendations
+              </span>
+              <span style="
+                background: #0ea5e9;
+                color: white;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 10px;
+                font-weight: 500;
+              ">Personalized</span>
+            </div>
             <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')" 
-                    style="font-size: 11px; padding: 2px 8px;">
+                    style="font-size: 11px; padding: 2px 8px; border-color: #0ea5e9; color: #0ea5e9;">
               <i class="fas fa-sync-alt"></i> Refresh
             </button>
           </div>
-          <div class="insights-text" style="
-            font-size: 13px;
-            line-height: 1.4;
-            color: #374151;
-            white-space: pre-line;
-            max-height: 150px;
-            overflow-y: auto;
+          <div class="insights-content" style="
+            font-size: 14px;
+            line-height: 1.6;
+            color: #0d0d0eff;
           ">
-${data.insights}
+            ${displayContent}
           </div>
         </div>
       `;
@@ -828,7 +839,7 @@ Make each recommendation unique to this student's specific data and situation.`;
             <div class="insights-content" style="
               font-size: 14px;
               line-height: 1.6;
-              color: #374151;
+              color: #0d0d0eff;
             ">
               ${formattedRecommendations}
             </div>
