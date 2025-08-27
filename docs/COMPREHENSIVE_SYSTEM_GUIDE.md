@@ -2,7 +2,7 @@
 
 **Complete Technical and Educational Documentation**  
 **Last Updated**: December 2024  
-**Version**: Current Development (Bulk Intervention Management Complete)
+**Version**: Current Development (GPT-5-Nano Enhanced + Codebase Cleanup Complete)
 
 ---
 
@@ -30,8 +30,10 @@
 
 ### Key Strengths
 - **K-12 Specialized ML Model**: 81.5% AUC with grade-band specific features
+- **GPT-5-Nano AI Insights**: Personalized recommendations with intelligent caching for cost optimization
 - **Comprehensive Intervention System**: Full bulk operations workflow with mixed selection
 - **FERPA-Compliant Infrastructure**: Encryption, audit logging, role-based access
+- **Clean Codebase**: 745+ lines of bloat eliminated (20-25% reduction) with zero functional impact
 - **Extensive Test Coverage**: 125+ tests passing across components and integration
 - **Multi-Tenant Architecture**: Institution-based data isolation
 - **Real-Time Updates**: No manual refresh needed across entire system
@@ -46,6 +48,29 @@
 ---
 
 ## Advanced AI Architecture
+
+### GPT-5-Nano Enhanced AI Insights (Latest Addition)
+
+**Intelligent Student Recommendations:**
+- **Model**: OpenAI GPT-5-nano via Responses API
+- **Purpose**: Generate personalized intervention recommendations for individual students
+- **Key Features**:
+  - Adaptive prompt generation based on student profile and risk factors
+  - Intervention-aware recommendations that build upon existing support
+  - Grade-level appropriate language (K-5, 6-8, 9-12)
+  - Structured formatting with numbered recommendations and bullet points
+
+**Cost Optimization Strategy:**
+- **Smart Caching**: SessionStorage-based caching with data hash validation
+- **Cache Invalidation**: Automatic refresh when student data changes (interventions added, grades updated)
+- **User Control**: Manual refresh button for generating new insights when needed
+- **Display Logic**: Cached insights auto-display, new insights only generated on user click
+
+**Technical Implementation:**
+- **Frontend**: `analysis.js` component handles caching, display, and user interaction
+- **Backend**: `gpt_enhanced_endpoints.py` manages GPT API calls and response processing  
+- **Service Layer**: `gpt_oss_service.py` handles prompt construction and response parsing
+- **Cache Management**: Session-based storage prevents unnecessary API calls
 
 ### K-12 Specialized Models
 
