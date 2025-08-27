@@ -678,8 +678,24 @@ Make each recommendation unique to this student's specific data and situation.`;
   }
 
   async getComprehensiveStudentData(studentId, riskLevel) {
-    // Get basic student data from app state
-    const currentStudent = this.appState.getState().selectedStudent;
+    // Find the correct student by ID from the students array, not from selectedStudent
+    const allStudents = this.appState.getState().students || [];
+    const currentStudent = allStudents.find(s => 
+      (s.student_id?.toString() === studentId?.toString()) || 
+      (s.id?.toString() === studentId?.toString())
+    );
+    
+    if (!currentStudent) {
+      console.error(`❌ Student not found in app state for ID: ${studentId}`);
+      // Fallback to selectedStudent if we can't find the specific student
+      const fallbackStudent = this.appState.getState().selectedStudent;
+      if (fallbackStudent) {
+        console.warn(`⚠️ Using fallback selectedStudent data`);
+        return this.buildStudentDataFromFallback(fallbackStudent, studentId, riskLevel);
+      }
+      return this.buildMinimalStudentData(studentId, riskLevel);
+    }
+    
     const risk = currentStudent?.risk_score || currentStudent?.success_probability || 0.5;
     
     // Fetch current interventions for this student
@@ -737,6 +753,40 @@ Make each recommendation unique to this student's specific data and situation.`;
     }
     
     return studentData;
+  }
+
+  buildStudentDataFromFallback(fallbackStudent, studentId, riskLevel) {
+    // Build student data using fallback student but correct the ID
+    return {
+      student_id: studentId,
+      grade_level: fallbackStudent?.grade_level || 9,
+      risk_category: riskLevel,
+      risk_score: fallbackStudent?.risk_score || 0.5,
+      success_probability: fallbackStudent?.success_probability || 0.5,
+      needs_intervention: fallbackStudent?.needs_intervention || false,
+      name: fallbackStudent?.name || `Student ${studentId}`,
+      gpa: fallbackStudent?.gpa || fallbackStudent?.current_gpa || 2.5,
+      attendance_rate: fallbackStudent?.attendance_rate || 0.95,
+      behavioral_incidents: fallbackStudent?.behavioral_incidents || fallbackStudent?.discipline_incidents || 0,
+      interventions_count: 0
+    };
+  }
+
+  buildMinimalStudentData(studentId, riskLevel) {
+    // Build minimal student data when no student data is available
+    return {
+      student_id: studentId,
+      grade_level: 9,
+      risk_category: riskLevel,
+      risk_score: 0.5,
+      success_probability: 0.5,
+      needs_intervention: riskLevel === 'High Risk',
+      name: `Student ${studentId}`,
+      gpa: 2.5,
+      attendance_rate: 0.95,
+      behavioral_incidents: 0,
+      interventions_count: 0
+    };
   }
 
   cleanOldCacheEntries(studentId, riskLevel, currentDataHash) {

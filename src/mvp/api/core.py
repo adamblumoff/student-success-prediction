@@ -233,12 +233,20 @@ async def analyze_student_data(
             risk_category = risk_category_map.get(risk_level, 'Medium Risk')
             
             results.append({
-                'student_id': convert_student_id_to_int(prediction['student_id']),
+                'student_id': prediction['student_id'],  # Keep original CSV student_id (S002)
+                'id': convert_student_id_to_int(prediction['student_id']),  # Add converted ID for database  
                 'name': prediction.get('name', f"Student {prediction['student_id']}"),  # Include student name
                 'risk_score': risk_prob,
                 'risk_category': risk_category,
                 'success_probability': success_prob,
-                'needs_intervention': risk_level in ['danger', 'warning']
+                'needs_intervention': risk_level in ['danger', 'warning'],
+                # Include detailed student data for GPT analysis (fix for GPT insights integration)
+                'gpa': prediction.get('current_gpa', 2.5),  # Map current_gpa to gpa for frontend compatibility
+                'attendance_rate': prediction.get('attendance_rate', 0.95),
+                'grade_level': prediction.get('grade_level', 9),
+                'behavioral_incidents': prediction.get('discipline_incidents', 0),
+                'current_gpa': prediction.get('current_gpa', 2.5),  # Keep original field too
+                'discipline_incidents': prediction.get('discipline_incidents', 0)
             })
         
         # Log prediction metrics
@@ -916,7 +924,14 @@ async def load_sample_data(
                             'risk_score': float(pred.risk_score),
                             'risk_category': pred.risk_category,
                             'success_probability': float(pred.success_probability) if pred.success_probability else 1.0 - float(pred.risk_score),
-                            'needs_intervention': pred.risk_category in ['High Risk', 'Medium Risk']
+                            'needs_intervention': pred.risk_category in ['High Risk', 'Medium Risk'],
+                            # Include detailed student data for GPT analysis (database read-only path)
+                            'gpa': 2.5,  # Default sample data values
+                            'attendance_rate': 0.85,
+                            'grade_level': 10,
+                            'behavioral_incidents': 1,
+                            'current_gpa': 2.5,
+                            'discipline_incidents': 1
                         })
                 
                 # If we have complete data, return it
@@ -1012,7 +1027,14 @@ async def load_sample_data(
                 'risk_score': risk_prob,
                 'risk_category': risk_category,
                 'success_probability': success_prob,
-                'needs_intervention': risk_level in ['danger', 'warning']
+                'needs_intervention': risk_level in ['danger', 'warning'],
+                # Include detailed student data for GPT analysis (fix for GPT insights integration)
+                'gpa': prediction.get('current_gpa', 2.5),  # Map current_gpa to gpa for frontend compatibility
+                'attendance_rate': prediction.get('attendance_rate', 0.95),
+                'grade_level': prediction.get('grade_level', 9),
+                'behavioral_incidents': prediction.get('discipline_incidents', 0),
+                'current_gpa': prediction.get('current_gpa', 2.5),  # Keep original field too
+                'discipline_incidents': prediction.get('discipline_incidents', 0)
             })
         
         # Save predictions to database only if they don't already exist (READ-ONLY principle)
