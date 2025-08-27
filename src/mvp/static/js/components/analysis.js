@@ -472,6 +472,130 @@ ${data.insights}
     return Math.abs(hash).toString(16);
   }
   
+  formatGPTRecommendations(rawText) {
+    // Clean and structure the GPT response
+    const lines = rawText.split('\n').map(line => line.trim()).filter(line => line);
+    
+    let formattedHTML = '';
+    let currentRecommendation = null;
+    let recommendationCount = 0;
+    
+    for (const line of lines) {
+      // Check if this line starts a new recommendation (numbered)
+      const numberedMatch = line.match(/^(\d+)\.\s*(.+)/);
+      
+      if (numberedMatch) {
+        // Close previous recommendation if exists
+        if (currentRecommendation) {
+          formattedHTML += '</div></div>';
+        }
+        
+        recommendationCount++;
+        const recommendationText = numberedMatch[2];
+        
+        // Start new recommendation card
+        formattedHTML += `
+          <div class="recommendation-card" style="
+            background: white;
+            border: 1px solid #e0f2fe;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          ">
+            <div class="recommendation-header" style="
+              display: flex;
+              align-items: flex-start;
+              margin-bottom: 10px;
+            ">
+              <div class="recommendation-number" style="
+                background: #0ea5e9;
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+                margin-right: 10px;
+                flex-shrink: 0;
+              ">
+                ${recommendationCount}
+              </div>
+              <div class="recommendation-title" style="
+                font-weight: 600;
+                color: #0369a1;
+                font-size: 14px;
+                line-height: 1.3;
+              ">
+                ${recommendationText}
+              </div>
+            </div>
+            <div class="recommendation-details" style="margin-left: 34px;">
+        `;
+        
+        currentRecommendation = recommendationCount;
+      } else if (currentRecommendation && line.startsWith('-') || line.startsWith('•')) {
+        // Format bullet points
+        const bulletText = line.replace(/^[-•]\s*/, '');
+        formattedHTML += `
+          <div class="recommendation-bullet" style="
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 6px;
+          ">
+            <div style="
+              color: #0ea5e9;
+              margin-right: 8px;
+              font-weight: bold;
+              margin-top: 2px;
+            ">•</div>
+            <span style="color: #4b5563; font-size: 13px; line-height: 1.4;">
+              ${bulletText}
+            </span>
+          </div>
+        `;
+      } else if (currentRecommendation && line.length > 0) {
+        // Regular text within a recommendation
+        formattedHTML += `
+          <p style="
+            color: #4b5563;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 8px 0;
+          ">
+            ${line}
+          </p>
+        `;
+      }
+    }
+    
+    // Close the last recommendation
+    if (currentRecommendation) {
+      formattedHTML += '</div></div>';
+    }
+    
+    // If no structured recommendations found, display as simple formatted text
+    if (recommendationCount === 0) {
+      formattedHTML = `
+        <div class="simple-recommendations" style="
+          background: white;
+          border: 1px solid #e0f2fe;
+          border-radius: 6px;
+          padding: 16px;
+        ">
+          ${rawText.split('\n').map(line => 
+            line.trim() ? `<p style="margin-bottom: 8px; color: #4b5563; line-height: 1.5;">${line.trim()}</p>` : ''
+          ).join('')}
+        </div>
+      `;
+    }
+    
+    return formattedHTML;
+  }
+
   async buildPersonalizedPrompt(studentId, riskLevel) {
     // Get comprehensive student data to analyze their specific situation
     const studentData = await this.getComprehensiveStudentData(studentId, riskLevel);
@@ -672,45 +796,48 @@ Make each recommendation unique to this student's specific data and situation.`;
         const result = await response.json();
         const insights = result.insight || 'No insights available';
         
-        // Extract key points from GPT response and clean formatting
-        const lines = insights.split('\n')
-          .filter(line => line.trim()) // Remove empty lines
-          .map(line => line.trim()) // Remove leading/trailing spaces
-          .slice(0, 8);
-        const actionableInsights = lines.join('\n');
+        // Format GPT response into structured recommendations
+        const formattedRecommendations = this.formatGPTRecommendations(insights);
         
         contentDiv.innerHTML = `
           <div class="gpt-quick-insights" style="
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             border-left: 3px solid #0ea5e9;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
+            border-radius: 8px;
             margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
           ">
-            <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-              <span style="font-weight: 600; color: #0369a1; font-size: 13px;">
-                <i class="fas fa-lightbulb"></i> Quick AI Recommendations
+            <div class="insights-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <span style="font-weight: 600; color: #0369a1; font-size: 14px;">
+                <i class="fas fa-lightbulb" style="margin-right: 8px; color: #f59e0b;"></i> Personalized AI Recommendations
               </span>
-              <span style="background: #0ea5e9; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
-                ⚡ ${result.processing_time_seconds?.toFixed(1)}s
-              </span>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                  🎯 Personalized
+                </span>
+                <span style="background: #0ea5e9; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px;">
+                  ⚡ ${result.processing_time_seconds?.toFixed(1)}s
+                </span>
+                <button class="btn btn-outline btn-small" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')" 
+                        style="font-size: 11px; padding: 2px 8px; border-color: #0ea5e9; color: #0ea5e9;">
+                  <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+              </div>
             </div>
-            <div class="insights-text" style="
-              font-size: 13px;
-              line-height: 1.4;
+            <div class="insights-content" style="
+              font-size: 14px;
+              line-height: 1.6;
               color: #374151;
-              white-space: pre-line;
-              max-height: 150px;
-              overflow-y: auto;
             ">
-${actionableInsights}
+              ${formattedRecommendations}
             </div>
           </div>
         `;
         
         // Cache the result
         sessionStorage.setItem(cacheKey, JSON.stringify({
-          insights: actionableInsights,
+          insights: formattedRecommendations,
           timestamp: Date.now()
         }));
         
