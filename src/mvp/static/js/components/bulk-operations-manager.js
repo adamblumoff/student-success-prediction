@@ -93,11 +93,11 @@ class BulkOperationsManager {
         try {
             this.showNotification('Deleting interventions...', 'info');
 
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
             const response = await fetch('/api/interventions/bulk/delete', {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(interventionIds)

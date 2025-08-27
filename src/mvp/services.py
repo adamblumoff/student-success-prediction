@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 _intervention_system: Optional[InterventionRecommendationSystem] = None
 _k12_ultra_predictor: Optional[K12UltraPredictor] = None
 _google_classroom_integration = None
+_gpt_oss_service = None
+_gpt_cache_service = None
 
 
 def get_intervention_system() -> InterventionRecommendationSystem:
@@ -100,18 +102,69 @@ def get_google_classroom_integration():
     return _google_classroom_integration
 
 
+def get_gpt_oss_service():
+    """
+    FastAPI dependency to get or create GPT-OSS service instance.
+    
+    Returns:
+        GPTOSSService: GPT-OSS 20B model service
+        
+    Raises:
+        RuntimeError: If service cannot be initialized
+    """
+    global _gpt_oss_service
+    
+    if _gpt_oss_service is None:
+        try:
+            logger.info("🤖 Initializing GPT-OSS service")
+            from src.mvp.services.gpt_oss_service import GPTOSSService
+            _gpt_oss_service = GPTOSSService()
+            logger.info("✅ GPT-OSS service initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize GPT-OSS service: {e}")
+            # Don't raise error - allow system to work without GPT-OSS
+            logger.warning("⚠️ System will continue without GPT-OSS enhancement")
+    
+    return _gpt_oss_service
+
+
+def get_gpt_cache_service():
+    """
+    FastAPI dependency to get or create GPT Cache service instance.
+    
+    Returns:
+        GPTCacheService: GPT analysis caching service
+    """
+    global _gpt_cache_service
+    
+    if _gpt_cache_service is None:
+        try:
+            logger.info("🗄️ Initializing GPT Cache service")
+            from src.mvp.services.gpt_cache_service import GPTCacheService
+            _gpt_cache_service = GPTCacheService()
+            logger.info("✅ GPT Cache service initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize GPT Cache service: {e}")
+            # Don't raise error - allow system to work without caching
+            logger.warning("⚠️ System will continue without GPT caching")
+    
+    return _gpt_cache_service
+
+
 def reset_services():
     """
     Reset all service instances (useful for testing).
     
     Warning: This will force re-initialization of all services.
     """
-    global _intervention_system, _k12_ultra_predictor, _google_classroom_integration
+    global _intervention_system, _k12_ultra_predictor, _google_classroom_integration, _gpt_oss_service, _gpt_cache_service
     
     logger.info("🔄 Resetting all service instances")
     _intervention_system = None
     _k12_ultra_predictor = None
     _google_classroom_integration = None
+    _gpt_oss_service = None
+    _gpt_cache_service = None
 
 
 def health_check_services() -> dict:
@@ -124,5 +177,7 @@ def health_check_services() -> dict:
     return {
         'intervention_system': _intervention_system is not None,
         'k12_ultra_predictor': _k12_ultra_predictor is not None,
-        'google_classroom': _google_classroom_integration is not None
+        'google_classroom': _google_classroom_integration is not None,
+        'gpt_oss_service': _gpt_oss_service is not None,
+        'gpt_cache_service': _gpt_cache_service is not None
     }

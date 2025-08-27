@@ -468,10 +468,10 @@ class AuditLogger:
                         MAX(created_at) as last_event
                     FROM audit_logs 
                     WHERE institution_id = :institution_id 
-                    AND created_at >= NOW() - INTERVAL '%s days'
+                    AND created_at >= NOW() - INTERVAL '1 day' * :days
                     GROUP BY action, resource_type
                     ORDER BY event_count DESC
-                """ % days)
+                """)
             else:
                 # SQLite syntax with timestamp column
                 sql = text("""
@@ -484,12 +484,12 @@ class AuditLogger:
                         MAX(timestamp) as last_event
                     FROM audit_logs 
                     WHERE institution_id = :institution_id 
-                    AND timestamp >= datetime('now', '-%s days')
+                    AND timestamp >= datetime('now', '-' || :days || ' days')
                     GROUP BY action, resource_type
                     ORDER BY event_count DESC
-                """ % days)
+                """)
             
-            result = session.execute(sql, {"institution_id": institution_id})
+            result = session.execute(sql, {"institution_id": institution_id, "days": days})
             
             events = []
             for row in result.fetchall():

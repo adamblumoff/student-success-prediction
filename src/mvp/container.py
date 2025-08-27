@@ -178,13 +178,13 @@ def configure_production_services():
     
     # Cache services
     _container.register_singleton(
-        'cache_service',
+        ProductionCacheService,
         factory=lambda c: ProductionCacheService()
     )
     
     # Monitoring services
     _container.register_singleton(
-        'metrics_service', 
+        MetricsCollector, 
         factory=lambda c: MetricsCollector()
     )
     
@@ -298,11 +298,11 @@ def get_k12_ultra_predictor():
 
 def get_cache_service():
     """FastAPI dependency to get cache service."""
-    return _container.get('cache_service')
+    return _container.get(ProductionCacheService)
 
 def get_metrics_service():
     """FastAPI dependency to get metrics service."""
-    return _container.get('metrics_service')
+    return _container.get(MetricsCollector)
 
 # Startup function
 def initialize_container():

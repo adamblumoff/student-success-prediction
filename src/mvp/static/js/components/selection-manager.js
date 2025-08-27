@@ -7,7 +7,7 @@ class SelectionManager {
     constructor() {
         this.selectedStudents = new Set();
         this.selectedInterventions = new Set();
-        this.selectionMode = false;
+        this.selectionMode = true; // Default to enabled (bulk mode on by default)
         this.callbacks = new Map();
         this.init();
     }
@@ -18,6 +18,11 @@ class SelectionManager {
         this.createFloatingToolbar();
         this.bindEvents();
         this.setupMutationObserver();
+        
+        // Since selection mode defaults to enabled, enter selection mode immediately
+        if (this.selectionMode) {
+            this.enterSelectionMode();
+        }
     }
 
     // ========== SELECTION STATE MANAGEMENT ==========

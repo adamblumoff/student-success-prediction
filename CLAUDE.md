@@ -897,3 +897,5 @@ python3 scripts/validate_deployment.py
 
 This systematic approach maintains a clean, navigable repository that scales with the project's growth.
 - this product is made for teachers/adminstrators for k-12 schools and making their workflow easier
+- always have the server running in the background so that i can test it
+- need to make sure features work before committing

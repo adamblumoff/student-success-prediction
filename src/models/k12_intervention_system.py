@@ -16,7 +16,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Import K-12 explainable AI
-from k12_explainable_ai import K12ExplainableAI
+from .k12_explainable_ai import K12ExplainableAI
 
 class K12InterventionSystem:
     """Comprehensive intervention recommendation system for K-12 students."""

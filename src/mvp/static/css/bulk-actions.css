@@ -108,16 +108,16 @@
 
 .bulk-action-toolbar {
     position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
+    top: 50%;
+    left: 24px;
+    transform: translateX(-100px) translateY(-50%);
     background: white;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     border: 1px solid #e5e7eb;
     z-index: 1000;
-    min-width: 320px;
-    max-width: 90vw;
+    min-width: 160px;
+    max-width: 200px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
 }
@@ -127,16 +127,17 @@
 }
 
 .bulk-action-toolbar.visible {
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(0) translateY(-50%);
     opacity: 1;
 }
 
 .toolbar-content {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+    max-width: 200px;
 }
 
 .selection-info {
@@ -157,9 +158,9 @@
 
 .toolbar-actions {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
-    flex-wrap: wrap;
 }
 
 .toolbar-toggle {
@@ -242,6 +243,7 @@
 @media (max-width: 768px) {
     .bulk-action-toolbar {
         bottom: 16px;
+        top: auto;
         left: 16px;
         right: 16px;
         transform: translateY(100px);
@@ -1088,5 +1090,46 @@ button[type="submit"],
     
     .assignment-options {
         padding: 12px;
+    }
+}
+
+/* ========== LAYOUT ADJUSTMENTS FOR BULK MODE ========== */
+
+/* Push main content right when bulk selection mode is active */
+.bulk-selection-mode .container,
+.bulk-selection-mode .student-list-panel,
+.bulk-selection-mode .student-detail-panel,
+.bulk-selection-mode .main {
+    margin-left: 240px;
+    transition: margin-left 0.3s ease;
+}
+
+/* Adjust main layout panels to prevent overlap */
+.bulk-selection-mode .student-list-panel {
+    padding-left: 20px;
+}
+
+.bulk-selection-mode .student-detail-panel {
+    padding-left: 20px;
+}
+
+/* Ensure filter tabs and controls also move right */
+.bulk-selection-mode .filter-tab,
+.bulk-selection-mode .list-controls,
+.bulk-selection-mode .analysis-actions {
+    margin-left: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+/* Mobile responsiveness - disable layout adjustment on mobile */
+@media (max-width: 768px) {
+    .bulk-selection-mode .container,
+    .bulk-selection-mode .student-list-panel,
+    .bulk-selection-mode .student-detail-panel,
+    .bulk-selection-mode .main,
+    .bulk-selection-mode .filter-tab,
+    .bulk-selection-mode .list-controls,
+    .bulk-selection-mode .analysis-actions {
+        margin-left: 0;
     }
 }
