@@ -19,6 +19,7 @@ import os
 from typing import List, Dict, Any
 import io
 import time
+import importlib.util
 from datetime import datetime
 
 # Import models using consistent approach (consolidated path management)
@@ -69,7 +70,15 @@ _demo_cache = {
 # Import dependency injection services 
 # Temporary: Import only the working services to get server running
 try:
-    from src.mvp.services import get_intervention_system, get_k12_ultra_predictor
+    # Import from services.py file (not the services/ directory)
+    import sys
+    from pathlib import Path
+    services_file_path = Path(__file__).parent.parent / 'services.py'
+    spec = importlib.util.spec_from_file_location("mvp_services", services_file_path)
+    mvp_services = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mvp_services)
+    get_intervention_system = mvp_services.get_intervention_system
+    get_k12_ultra_predictor = mvp_services.get_k12_ultra_predictor
     
     # Create a working demo GPT service for proof-of-concept
     class DemoGPTService:
