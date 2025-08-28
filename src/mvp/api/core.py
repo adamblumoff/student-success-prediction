@@ -31,7 +31,7 @@ if str(Path(__file__).parent.parent.parent) not in sys.path:
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
-from src.mvp.simple_auth_clean import simple_auth_check
+from src.mvp.simple_auth_clean import simple_auth_check, apply_rate_limit
 from src.mvp.simple_auth import simple_file_validation  # Keep file validation
 from mvp.database import get_db_session, get_session_factory, save_predictions_batch, save_gpt_insight, get_gpt_insight, get_all_gpt_insights_for_session
 from sqlalchemy.orm import Session
@@ -157,7 +157,7 @@ async def analyze_student_data(
     """Analyze uploaded CSV file and return risk predictions using K-12 model"""
     try:
         # Production-ready rate limiting
-        rate_limiter.check_rate_limit(request, 'file_upload')
+        apply_rate_limit(request)
         
         # Secure file validation and processing
         contents = await file.read()
@@ -319,7 +319,7 @@ async def analyze_detailed_student_data(
 ):
     """Detailed analysis with explainable AI predictions"""
     try:
-        rate_limiter.check_rate_limit(request, 'file_upload')
+        apply_rate_limit(request)
         
         contents = await file.read()
         filename = input_sanitizer.sanitize_filename(file.filename)
@@ -512,7 +512,7 @@ async def analyze_k12_gradebook(
     operation_start = time.time()
     
     try:
-        rate_limiter.check_rate_limit(request, 'file_upload')
+        apply_rate_limit(request)
         
         # Log file upload start
         request_context = {
@@ -1517,38 +1517,33 @@ def get_session_secret():
 
 @router.post("/auth/web-login")
 async def web_login(request: Request):
-    """Production-ready secure web authentication endpoint"""
+    """Simple web login for development mode"""
     try:
-        # Rate limit authentication attempts
-        rate_limiter.check_rate_limit(request, 'auth_attempt')
+        # In development mode, always allow login
+        if os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true':
+            response = JSONResponse({
+                "authenticated": True,
+                "user": "dev_user",
+                "message": "Development login successful"
+            })
+            
+            # Set simple session cookie for development
+            response.set_cookie(
+                key="dev_session",
+                value="dev_authenticated",
+                max_age=86400,  # 24 hours
+                httponly=False,  # Allow JS access in dev mode
+                secure=False
+            )
+            
+            logger.info(f"Development login successful from {request.client.host}")
+            return response
         
-        # Create cryptographically secure session
-        session_token = create_web_session("web_user")
-        
-        # Create response with authentication success
-        response = JSONResponse({
-            'status': 'authenticated',
-            'user': 'web_user',
-            'message': 'Authentication successful',
-            'session_expires_in': 8 * 3600  # 8 hours
-        })
-        
-        # Set secure session cookie with production-ready settings
-        is_https = request.url.scheme == "https"
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,     # Prevents XSS access to cookie
-            secure=is_https,   # Only send over HTTPS in production
-            samesite="strict", # Strong CSRF protection
-            max_age=8 * 3600   # 8-hour sessions
-        )
-        
-        logger.info(f"Created secure web session for user from {request.client.host}")
-        return response
+        # For production mode, implement proper authentication
+        raise HTTPException(status_code=401, detail="Authentication required")
         
     except HTTPException:
-        raise
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error in web login: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
