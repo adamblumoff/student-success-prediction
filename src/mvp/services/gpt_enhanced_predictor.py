@@ -238,9 +238,9 @@ class GPTEnhancedPredictor:
                 # Single field mapping
                 formatted_data[ml_field] = student_data.get(source_fields, self._get_default_value(ml_field))
         
-        # Ensure student_id is properly formatted
+        # Ensure student_id is properly formatted - use original ID from student_data
         if "student_id" not in formatted_data or formatted_data["student_id"] is None:
-            formatted_data["student_id"] = f"temp_student_{hash(str(student_data)) % 10000}"
+            formatted_data["student_id"] = student_data.get("student_id", "unknown_student")
         
         return pd.DataFrame([formatted_data])
     

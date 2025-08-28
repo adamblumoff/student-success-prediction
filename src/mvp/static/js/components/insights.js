@@ -37,7 +37,7 @@ class Insights extends Component {
     let globalInsights = null;
     try {
       const response = await fetch('/api/mvp/insights', {
-        headers: { 'Authorization': 'Bearer dev-key-change-me' }
+        headers: { 'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe' }
       });
       if (response.ok) {
         const data = await response.json();

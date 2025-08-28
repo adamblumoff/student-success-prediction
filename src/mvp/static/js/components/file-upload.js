@@ -195,12 +195,15 @@ class FileUpload extends Component {
     // Show success message
     this.showNotification(`Analysis complete! Found ${students.length} students.`, 'success');
     
-    // CRITICAL: Actually render the students using working pattern from app.js
-    // Call the main app's render method instead of this component's method
-    if (window.modernApp && window.modernApp.renderStudentsClean) {
-      window.modernApp.renderStudentsClean(students);
+    // CRITICAL FIX: Use the same rendering path as sample data
+    // Instead of using custom renderStudentsClean, use the analysis component directly
+    // This ensures CSV students work exactly like sample students
+    const analysisComponent = this.appState.components.get('analysis');
+    if (analysisComponent) {
+      // Use the analysis component's rendering method (same as sample data)
+      analysisComponent.updateStudentList(students);
     } else {
-      // Fallback: call this component's method
+      // Fallback: call this component's method if analysis component not available
       this.renderStudentsClean(students);
     }
   }

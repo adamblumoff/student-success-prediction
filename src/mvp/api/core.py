@@ -31,15 +31,9 @@ if str(Path(__file__).parent.parent.parent) not in sys.path:
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
-from mvp.security import (
-    get_current_user_secure, 
-    rate_limiter, 
-    input_sanitizer, 
-    create_web_session,
-    revoke_web_session,
-    security_config
-)
-from mvp.database import get_db_session, get_session_factory, save_predictions_batch
+from src.mvp.simple_auth_clean import simple_auth_check
+from src.mvp.simple_auth import simple_file_validation  # Keep file validation
+from mvp.database import get_db_session, get_session_factory, save_predictions_batch, save_gpt_insight, get_gpt_insight, get_all_gpt_insights_for_session
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from mvp.audit_logger import audit_logger
@@ -147,9 +141,9 @@ def convert_student_id_to_int(student_id):
             try:
                 return int(student_id_str.split('_')[1]) + 1001  # Start from 1001
             except (IndexError, ValueError):
-                return hash(student_id_str) % 10000  # Fallback to hash
+                return student_id_str  # Use original ID
         else:
-            return hash(student_id_str) % 10000  # Fallback to hash
+            return student_id_str  # Use original ID directly
 
 # Removed deprecated get_current_user - using get_current_user_secure directly
 
@@ -157,7 +151,7 @@ def convert_student_id_to_int(student_id):
 async def analyze_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Analyze uploaded CSV file and return risk predictions using K-12 model"""
@@ -233,8 +227,8 @@ async def analyze_student_data(
             risk_category = risk_category_map.get(risk_level, 'Medium Risk')
             
             results.append({
-                'student_id': prediction['student_id'],  # Keep original CSV student_id (S002)
-                'id': convert_student_id_to_int(prediction['student_id']),  # Add converted ID for database  
+                'student_id': convert_student_id_to_int(prediction['student_id']),  # INTEGER ID for frontend compatibility (like sample data)
+                'original_student_id': prediction['student_id'],  # Keep original CSV ID (S002) for reference
                 'name': prediction.get('name', f"Student {prediction['student_id']}"),  # Include student name
                 'risk_score': risk_prob,
                 'risk_category': risk_category,
@@ -320,7 +314,7 @@ async def analyze_student_data(
 async def analyze_detailed_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     intervention_system = Depends(get_intervention_system)
 ):
     """Detailed analysis with explainable AI predictions"""
@@ -381,7 +375,7 @@ async def analyze_detailed_student_data(
 async def get_audit_summary(
     request: Request,
     days: int = 30,
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     db: Session = Depends(get_db)
 ):
     """Get comprehensive audit summary for compliance reporting"""
@@ -425,7 +419,7 @@ async def get_audit_events(
     limit: int = 100,
     offset: int = 0,
     action_filter: str = None,
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     db: Session = Depends(get_db)
 ):
     """Get detailed audit events for compliance review"""
@@ -502,7 +496,7 @@ async def analyze_k12_gradebook(
     file: UploadFile = File(...),
     include_gpt_analysis: bool = Query(False, description="Include GPT-OSS enhanced natural language analysis"),
     gpt_analysis_depth: str = Query("basic", description="GPT analysis depth: basic, detailed, comprehensive"),
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor),
     db: Session = Depends(get_db)
 ):
@@ -741,7 +735,7 @@ Focus on actionable insights for K-12 educators and administrators."""
 @router.get("/sample")
 async def load_sample_data(
     request: Request,
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor),
     db: Session = Depends(get_db)
 ):
@@ -1119,7 +1113,7 @@ async def load_sample_data(
         })
 
 @router.get("/stats")
-async def get_simple_stats(current_user: dict = Depends(get_current_user_secure)):
+async def get_simple_stats(current_user: dict = Depends(simple_auth_check)):
     """Get simple analytics and system stats"""
     try:
         # Get database session
@@ -1295,7 +1289,7 @@ def generate_useful_explanation(student, prediction, risk_score, risk_category):
 
 @router.get("/insights")
 async def get_model_insights(
-    current_user: dict = Depends(get_current_user_secure),
+    current_user: dict = Depends(simple_auth_check),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Get global model insights and feature importance for K-12 model"""
@@ -1356,7 +1350,7 @@ async def get_model_insights(
 
 
 @router.get("/success-stories")
-async def get_success_stories(current_user: dict = Depends(get_current_user_secure)):
+async def get_success_stories(current_user: dict = Depends(simple_auth_check)):
     """Get success stories and case studies"""
     try:
         # Sample success stories for demonstration
@@ -1415,7 +1409,7 @@ async def get_success_stories(current_user: dict = Depends(get_current_user_secu
 
 # Demo endpoints
 @router.get("/demo/stats")
-async def demo_stats(current_user: dict = Depends(get_current_user_secure)):
+async def demo_stats(current_user: dict = Depends(simple_auth_check)):
     """Get demo statistics for presentations"""
     try:
         return JSONResponse({
@@ -1456,7 +1450,7 @@ async def demo_stats(current_user: dict = Depends(get_current_user_secure)):
         raise HTTPException(status_code=500, detail=f"Error retrieving demo stats: {str(e)}")
 
 @router.get("/demo/simulate-new-student")
-async def simulate_new_student(current_user: dict = Depends(get_current_user_secure)):
+async def simulate_new_student(current_user: dict = Depends(simple_auth_check)):
     """Simulate a new student for demo purposes"""
     try:
         # Generate a random demo student
@@ -1507,7 +1501,7 @@ async def simulate_new_student(current_user: dict = Depends(get_current_user_sec
         raise HTTPException(status_code=500, detail=f"Error simulating student: {str(e)}")
 
 @router.get("/demo/success-stories")
-async def demo_success_stories(current_user: dict = Depends(get_current_user_secure)):
+async def demo_success_stories(current_user: dict = Depends(simple_auth_check)):
     """Get success stories for demo presentations"""
     return await get_success_stories(current_user)
 
@@ -1560,10 +1554,112 @@ async def web_login(request: Request):
         raise HTTPException(status_code=500, detail="Authentication failed")
 
 @router.get("/auth/status")
-async def auth_status(current_user: dict = Depends(get_current_user_secure)):
+async def auth_status(current_user: dict = Depends(simple_auth_check)):
     """Check current authentication status"""
     return JSONResponse({
         'authenticated': True,
         'user': current_user.get('user'),
         'permissions': current_user.get('permissions', [])
     })
+
+# GPT Insights Database Endpoints
+@router.post("/gpt-insights/check")
+async def check_gpt_insights(
+    request: Request
+):
+    """Check if GPT insights exist in database for given student and data hash."""
+    try:
+        # Manual authentication check
+        current_user = simple_auth_check(request, None)
+        
+        body = await request.json()
+        student_id = body.get('student_id')
+        data_hash = body.get('data_hash')
+        
+        if not student_id or not data_hash:
+            raise HTTPException(status_code=400, detail="student_id and data_hash required")
+        
+        # Get insights from database
+        insight = get_gpt_insight(student_id, data_hash, institution_id=1)
+        
+        if insight:
+            return JSONResponse({
+                'found': True,
+                'formatted_html': insight['formatted_html'],
+                'cache_hits': insight['cache_hits'],
+                'created_at': insight['created_at'].isoformat(),
+                'is_cached': True
+            })
+        else:
+            return JSONResponse({'found': False})
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking GPT insights: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check insights")
+
+@router.post("/gpt-insights/save")
+async def save_gpt_insights(
+    request: Request
+):
+    """Save GPT insights to database after fresh generation."""
+    try:
+        # Manual authentication check
+        current_user = simple_auth_check(request, None)
+        
+        body = await request.json()
+        
+        # Extract session information
+        session_id = current_user.get('session_id', f"session_{int(time.time())}")
+        user_id = current_user.get('user_id')
+        
+        # Prepare insight data
+        insight_data = {
+            'student_id': body['student_id'],
+            'risk_level': body['risk_level'],
+            'data_hash': body['data_hash'],
+            'raw_response': body['raw_response'],
+            'formatted_html': body['formatted_html'],
+            'gpt_model': body.get('gpt_model', 'gpt-5-nano'),
+            'tokens_used': body.get('tokens_used'),
+            'generation_time_ms': body.get('generation_time_ms'),
+            'student_database_id': body.get('student_database_id')  # Optional DB reference
+        }
+        
+        # Save to database
+        insight_id = save_gpt_insight(insight_data, session_id, user_id, institution_id=1)
+        
+        return JSONResponse({
+            'success': True,
+            'insight_id': insight_id,
+            'message': 'GPT insights saved to database'
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving GPT insights: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save insights")
+
+@router.get("/gpt-insights/session/{session_id}")
+async def get_session_gpt_insights(
+    session_id: str,
+    request: Request
+):
+    """Retrieve all GPT insights for a session (for restoring on login/refresh)."""
+    try:
+        # Manual authentication check
+        current_user = simple_auth_check(request, None)
+        
+        insights = get_all_gpt_insights_for_session(session_id, institution_id=1)
+        
+        return JSONResponse({
+            'success': True,
+            'insights': insights,
+            'count': len(insights)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving session insights: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve session insights")

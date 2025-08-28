@@ -391,12 +391,50 @@ class Analysis extends Component {
     return types[type] || type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
+  async loadCachedInsightsFromDatabase(studentId, riskLevel, contentDiv) {
+    try {
+      // Generate data hash for current student state
+      const currentStudent = this.appState.getState().selectedStudent;
+      const dataHash = await this.generateDataHash(studentId, currentStudent);
+      
+      // Check database for existing insights
+      const response = await fetch('/api/mvp/gpt-insights/check', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          data_hash: dataHash
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.found) {
+          // Load cached insights from database
+          contentDiv.innerHTML = result.formatted_html;
+          console.log(`✅ Restored GPT insights from database for student ${studentId} (cache hits: ${result.cache_hits})`);
+          return true; // Successfully loaded from database
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load cached insights from database:', error);
+    }
+    
+    return false; // No cached insights found
+  }
+
   async checkCachedInsights(studentId, riskLevel) {
     const container = document.getElementById(`gpt-insights-${studentId}`);
     if (!container) return;
     
     const contentDiv = container.querySelector('.gpt-insights-content');
     if (!contentDiv) return;
+    
+    // Check database for cached insights first
+    await this.loadCachedInsightsFromDatabase(studentId, riskLevel, contentDiv);
     
     // Generate data hash for cache invalidation
     const currentStudent = this.appState.getState().selectedStudent;
@@ -824,7 +862,34 @@ Make each recommendation unique to this student's specific data and situation.`;
     const dataHash = await this.generateDataHash(studentId, currentStudent);
     const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
     
-    // Show loading state
+    // FIRST: Check database for existing insights
+    try {
+      const dbResponse = await fetch('/api/mvp/gpt-insights/check', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          data_hash: dataHash
+        })
+      });
+      
+      if (dbResponse.ok) {
+        const dbResult = await dbResponse.json();
+        if (dbResult.found) {
+          // Load from database - no need to regenerate
+          contentDiv.innerHTML = dbResult.formatted_html;
+          console.log(`✅ Loaded cached GPT insights for student ${studentId} (cache hits: ${dbResult.cache_hits})`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Database check failed, proceeding with GPT generation:', error);
+    }
+    
+    // Show loading state for fresh generation
     contentDiv.innerHTML = `
       <div class="loading-state" style="text-align: center; padding: 20px;">
         <div class="spinner" style="
@@ -896,7 +961,36 @@ Make each recommendation unique to this student's specific data and situation.`;
           </div>
         `;
         
-        // Cache the result
+        // SAVE TO DATABASE: This is a fresh generation, so save it
+        try {
+          const saveResponse = await fetch('/api/mvp/gpt-insights/save', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              student_id: studentId,
+              risk_level: riskLevel,
+              data_hash: dataHash,
+              raw_response: insights,
+              formatted_html: contentDiv.innerHTML,
+              gpt_model: 'gpt-5-nano',
+              tokens_used: result.tokens_used,
+              generation_time_ms: result.processing_time_seconds ? Math.round(result.processing_time_seconds * 1000) : null
+            })
+          });
+          
+          if (saveResponse.ok) {
+            console.log(`✅ Saved GPT insights to database for student ${studentId}`);
+          } else {
+            console.warn('Failed to save GPT insights to database:', await saveResponse.text());
+          }
+        } catch (error) {
+          console.warn('Database save failed:', error);
+        }
+        
+        // Cache the result in sessionStorage as backup
         sessionStorage.setItem(cacheKey, JSON.stringify({
           insights: formattedRecommendations,
           timestamp: Date.now()

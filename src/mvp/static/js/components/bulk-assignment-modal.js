@@ -251,7 +251,7 @@ class BulkAssignmentModal {
     async loadStaffSuggestions() {
         try {
             // Get staff suggestions from existing interventions
-            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
+            const token = localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe';
             const response = await fetch('/api/interventions/all?limit=100', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -334,7 +334,7 @@ class BulkAssignmentModal {
 
     async getInterventionDetails(interventionId) {
         try {
-            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
+            const token = localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe';
             const response = await fetch(`/api/interventions/${interventionId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -398,7 +398,7 @@ class BulkAssignmentModal {
         this.showProgressSection();
         
         try {
-            const token = localStorage.getItem('api_key') || 'dev-key-change-me';
+            const token = localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe';
             const response = await fetch('/api/interventions/bulk/update', {
                 method: 'PUT',
                 headers: {

@@ -122,7 +122,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 # Import all modular routers
 from src.mvp.api.core import router as core_router
-from src.mvp.api.auth import router as auth_router
+# Removed unused database auth router
 from src.mvp.api.interventions import router as interventions_router
 from src.mvp.api.canvas_endpoints import router as canvas_router
 from src.mvp.api.powerschool_endpoints import router as powerschool_router
@@ -168,7 +168,7 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 templates = Jinja2Templates(directory=str(templates_dir))
 
 # Include all routers
-app.include_router(auth_router, prefix="/api", tags=["Authentication"])
+# Removed unused database auth router - using simple API key auth only
 app.include_router(interventions_router, prefix="/api", tags=["Interventions"])
 app.include_router(core_router, prefix="/api/mvp", tags=["Core MVP"])
 app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])  # provides /api/lms/canvas/*

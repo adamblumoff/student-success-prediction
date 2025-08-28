@@ -12,7 +12,7 @@ import json
 from typing import Optional, Generator
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, MetaData, text, Column, Integer, String, DateTime, Float, Text, Boolean
+from sqlalchemy import create_engine, MetaData, text, Column, Integer, String, DateTime, Float, Text, Boolean, func
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.pool import QueuePool
@@ -503,3 +503,119 @@ def save_prediction(prediction_data: dict, session_id: str):
     except Exception as e:
         logger.error(f"Failed to save prediction for student {prediction_data.get('student_id')}: {e}")
         raise
+
+# GPT Insights Database Functions
+def save_gpt_insight(insight_data: dict, session_id: str = None, user_id: int = None, institution_id: int = 1):
+    """Save GPT insight to database with smart caching logic."""
+    try:
+        from .models import GPTInsight
+        
+        with get_db_session() as session:
+            # Check if insight already exists with same student_id and data_hash
+            existing_insight = session.query(GPTInsight).filter(
+                GPTInsight.student_id == str(insight_data['student_id']),
+                GPTInsight.data_hash == insight_data['data_hash']
+            ).first()
+            
+            if existing_insight:
+                # Update access tracking for existing insight
+                existing_insight.cache_hits += 1
+                existing_insight.last_accessed = func.now()
+                existing_insight.is_cached = True
+                session.commit()
+                logger.info(f"Updated access for existing GPT insight: student {insight_data['student_id']}, cache hits: {existing_insight.cache_hits + 1}")
+                return existing_insight.id
+            else:
+                # Create new insight - this is a fresh generation
+                insight = GPTInsight(
+                    institution_id=institution_id,
+                    student_id=str(insight_data['student_id']),
+                    student_database_id=insight_data.get('student_database_id'),
+                    risk_level=insight_data['risk_level'],
+                    data_hash=insight_data['data_hash'],
+                    raw_response=insight_data['raw_response'],
+                    formatted_html=insight_data['formatted_html'],
+                    gpt_model=insight_data.get('gpt_model', 'gpt-5-nano'),
+                    tokens_used=insight_data.get('tokens_used'),
+                    generation_time_ms=insight_data.get('generation_time_ms'),
+                    session_id=session_id,
+                    user_id=user_id,
+                    is_cached=False,  # This is a fresh generation
+                    cache_hits=0
+                )
+                session.add(insight)
+                session.commit()
+                logger.info(f"Saved new GPT insight for student {insight_data['student_id']}")
+                return insight.id
+                
+    except Exception as e:
+        logger.error(f"Failed to save GPT insight for student {insight_data.get('student_id')}: {e}")
+        raise
+
+def get_gpt_insight(student_id: str, data_hash: str, institution_id: int = 1):
+    """Retrieve existing GPT insight from database if available."""
+    try:
+        from .models import GPTInsight
+        
+        with get_db_session() as session:
+            insight = session.query(GPTInsight).filter(
+                GPTInsight.student_id == str(student_id),
+                GPTInsight.data_hash == data_hash,
+                GPTInsight.institution_id == institution_id
+            ).first()
+            
+            if insight:
+                # Update access tracking
+                insight.cache_hits += 1
+                insight.last_accessed = func.now()
+                insight.is_cached = True
+                session.commit()
+                
+                logger.info(f"Retrieved cached GPT insight for student {student_id}, cache hits: {insight.cache_hits}")
+                return {
+                    'id': insight.id,
+                    'raw_response': insight.raw_response,
+                    'formatted_html': insight.formatted_html,
+                    'risk_level': insight.risk_level,
+                    'created_at': insight.created_at,
+                    'is_cached': True,
+                    'cache_hits': insight.cache_hits
+                }
+            else:
+                logger.info(f"No cached GPT insight found for student {student_id}")
+                return None
+                
+    except Exception as e:
+        logger.error(f"Failed to retrieve GPT insight for student {student_id}: {e}")
+        return None
+
+def get_all_gpt_insights_for_session(session_id: str, institution_id: int = 1):
+    """Retrieve all GPT insights for a session to restore on login/refresh."""
+    try:
+        from .models import GPTInsight
+        
+        with get_db_session() as session:
+            insights = session.query(GPTInsight).filter(
+                GPTInsight.session_id == session_id,
+                GPTInsight.institution_id == institution_id
+            ).all()
+            
+            result = {}
+            for insight in insights:
+                result[insight.student_id] = {
+                    'id': insight.id,
+                    'raw_response': insight.raw_response,
+                    'formatted_html': insight.formatted_html,
+                    'risk_level': insight.risk_level,
+                    'data_hash': insight.data_hash,
+                    'created_at': insight.created_at,
+                    'is_cached': True,
+                    'cache_hits': insight.cache_hits
+                }
+            
+            logger.info(f"Retrieved {len(result)} GPT insights for session {session_id}")
+            return result
+            
+    except Exception as e:
+        logger.error(f"Failed to retrieve GPT insights for session {session_id}: {e}")
+        return {}

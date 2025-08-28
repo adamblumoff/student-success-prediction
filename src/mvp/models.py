@@ -337,3 +337,55 @@ class UserSession(Base):
     
     def __repr__(self):
         return f"<UserSession(user_id={self.user_id}, active={self.is_active})>"
+
+class GPTInsight(Base):
+    """GPT-generated insights for students with smart caching."""
+    __tablename__ = "gpt_insights"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    institution_id = Column(Integer, ForeignKey("institutions.id"), nullable=False, index=True)
+    
+    # Student identification - flexible to handle both database IDs and CSV IDs
+    student_id = Column(String(100), nullable=False, index=True)  # The student ID used in the frontend
+    student_database_id = Column(Integer, ForeignKey("students.id"), nullable=True, index=True)  # Database reference if available
+    
+    # Analysis context for cache validation
+    risk_level = Column(String(20), nullable=False, index=True)  # High Risk, Medium Risk, Low Risk
+    data_hash = Column(String(64), nullable=False, index=True)  # Hash of student data to detect changes
+    
+    # GPT analysis content
+    raw_response = Column(Text, nullable=False)  # Full GPT response
+    formatted_html = Column(Text, nullable=False)  # HTML-formatted response for display
+    
+    # Analysis metadata
+    gpt_model = Column(String(50), default="gpt-5-nano")  # Model version used
+    tokens_used = Column(Integer)  # Cost tracking
+    generation_time_ms = Column(Integer)  # Performance tracking
+    
+    # Session and user tracking
+    session_id = Column(String(100), index=True)  # Session that generated this insight
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    
+    # Cache management
+    is_cached = Column(Boolean, default=False, index=True)  # Whether this was loaded from cache
+    cache_hits = Column(Integer, default=0)  # How many times this cached result was used
+    last_accessed = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    institution = relationship("Institution")
+    student = relationship("Student", foreign_keys=[student_database_id])
+    user = relationship("User")
+    
+    # Indexes for efficient queries
+    __table_args__ = (
+        Index('ix_gpt_insights_student_hash', 'student_id', 'data_hash'),
+        Index('ix_gpt_insights_session_risk', 'session_id', 'risk_level'),
+        Index('ix_gpt_insights_institution_created', 'institution_id', 'created_at'),
+    )
+    
+    def __repr__(self):
+        return f"<GPTInsight(student_id='{self.student_id}', risk_level='{self.risk_level}', cached={self.is_cached})>"
