@@ -33,6 +33,7 @@ from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
 from src.mvp.simple_auth_clean import simple_auth_check, apply_rate_limit
 from src.mvp.simple_auth import simple_file_validation  # Keep file validation
+from src.mvp.security import InputSanitizer
 from mvp.database import get_db_session, get_session_factory, save_predictions_batch, save_gpt_insight, get_gpt_insight, get_all_gpt_insights_for_session
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -161,8 +162,8 @@ async def analyze_student_data(
         
         # Secure file validation and processing
         contents = await file.read()
-        filename = input_sanitizer.sanitize_filename(file.filename)
-        input_sanitizer.validate_file_content(contents, filename)
+        filename = InputSanitizer.sanitize_filename(file.filename)
+        InputSanitizer.validate_file_content(contents, filename)
         
         # Process CSV
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
@@ -322,8 +323,8 @@ async def analyze_detailed_student_data(
         apply_rate_limit(request)
         
         contents = await file.read()
-        filename = input_sanitizer.sanitize_filename(file.filename)
-        input_sanitizer.validate_file_content(contents, filename)
+        filename = InputSanitizer.sanitize_filename(file.filename)
+        InputSanitizer.validate_file_content(contents, filename)
         
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         if df.shape[1] < 2:
@@ -537,8 +538,8 @@ async def analyze_k12_gradebook(
         )
         
         contents = await file.read()
-        filename = input_sanitizer.sanitize_filename(file.filename)
-        input_sanitizer.validate_file_content(contents, filename)
+        filename = InputSanitizer.sanitize_filename(file.filename)
+        InputSanitizer.validate_file_content(contents, filename)
         
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         if df.shape[1] < 2:
