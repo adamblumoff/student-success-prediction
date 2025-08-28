@@ -125,7 +125,10 @@ async def detailed_health_check():
 
     # Authentication system check
     try:
-        from mvp.security import secure_auth, security_config
+        try:
+            from src.mvp.security import secure_auth, security_config
+        except Exception:
+            from mvp.security import secure_auth, security_config
         from fastapi.security import HTTPAuthorizationCredentials
         
         # Test API key validation with production security
@@ -142,9 +145,12 @@ async def detailed_health_check():
         }
         
     except Exception as e:
+        env = os.getenv('ENVIRONMENT', 'development').lower()
         health_status["checks"]["authentication"] = {
             "status": "unhealthy",
-            "error": str(e)
+            "error": str(e),
+            "environment": env,
+            "hint": "Set MVP_API_KEY and avoid default key in production" if env in ['production', 'prod'] else "Ensure MVP_API_KEY is set or development mode is configured"
         }
         health_status["status"] = "degraded"
 

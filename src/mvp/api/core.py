@@ -1518,10 +1518,21 @@ def get_session_secret():
 
 @router.post("/auth/web-login")
 async def web_login(request: Request):
-    """Production-level web login with proper authentication"""
+    """Production-level web login with proper authentication.
+
+    Safeguards:
+    - Disabled by default in production unless DEMO_LOGIN_ENABLED=true
+    - Cookie security flags adapt to environment
+    """
     try:
         # Rate limit authentication attempts
         apply_rate_limit(request)
+        
+        # Environment gating to prevent demo login in production
+        env = os.getenv('ENVIRONMENT', 'development').lower()
+        demo_login_enabled = os.getenv('DEMO_LOGIN_ENABLED', 'false' if env in ['production', 'prod'] else 'true').lower() == 'true'
+        if env in ['production', 'prod'] and not demo_login_enabled:
+            raise HTTPException(status_code=403, detail="Demo login disabled in production")
         
         # Parse request body
         body = await request.json()
@@ -1532,12 +1543,30 @@ async def web_login(request: Request):
         if not username or not password:
             raise HTTPException(status_code=400, detail="Username and password required")
         
-        # Production credentials (admin/admin123)
-        valid_credentials = {
-            'admin': 'admin123',
-            'demo': 'demo123',
-            'educator': 'educator123'
-        }
+        # Demo credentials (env-configurable). Format: "admin:admin123,demo:demo123"
+        env_creds = os.getenv('DEMO_USERS', '')
+        valid_credentials = {}
+        if env_creds:
+            try:
+                for pair in env_creds.split(','):
+                    if not pair.strip():
+                        continue
+                    if ':' in pair:
+                        u, p = pair.split(':', 1)
+                        u = u.strip()
+                        p = p.strip()
+                        if u and p:
+                            valid_credentials[u] = p
+            except Exception:
+                # Fallback to defaults if parsing fails
+                valid_credentials = {}
+        # Defaults for development if not provided via env
+        if not valid_credentials:
+            valid_credentials = {
+                'admin': 'admin123',
+                'demo': 'demo123',
+                'educator': 'educator123'
+            }
         
         # Check credentials
         if username not in valid_credentials or valid_credentials[username] != password:
@@ -1560,12 +1589,13 @@ async def web_login(request: Request):
         })
         
         # Set authentication session cookie
+        is_https = request.url.scheme == "https" or env in ['production', 'prod']
         response.set_cookie(
             key="session_token",
             value=f"authenticated_{username}",
             max_age=86400,  # 24 hours
-            httponly=False,  # Allow JS access for redirect
-            secure=False,   # True in production with HTTPS
+            httponly=False,  # Allow JS access for redirect (demo only)
+            secure=is_https,   # Enforce secure cookies in production
             samesite="lax"
         )
         

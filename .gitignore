@@ -53,11 +53,13 @@ Thumbs.db
 
 # Model artifacts (large files)
 results/models/*.pkl
+results/models/**/*.pkl
 results/figures/*.png
 results/figures/*.jpg
 
 # Data files (keep structure but not content)
 data/raw/*.csv
+data/archive/*
 
 # Environment variables (all env files except examples)
 .env
