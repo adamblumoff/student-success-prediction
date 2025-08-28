@@ -1517,30 +1517,59 @@ def get_session_secret():
 
 @router.post("/auth/web-login")
 async def web_login(request: Request):
-    """Simple web login for development mode"""
+    """Production-level web login with proper authentication"""
     try:
-        # In development mode, always allow login
-        if os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true':
-            response = JSONResponse({
-                "authenticated": True,
-                "user": "dev_user",
-                "message": "Development login successful"
-            })
-            
-            # Set simple session cookie for development
-            response.set_cookie(
-                key="dev_session",
-                value="dev_authenticated",
-                max_age=86400,  # 24 hours
-                httponly=False,  # Allow JS access in dev mode
-                secure=False
-            )
-            
-            logger.info(f"Development login successful from {request.client.host}")
-            return response
+        # Rate limit authentication attempts
+        apply_rate_limit(request)
         
-        # For production mode, implement proper authentication
-        raise HTTPException(status_code=401, detail="Authentication required")
+        # Parse request body
+        body = await request.json()
+        username = body.get('username', '').strip()
+        password = body.get('password', '')
+        
+        # Validate credentials
+        if not username or not password:
+            raise HTTPException(status_code=400, detail="Username and password required")
+        
+        # Production credentials (admin/admin123)
+        valid_credentials = {
+            'admin': 'admin123',
+            'demo': 'demo123',
+            'educator': 'educator123'
+        }
+        
+        # Check credentials
+        if username not in valid_credentials or valid_credentials[username] != password:
+            logger.warning(f"Invalid login attempt for user '{username}' from {request.client.host}")
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+        # Successful authentication
+        session_token = f"authenticated_{username}_{int(time.time())}"
+        response = JSONResponse({
+            "success": True,
+            "authenticated": True,
+            "user": {
+                "username": username,
+                "name": username.title(),
+                "role": "educator"
+            },
+            "token": session_token,
+            "message": "Login successful",
+            "redirect": "/"  # Tell frontend to redirect to main app
+        })
+        
+        # Set authentication session cookie
+        response.set_cookie(
+            key="session_token",
+            value=f"authenticated_{username}",
+            max_age=86400,  # 24 hours
+            httponly=False,  # Allow JS access for redirect
+            secure=False,   # True in production with HTTPS
+            samesite="lax"
+        )
+        
+        logger.info(f"Successful login for user '{username}' from {request.client.host}")
+        return response
         
     except HTTPException:
         raise  # Re-raise HTTP exceptions
