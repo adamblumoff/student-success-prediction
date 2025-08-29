@@ -368,6 +368,7 @@ async def get_quick_student_insight(
         ]
         
         # Add relevant student data
+        logger.info(f"🔍 DEBUG: Student data received: {request_data.student_data}")
         for key, value in request_data.student_data.items():
             if value is not None:
                 prompt_parts.append(f"• {key.replace('_', ' ').title()}: {value}")
@@ -378,11 +379,12 @@ async def get_quick_student_insight(
             "1) [Action title]",
             "- What to do: [One specific action]", 
             "- Why it's needed for THIS student: [Brief explanation using their data]",
-            "- How to implement: [2-3 concrete steps]",
+            "- How to implement: [1 concrete step]",
             "- Timeline: [When to start/complete]"
         ])
         
         insight_prompt = "\n".join(prompt_parts)
+        logger.info(f"🔍 DEBUG: Full prompt being sent to GPT:\n{insight_prompt}")
         
         # Generate insight
         gpt_response = gpt_service.generate_analysis(
@@ -390,6 +392,7 @@ async def get_quick_student_insight(
             "student_analysis", 
             max_tokens=512
         )
+        logger.info(f"🔍 DEBUG: GPT response: {gpt_response}")
         
         processing_time = (datetime.now() - start_time).total_seconds()
         

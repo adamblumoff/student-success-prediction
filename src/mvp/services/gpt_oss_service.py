@@ -79,7 +79,7 @@ class GPTOSSService:
 1) [Intervention title]
 - What to do: [One specific action sentence]
 - Why it's needed for THIS student: [One sentence using their specific data like GPA, attendance, etc.]  
-- How to implement: [2-3 bullet points with concrete steps]
+- How to implement: [1 concrete step]
 - Timeline: [Specific timeframe like "This week" or "Next 2 weeks"]
 
 Be extremely concise and practical. Use the student's actual data in your reasoning.""",
