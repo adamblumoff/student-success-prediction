@@ -895,32 +895,35 @@ class Analysis extends Component {
     const dataHash = await this.generateDataHash(studentId, currentStudent);
     const cacheKey = `quick-insights-${studentId}-${riskLevel}-${dataHash}`;
     
-    // FIRST: Check database for existing insights
-    try {
-      const dbResponse = await fetch('/api/mvp/gpt-insights/check', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          student_id: studentId,
-          data_hash: dataHash
-        })
-      });
-      
-      if (dbResponse.ok) {
-        const dbResult = await dbResponse.json();
-        if (dbResult.found) {
-          // Load from database - no need to regenerate
-          contentDiv.innerHTML = dbResult.formatted_html;
-          console.log(`✅ Loaded cached GPT insights for student ${studentId} (cache hits: ${dbResult.cache_hits})`);
-          return;
-        }
-      }
-    } catch (error) {
-      console.warn('Database check failed, proceeding with GPT generation:', error);
-    }
+    // TEMPORARY: Skip cache check to test new GPT prompts 
+    console.log('🔧 TESTING MODE: Skipping cache to test new GPT prompts');
+    
+    // FIRST: Check database for existing insights (DISABLED FOR TESTING)
+    // try {
+    //   const dbResponse = await fetch('/api/mvp/gpt-insights/check', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify({
+    //       student_id: studentId,
+    //       data_hash: dataHash
+    //     })
+    //   });
+    //   
+    //   if (dbResponse.ok) {
+    //     const dbResult = await dbResponse.json();
+    //     if (dbResult.found) {
+    //       // Load from database - no need to regenerate
+    //       contentDiv.innerHTML = dbResult.formatted_html;
+    //       console.log(`✅ Loaded cached GPT insights for student ${studentId} (cache hits: ${dbResult.cache_hits})`);
+    //       return;
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.warn('Database check failed, proceeding with GPT generation:', error);
+    // }
     
     // Show loading state for fresh generation
     contentDiv.innerHTML = `

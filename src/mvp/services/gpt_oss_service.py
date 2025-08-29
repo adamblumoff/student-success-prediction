@@ -197,21 +197,13 @@ Identify actionable insights for systemic improvements while maintaining student
         try:
             # Build system and user messages with GPT-5-nano optimization
             system_prompt = self.system_prompts.get(analysis_type, self.system_prompts['student_analysis'])
+            logger.info(f"🔍 DEBUG: System prompt being used:\n{system_prompt}")
             
-            # For GPT-5-nano, use specific prompt format to trigger reasoning
+            # For GPT-5-nano, use system prompt only to avoid verbose overrides
             if "gpt-5-nano" in self.model_name.lower():
-                enhanced_prompt = f"""{prompt}
-
-Think step by step about this student's situation:
-1. What are the key risk factors?
-2. What interventions would be most effective?
-3. What is the priority order for implementing support?
-
-Based on your analysis, provide specific recommendations for the educator."""
-                
                 messages = [
-                    {"role": "system", "content": system_prompt + "\n\nYou must always provide a complete written analysis after your reasoning."},
-                    {"role": "user", "content": enhanced_prompt}
+                    {"role": "system", "content": system_prompt + "\n\nProvide your complete response following the exact format specified."},
+                    {"role": "user", "content": prompt}
                 ]
             else:
                 messages = [
@@ -260,9 +252,11 @@ Based on your analysis, provide specific recommendations for the educator."""
             if "gpt-5" in self.model_name.lower():
                 # Try Responses API for GPT-5 models
                 try:
+                    # Combine system and user prompts for Responses API since it doesn't support messages format
+                    combined_input = f"{messages[0]['content']}\n\n{messages[1]['content']}"
                     response = self.client.responses.create(
                         model=self.model_name,
-                        input=messages[1]["content"],  # User message content
+                        input=combined_input,  # Combined system + user content
                         reasoning={"effort": request_params.get("reasoning_effort", "minimal")},
                         max_output_tokens=request_params.get("max_completion_tokens", max_tokens)
                     )
