@@ -1464,14 +1464,24 @@ async def load_existing_students(
                 Prediction.student_id == student.id
             ).order_by(desc(Prediction.created_at)).first()
             
-            # Build student data structure matching CSV upload format
+            # Build student data structure matching CSV upload format - use REAL data from database
             student_data = {
                 "id": student.id,  # Database ID for selections
                 "student_id": student.student_id,  # Display ID  
                 "name": student.name or f"Student {student.student_id}",  # Use actual name from database or fallback
                 "grade_level": student.grade_level,
-                "current_gpa": 2.5,  # Default since we don't store GPA in student table
-                "attendance_rate": 0.85,  # Default since we don't store attendance in student table
+                "current_gpa": student.current_gpa or 2.5,  # Use real GPA from CSV or fallback
+                "attendance_rate": student.attendance_rate or 0.85,  # Use real attendance from CSV or fallback
+                # Include all the comprehensive CSV data we now save
+                "previous_gpa": student.previous_gpa,
+                "study_hours_week": student.study_hours_week,
+                "extracurricular": student.extracurricular,
+                "parent_education": student.parent_education,
+                "socioeconomic_status": student.socioeconomic_status,
+                # Additional fields for compatibility
+                "gpa": student.current_gpa or 2.5,  # Alias for frontend compatibility
+                "behavioral_incidents": 0,  # Default
+                "discipline_incidents": 0,  # Default
             }
             
             if latest_prediction:
@@ -1486,6 +1496,20 @@ async def load_existing_students(
                     "prediction_date": latest_prediction.prediction_date.isoformat() if latest_prediction.prediction_date else None,
                     "needs_intervention": latest_prediction.risk_score >= 0.5
                 })
+                
+                # Also include comprehensive CSV data from predictions features_used field
+                if latest_prediction.features_used:
+                    try:
+                        import json
+                        features_data = json.loads(latest_prediction.features_used)
+                        # Ensure features_data is not None and is a dict before iterating
+                        if features_data and isinstance(features_data, dict):
+                            # Add non-null features to student data
+                            for key, value in features_data.items():
+                                if value is not None and key not in student_data:
+                                    student_data[key] = value
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Could not parse features_used for student {student.student_id}: {e}")
             else:
                 # Default values if no prediction exists
                 student_data.update({
