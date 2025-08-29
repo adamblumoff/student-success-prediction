@@ -350,9 +350,11 @@ async def get_quick_student_insight(
     """
     try:
         start_time = datetime.now()
+        logger.info(f"🔍 DEBUG: /api/gpt/quick-insight endpoint called!")
         logger.info(f"❓ Generating quick insight for student question")
         
         if not gpt_service or not gpt_service.is_initialized:
+            logger.error(f"🔍 DEBUG: GPT service not initialized! gpt_service exists: {gpt_service is not None}, is_initialized: {gpt_service.is_initialized if gpt_service else 'N/A'}")
             return {
                 "success": False,
                 "error": "GPT service not available",
