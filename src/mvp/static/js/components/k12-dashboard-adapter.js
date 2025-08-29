@@ -35,20 +35,22 @@ class K12DashboardAdapter extends Component {
   }
 
   renderK12Dashboard(students = null) {
+    // Check if we should fetch real data from database
     if (!students) {
       students = this.appState.getState().students;
     }
     
+    // If no students in app state, fetch from database
     if (!students || students.length === 0) {
-      console.log('No students available for K-12 dashboard');
-      this.renderEmptyState();
+      console.log('🔄 No students in app state, fetching real data from database...');
+      this.fetchRealStudentData();
       return;
     }
 
     console.log('📊 Rendering K-12 educational dashboard with', students.length, 'students');
     
-    // Convert app state students to K12Dashboard format
-    const k12StudentData = this.convertToK12Format(students);
+    // Check if students are already in K12 format (from database) or need conversion (from app state)
+    const k12StudentData = this.isK12Format(students) ? students : this.convertToK12Format(students);
     
     // Create audit logger for FERPA compliance
     const auditLogger = (logEntry) => {
@@ -210,6 +212,91 @@ class K12DashboardAdapter extends Component {
     return Math.round((gpaScore + studyScore) * 10) / 10;
   }
 
+  async fetchRealStudentData(institutionId = 1, gradeLevels = null) {
+    try {
+      console.log('🔄 Fetching real student data from database...');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (gradeLevels) {
+        params.append('grade_levels', gradeLevels);
+      }
+      
+      // Fetch data from new K12 dashboard endpoint
+      const url = `/api/k12-dashboard/students?institution_id=${institutionId}${params.toString() ? '&' + params.toString() : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('api_key') || 'dev-key-change-me'}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch student data: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      console.log(`✅ Fetched ${data.students.length} students from database`);
+      console.log('📊 Grade distribution:', data.metadata.grade_distribution);
+      console.log('⚠️ Risk distribution:', data.metadata.risk_distribution);
+      
+      // Store in app state for future use
+      this.appState.setState({ 
+        students: data.students,
+        dashboardMetadata: data.metadata
+      });
+      
+      // Now render with real data
+      this.renderK12Dashboard(data.students);
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch real student data:', error);
+      
+      // Show error message to user
+      this.renderErrorState('Unable to load student data from database. Using fallback display.');
+      
+      // Fallback to empty state or basic demo data
+      this.renderEmptyState();
+    }
+  }
+
+  isK12Format(students) {
+    // Check if students array contains K12-formatted objects
+    if (!Array.isArray(students) || students.length === 0) {
+      return false;
+    }
+    
+    const firstStudent = students[0];
+    
+    // K12 format has specific fields that distinguish it from app state format
+    return firstStudent.hasOwnProperty('reading_level') ||
+           firstStudent.hasOwnProperty('special_populations') ||
+           firstStudent.hasOwnProperty('behavioral_concerns') ||
+           firstStudent.data_source === 'database';
+  }
+
+  renderErrorState(message) {
+    const dashboardGrid = this.element.querySelector('.dashboard-grid');
+    if (!dashboardGrid) return;
+
+    dashboardGrid.innerHTML = `
+      <div class="error-state">
+        <div class="error-state-icon">
+          <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+        </div>
+        <h3>Dashboard Data Error</h3>
+        <p>${message}</p>
+        <button class="btn btn-primary" onclick="location.reload()">
+          <i class="fas fa-refresh"></i>
+          Reload Dashboard
+        </button>
+      </div>
+    `;
+  }
+
   addEducationalFeatures() {
     // Add educational-specific UI enhancements
     const dashboardElement = this.element.querySelector('.dashboard-grid');
@@ -257,7 +344,21 @@ class K12DashboardAdapter extends Component {
     });
     event.target.classList.add('active');
 
-    // Filter student cards based on grade band
+    if (band === 'all') {
+      // Show all students
+      const studentCards = this.element.querySelectorAll('.student-card');
+      studentCards.forEach(card => {
+        card.style.display = 'block';
+      });
+      console.log('🎯 Showing all students');
+      return;
+    }
+
+    // If we want to filter by grade band, we could either:
+    // 1. Filter existing cards (current approach)
+    // 2. Fetch filtered data from API (more efficient for large datasets)
+    
+    // For now, let's filter existing cards for immediate response
     const studentCards = this.element.querySelectorAll('.student-card');
     studentCards.forEach(card => {
       const gradeLevel = parseInt(card.getAttribute('data-student-grade'));
@@ -275,6 +376,23 @@ class K12DashboardAdapter extends Component {
     });
 
     console.log(`🎯 Filtered dashboard for ${band} grade band`);
+    
+    // For large datasets, we could optionally fetch filtered data:
+    // this.fetchRealStudentData(1, this.getGradeLevelsForBand(band));
+  }
+
+  getGradeLevelsForBand(band) {
+    // Convert grade band to specific grade levels for API filtering
+    switch (band) {
+      case 'elementary':
+        return 'K,1,2,3,4,5';
+      case 'middle':
+        return '6,7,8';
+      case 'high':
+        return '9,10,11,12';
+      default:
+        return null;
+    }
   }
 
   renderEmptyState() {
