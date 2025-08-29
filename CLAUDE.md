@@ -944,3 +944,4 @@ This systematic approach maintains a clean, navigable repository that scales wit
 - always have the server running in the background so that i can test it
 - need to make sure features work before committing
 - if there is a problem with data in some way, please query the database and see what is going on.
+- use .env whenever connecting to the database

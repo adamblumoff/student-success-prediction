@@ -484,11 +484,18 @@ class Analysis extends Component {
   }
 
   async checkCachedInsights(studentId, riskLevel) {
+    console.log(`🔍 checkCachedInsights called for student ${studentId}, risk level: ${riskLevel}`);
     const container = document.getElementById(`gpt-insights-${studentId}`);
-    if (!container) return;
+    if (!container) {
+      console.warn(`⚠️ Container not found: gpt-insights-${studentId}`);
+      return;
+    }
     
     const contentDiv = container.querySelector('.gpt-insights-content');
-    if (!contentDiv) return;
+    if (!contentDiv) {
+      console.warn(`⚠️ Content div not found in container gpt-insights-${studentId}`);
+      return;
+    }
     
     // Check database for cached insights first
     await this.loadCachedInsightsFromDatabase(studentId, riskLevel, contentDiv);
