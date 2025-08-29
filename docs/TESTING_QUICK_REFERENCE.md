@@ -454,8 +454,9 @@ tests/
 ### **Configuration Files**
 - `jest.config.js` - Frontend test configuration
 - `pytest.ini` - Backend test configuration  
-- `.github/workflows/` - CI/CD test automation
+- `.git/hooks/` - Git hooks for automated testing
 - `scripts/test_*.py` - Custom test utilities
+- `scripts/setup_git_hooks.sh` - Git hooks setup script
 
 ### **Documentation**
 - `docs/TDD_STANDARDS_AND_PATTERNS.md` - Complete TDD guide

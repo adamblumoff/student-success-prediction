@@ -576,65 +576,64 @@ fi
 echo "✅ All educational platform tests passed!"
 ```
 
-### **CI/CD Pipeline for Educational Software**
+### **Git Hooks for Educational Software Testing**
 
-```yaml
-# .github/workflows/educational-platform-testing.yml
-name: K-12 Educational Platform Testing
+The platform uses Git hooks for automated local testing instead of CI/CD pipelines until deployment.
 
-on: [push, pull_request]
+```bash
+# Pre-commit hook (.git/hooks/pre-commit)
+# Automatically runs critical tests before each commit:
 
-jobs:
-  ferpa-compliance:
-    name: FERPA Compliance Testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Run FERPA compliance tests
-        run: |
-          python -m pytest tests/api/test_security.py -v --junitxml=ferpa-results.xml
-          python -m pytest tests/test_encryption.py -v --junitxml=encryption-results.xml
-      - name: Upload FERPA test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferpa-compliance-results
-          path: "*-results.xml"
+echo "🎓 Student Success Platform - Pre-Commit Validation"
 
-  educational-appropriateness:
-    name: Educational Content Testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test Educational Appropriateness
-        run: |
-          python -m pytest tests/gpt_systems/ -v -k "educational"
-          npm test -- --testNamePattern="educational|grade.level"
+# CRITICAL: FERPA Compliance (blocking)
+python3 -m pytest tests/api/test_security.py -x --tb=short -q
 
-  gpt-cost-management:
-    name: GPT Cost & Performance Testing  
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test GPT Cost Controls
-        run: |
-          python -m pytest tests/gpt_systems/test_gpt_caching.py -v
-          python -m pytest tests/gpt_systems/test_gpt_oss_service.py::TestCostManagement -v
+# CRITICAL: Educational Content Appropriateness (blocking)
+python3 -m pytest tests/gpt_systems/test_gpt_oss_service.py::TestEducationalAppropriateness -x --tb=short -q
 
-  performance-testing:
-    name: Educational Performance Testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Test District Scale Performance
-        run: |
-          python -m pytest tests/ -k "performance" -v
-          python scripts/performance_benchmark.py --scale=district
+# CRITICAL: GPT Emma Johnson Format Compliance (blocking)
+python3 -m pytest tests/gpt_systems/test_gpt_oss_service.py::TestEmmaJohnsonFormat -x --tb=short -q
+
+# CRITICAL: Core API & Database (blocking)
+python3 -m pytest tests/api/test_database_operations.py::TestDatabaseOperations::test_unique_constraints_students -x -q
+
+# CRITICAL: Frontend Components (blocking)
+npm test -- --testPathPattern='components/(analysis|dashboard)' --watchAll=false --silent
+
+# NON-CRITICAL: Code quality checks (warnings only)
+```
+
+```bash
+# Pre-push hook (.git/hooks/pre-push)
+# Comprehensive validation before pushing:
+
+echo "🚀 Student Success Platform - Pre-Push Validation"
+
+# Full security test suite
+python3 -m pytest tests/api/test_security.py -v --tb=short
+
+# Complete GPT AI system validation
+python3 -m pytest tests/gpt_systems/ --tb=short -q
+
+# All frontend tests
+npm test -- --watchAll=false --passWithNoTests
+
+# Database comprehensive validation
+python3 -m pytest tests/api/test_database_operations.py tests/api/test_database_constraints.py -v --tb=short
+
+# Branch-specific validations and sensitive data scanning
+```
+
+**Setup Git Hooks:**
+```bash
+# Run setup script to install hooks
+chmod +x scripts/setup_git_hooks.sh
+./scripts/setup_git_hooks.sh
+
+# Git hooks are now active and will run automatically
+git commit -m "Test commit"  # Triggers pre-commit hook
+git push origin dev          # Triggers pre-push hook
 ```
 
 ---
