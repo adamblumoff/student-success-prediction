@@ -130,6 +130,8 @@ class FileUpload extends Component {
       }
 
       const data = await response.json();
+      console.log('📤 CSV Upload Response:', data);
+      console.log('🔄 CSV processed successfully, now loading all students...');
       // CSV processed successfully, now load all students like a fresh page
       await this.loadAllStudents();
     } catch (error) {
@@ -144,9 +146,18 @@ class FileUpload extends Component {
   async loadAllStudents() {
     try {
       console.log('📊 Loading all students from database after CSV upload...');
+      console.log('📊 Calling /api/mvp/load-existing-students endpoint...');
+      
+      // Get auth token for the existing students API
+      const token = sessionStorage.getItem('auth_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      };
       
       const response = await fetch('/api/mvp/load-existing-students', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: headers
       });
       
       if (response.ok) {
@@ -176,7 +187,9 @@ class FileUpload extends Component {
           this.showNotification('CSV processed but no students found in database.', 'warning');
         }
       } else {
-        console.error('Failed to load existing students:', response.status);
+        const errorText = await response.text();
+        console.error('Failed to load existing students:', response.status, errorText);
+        console.log('📊 Auth token exists:', !!token);
         // Fallback to showing just uploaded data if loading all fails
         this.showNotification('CSV processed successfully! Switch tabs to see all data.', 'success');
       }
