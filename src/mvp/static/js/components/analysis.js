@@ -775,6 +775,7 @@ Make each recommendation unique to this student's specific data and situation.`;
   async getComprehensiveStudentData(studentId, riskLevel) {
     // Find the correct student by ID from the students array, not from selectedStudent
     const allStudents = this.appState.getState().students || [];
+    console.log(`🔍 Looking for student ID: ${studentId} in ${allStudents.length} students`);
     const currentStudent = allStudents.find(s => 
       (s.student_id?.toString() === studentId?.toString()) || 
       (s.id?.toString() === studentId?.toString())
@@ -782,6 +783,7 @@ Make each recommendation unique to this student's specific data and situation.`;
     
     if (!currentStudent) {
       console.error(`❌ Student not found in app state for ID: ${studentId}`);
+      console.log('Available students:', allStudents.map(s => ({ id: s.id, student_id: s.student_id, name: s.name })));
       // Fallback to selectedStudent if we can't find the specific student
       const fallbackStudent = this.appState.getState().selectedStudent;
       if (fallbackStudent) {
