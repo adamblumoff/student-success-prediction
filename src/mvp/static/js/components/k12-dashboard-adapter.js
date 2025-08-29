@@ -289,51 +289,269 @@ class K12DashboardAdapter extends Component {
     const dashboardElement = this.element.querySelector('.dashboard-grid');
     if (!dashboardElement) return;
 
-    // Calculate educator-focused insights
-    const insights = this.calculateEducatorInsights(students, metadata);
+    // Store data for tab switching
+    this.k12Students = students;
+    this.k12Metadata = metadata;
+    this.insights = this.calculateEducatorInsights(students, metadata);
     
     dashboardElement.innerHTML = `
-      <div class="educator-dashboard-panels">
-        <!-- Left Panel: Critical Alerts -->
-        <div class="dashboard-panel alerts-panel">
-          <h3><i class="fas fa-exclamation-triangle"></i> Critical Alerts</h3>
-          ${this.renderCompactAlerts(insights)}
+      <div class="educator-dashboard">
+        <!-- Tab Navigation -->
+        <div class="dashboard-tabs">
+          <button class="dashboard-tab active" data-tab="overview">
+            <i class="fas fa-chart-bar"></i>
+            Overview
+          </button>
+          <button class="dashboard-tab" data-tab="students">
+            <i class="fas fa-users"></i>
+            Students
+          </button>
+          <button class="dashboard-tab" data-tab="alerts">
+            <i class="fas fa-exclamation-triangle"></i>
+            Alerts
+          </button>
+          <button class="dashboard-tab" data-tab="reports">
+            <i class="fas fa-file-chart-line"></i>
+            Reports
+          </button>
         </div>
 
-        <!-- Center Panel: Student Data Table -->
-        <div class="dashboard-panel main-panel">
-          <div class="panel-header">
-            <h3><i class="fas fa-users"></i> Students by Priority</h3>
-            <div class="filter-controls">
-              <select id="grade-filter" class="filter-select">
-                <option value="">All Grades</option>
-                <option value="9">Grade 9</option>
-                <option value="10">Grade 10</option>
-                <option value="11">Grade 11</option>
-                <option value="12">Grade 12</option>
-              </select>
-              <select id="risk-filter" class="filter-select">
-                <option value="">All Risk Levels</option>
-                <option value="high">High Risk</option>
-                <option value="medium">Medium Risk</option>
-                <option value="low">Low Risk</option>
-              </select>
-            </div>
+        <!-- Tab Content -->
+        <div class="dashboard-content">
+          <div id="tab-overview" class="tab-panel active">
+            ${this.renderOverviewTab()}
           </div>
-          ${this.renderStudentTable(students)}
-        </div>
-
-        <!-- Right Panel: Actions & Summary -->
-        <div class="dashboard-panel actions-panel">
-          <h3><i class="fas fa-lightning-bolt"></i> Quick Actions</h3>
-          ${this.renderActionPanel(insights, students)}
+          <div id="tab-students" class="tab-panel">
+            ${this.renderStudentsTab()}
+          </div>
+          <div id="tab-alerts" class="tab-panel">
+            ${this.renderAlertsTab()}
+          </div>
+          <div id="tab-reports" class="tab-panel">
+            ${this.renderReportsTab()}
+          </div>
         </div>
       </div>
     `;
 
-    // Bind events for functional buttons
+    // Bind events for tabs and functionality
+    this.bindTabEvents();
     this.bindDashboardEvents();
     this.bindTableFilters(students);
+  }
+
+  renderOverviewTab() {
+    return `
+      <div class="overview-grid">
+        <div class="overview-card summary-card">
+          <h3><i class="fas fa-chart-pie"></i> Risk Summary</h3>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <div class="stat-number high-risk">${this.insights.overallHighRisk}</div>
+              <div class="stat-label">High Risk</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number medium-risk">${this.insights.overallMediumRisk}</div>
+              <div class="stat-label">Medium Risk</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number low-risk">${this.insights.overallLowRisk}</div>
+              <div class="stat-label">Low Risk</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="overview-card grade-card">
+          <h3><i class="fas fa-graduation-cap"></i> Grade Breakdown</h3>
+          <div class="grade-breakdown">
+            ${Object.keys(this.insights.gradeAnalysis).sort((a, b) => parseInt(a) - parseInt(b)).map(grade => {
+              const analysis = this.insights.gradeAnalysis[grade];
+              return `
+                <div class="grade-stat">
+                  <span class="grade-label">Grade ${grade}</span>
+                  <span class="grade-counts">
+                    <span class="high-count">${analysis.highRisk}</span>/<span class="total-count">${analysis.total}</span>
+                  </span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <div class="overview-card actions-card">
+          <h3><i class="fas fa-lightning-bolt"></i> Quick Actions</h3>
+          <div class="action-buttons">
+            <button class="action-btn primary" data-action="export-high-risk" data-count="${this.insights.overallHighRisk}">
+              <i class="fas fa-download"></i>
+              Export High Risk (${this.insights.overallHighRisk})
+            </button>
+            <button class="action-btn secondary" data-action="bulk-interventions" data-count="${this.insights.overallHighRisk}">
+              <i class="fas fa-plus-circle"></i>
+              Create Interventions
+            </button>
+            <button class="action-btn tertiary" data-action="generate-report">
+              <i class="fas fa-file-pdf"></i>
+              Generate Report
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderStudentsTab() {
+    return `
+      <div class="students-section">
+        <div class="section-header">
+          <h2>Student Risk Assessment</h2>
+          <div class="filter-controls">
+            <select id="grade-filter" class="filter-select">
+              <option value="">All Grades</option>
+              <option value="9">Grade 9</option>
+              <option value="10">Grade 10</option>
+              <option value="11">Grade 11</option>
+              <option value="12">Grade 12</option>
+            </select>
+            <select id="risk-filter" class="filter-select">
+              <option value="">All Risk Levels</option>
+              <option value="high">High Risk</option>
+              <option value="medium">Medium Risk</option>
+              <option value="low">Low Risk</option>
+            </select>
+          </div>
+        </div>
+        ${this.renderStudentTable(this.k12Students)}
+      </div>
+    `;
+  }
+
+  renderAlertsTab() {
+    return `
+      <div class="alerts-section">
+        <h2>Critical Alerts</h2>
+        <div class="alerts-grid">
+          ${this.renderDetailedAlerts()}
+        </div>
+      </div>
+    `;
+  }
+
+  renderReportsTab() {
+    return `
+      <div class="reports-section">
+        <h2>Reports & Analytics</h2>
+        <div class="reports-grid">
+          <div class="report-card">
+            <h3><i class="fas fa-file-pdf"></i> Risk Assessment Report</h3>
+            <p>Complete risk analysis for all students with recommendations.</p>
+            <button class="report-btn" data-action="generate-report">
+              <i class="fas fa-download"></i>
+              Generate Report
+            </button>
+          </div>
+          
+          <div class="report-card">
+            <h3><i class="fas fa-file-csv"></i> High Risk Students Export</h3>
+            <p>Detailed CSV export of students requiring immediate intervention.</p>
+            <button class="report-btn" data-action="export-high-risk">
+              <i class="fas fa-download"></i>
+              Export CSV (${this.insights.overallHighRisk} students)
+            </button>
+          </div>
+
+          <div class="report-card">
+            <h3><i class="fas fa-calendar-check"></i> Intervention Planning</h3>
+            <p>Bulk intervention planning for high-risk students.</p>
+            <button class="report-btn" data-action="bulk-interventions">
+              <i class="fas fa-plus-circle"></i>
+              Plan Interventions
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderDetailedAlerts() {
+    const alerts = [];
+    
+    // Critical Grade 12 situation
+    const grade12 = this.insights.gradeAnalysis[12];
+    if (grade12 && grade12.highRisk > 0) {
+      const riskPercent = ((grade12.highRisk / grade12.total) * 100).toFixed(0);
+      alerts.push(`
+        <div class="alert-card critical">
+          <div class="alert-icon">
+            <i class="fas fa-graduation-cap"></i>
+          </div>
+          <div class="alert-content">
+            <h3>Grade 12 Graduation Risk</h3>
+            <p><strong>${grade12.highRisk} of ${grade12.total} seniors (${riskPercent}%)</strong> are at high risk of not graduating</p>
+            <div class="alert-actions">
+              <button class="alert-btn primary" data-action="focus-grade-12">
+                <i class="fas fa-search"></i>
+                Review Grade 12 Students
+              </button>
+              <button class="alert-btn secondary" data-action="bulk-interventions" data-count="${grade12.highRisk}">
+                <i class="fas fa-plus-circle"></i>
+                Create Interventions
+              </button>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Study skills alert
+    if (this.insights.avgStudySkills < 3.5) {
+      alerts.push(`
+        <div class="alert-card warning">
+          <div class="alert-icon">
+            <i class="fas fa-book"></i>
+          </div>
+          <div class="alert-content">
+            <h3>Study Skills Development Needed</h3>
+            <p>School average is <strong>${this.insights.avgStudySkills.toFixed(1)}/5.0</strong> - consider implementing study skills programs</p>
+            <div class="alert-actions">
+              <button class="alert-btn primary" data-action="improve-study-skills">
+                <i class="fas fa-lightbulb"></i>
+                View Recommendations
+              </button>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    return alerts.length > 0 ? alerts.join('') : '<div class="no-alerts"><i class="fas fa-check-circle"></i> No critical alerts at this time</div>';
+  }
+
+  bindTabEvents() {
+    const tabs = this.element.querySelectorAll('.dashboard-tab');
+    const panels = this.element.querySelectorAll('.tab-panel');
+
+    tabs.forEach(tab => {
+      this.bindEvent(tab, 'click', (e) => {
+        const targetTab = tab.dataset.tab;
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update active panel
+        panels.forEach(panel => {
+          panel.classList.remove('active');
+          if (panel.id === `tab-${targetTab}`) {
+            panel.classList.add('active');
+          }
+        });
+        
+        // Re-bind events when switching to students tab
+        if (targetTab === 'students') {
+          this.bindTableFilters(this.k12Students);
+        }
+      });
+    });
   }
 
   calculateEducatorInsights(students, metadata) {
@@ -634,12 +852,29 @@ class K12DashboardAdapter extends Component {
   }
 
   focusGrade(grade) {
-    const gradeFilter = this.element.querySelector('#grade-filter');
-    if (gradeFilter) {
-      gradeFilter.value = grade.toString();
-      gradeFilter.dispatchEvent(new Event('change'));
+    // Switch to Students tab first
+    const studentsTab = this.element.querySelector('.dashboard-tab[data-tab="students"]');
+    if (studentsTab) {
+      studentsTab.click();
+      
+      // Wait for tab switch, then apply filter
+      setTimeout(() => {
+        const gradeFilter = this.element.querySelector('#grade-filter');
+        if (gradeFilter) {
+          gradeFilter.value = grade.toString();
+          gradeFilter.dispatchEvent(new Event('change'));
+        }
+        this.showNotification(`Switched to Students tab and filtered to Grade ${grade}`, 'info');
+      }, 100);
+    } else {
+      // Fallback if already on students tab
+      const gradeFilter = this.element.querySelector('#grade-filter');
+      if (gradeFilter) {
+        gradeFilter.value = grade.toString();
+        gradeFilter.dispatchEvent(new Event('change'));
+      }
+      this.showNotification(`Filtered to show Grade ${grade} students`, 'info');
     }
-    this.showNotification(`Filtered to show Grade ${grade} students`, 'info');
   }
 
   planStudySkillsProgram() {
