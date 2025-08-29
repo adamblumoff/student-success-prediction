@@ -130,12 +130,60 @@ class FileUpload extends Component {
       }
 
       const data = await response.json();
-      this.displayResults(data);
+      // CSV processed successfully, now load all students like a fresh page
+      await this.loadAllStudents();
     } catch (error) {
       console.error('Error analyzing data:', error);
       alert('Error analyzing student data. Please check your file format and try again.');
     } finally {
       this.showLoading(false);
+    }
+  }
+
+  // Load all students from database (like fresh page load)
+  async loadAllStudents() {
+    try {
+      console.log('📊 Loading all students from database after CSV upload...');
+      
+      const response = await fetch('/api/mvp/load-existing-students', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Loaded all students:', result);
+        
+        if (result.students && result.students.length > 0) {
+          // Update application state with all students
+          this.appState.setState({
+            students: result.students,
+            currentTab: 'analyze'
+          });
+          
+          // Enable analysis tab and subsequent tabs
+          const tabNav = this.appState.components.get('tabNavigation');
+          if (tabNav) {
+            tabNav.enableTab('analyze');
+            tabNav.enableTab('dashboard');
+          }
+          
+          // Show success message
+          this.showNotification(`CSV processed! Showing all ${result.students.length} students.`, 'success');
+          
+          console.log(`✅ Successfully loaded ${result.students.length} total students after CSV upload`);
+        } else {
+          console.log('ℹ️ No students found in database');
+          this.showNotification('CSV processed but no students found in database.', 'warning');
+        }
+      } else {
+        console.error('Failed to load existing students:', response.status);
+        // Fallback to showing just uploaded data if loading all fails
+        this.showNotification('CSV processed successfully! Switch tabs to see all data.', 'success');
+      }
+    } catch (error) {
+      console.error('Error loading all students:', error);
+      // Fallback to success message since CSV was processed
+      this.showNotification('CSV processed successfully! Switch tabs to see all data.', 'success');
     }
   }
 
