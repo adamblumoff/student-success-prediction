@@ -245,11 +245,10 @@ class K12DashboardAdapter extends Component {
       console.log('📊 Grade distribution:', data.metadata.grade_distribution);
       console.log('⚠️ Risk distribution:', data.metadata.risk_distribution);
       
-      // Store in app state for future use
-      this.appState.setState({ 
-        students: data.students,
-        dashboardMetadata: data.metadata
-      });
+      // Store K12 dashboard data separately - don't pollute global app state
+      // (K12 students are FERPA-compliant and don't have names, which breaks other components)
+      this.k12Students = data.students;
+      this.k12Metadata = data.metadata;
       
       // Now render with real data
       this.renderK12Dashboard(data.students);
