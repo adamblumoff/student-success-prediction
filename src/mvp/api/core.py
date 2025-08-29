@@ -333,6 +333,39 @@ async def analyze_student_data(
         except Exception as student_error:
             logger.error(f"Error persisting students to database: {student_error}")
         
+        logger.info("🔍 About to start database ID update fix")
+        # Update results with database IDs for frontend student selection
+        logger.info(f"🔧 Starting database ID update for {len(results)} results")
+        
+        # Add a simple test to verify the fix code is executing
+        logger.info("🚨 SIMPLE TEST: This log confirms fix code is executing!")
+        
+        try:
+            logger.info("🔧 About to call get_db_session()")
+            with get_db_session() as db:
+                # Get demo institution
+                demo_institution = db.query(Institution).filter(
+                    Institution.code == "MVP_DEMO"
+                ).first()
+                
+                if demo_institution:
+                    # Query students with their database IDs and update results
+                    for result in results:
+                        original_student_id = result.get('original_student_id', result['student_id'])
+                        db_student = db.query(Student).filter(
+                            Student.institution_id == demo_institution.id,
+                            Student.student_id == str(original_student_id)
+                        ).first()
+                        
+                        if db_student:
+                            result['id'] = db_student.id  # Add database ID for frontend student selection
+                            logger.info(f"✅ Added database ID {db_student.id} for student {original_student_id}")
+                        else:
+                            logger.warning(f"❌ Could not find database ID for student {original_student_id}")
+                            
+        except Exception as id_update_error:
+            logger.warning(f"Could not update results with database IDs: {id_update_error}")
+        
         # Save predictions to database (if available)
         try:
             session_id = f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
