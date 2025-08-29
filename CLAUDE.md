@@ -47,28 +47,47 @@ python src/models/k12_ultra_predictor.py
 python3 scripts/security_test.py
 ```
 
-## GPT-5-Nano Enhanced AI Insights (Latest Feature - 2024-12)
+## GPT-Enhanced AI Insights (Current Feature - August 2025)
 
-### 🧠 Intelligent Student Recommendations
-The system now includes advanced GPT-5-nano integration for personalized student insights:
+### 🧠 Intelligent Student Recommendations with Database Integration
+The system includes advanced GPT integration with full database persistence and intelligent caching:
 
-**Core Features:**
-- **Personalized Prompts**: Adaptive prompt generation based on student profile and intervention status
-- **Intelligent Caching**: SessionStorage-based caching with data hash invalidation to reduce API costs
-- **Structured Formatting**: Enhanced visual display with numbered recommendation cards and bullet points
-- **Intervention Awareness**: GPT considers existing interventions to avoid duplication and build upon current efforts
-- **Auto-Loading**: Cached insights appear immediately, new insights only generated on user click
+**Current Implementation (Verified):**
+- **Database-Backed GPT Insights**: `gpt_insights` table stores all GPT analyses with full metadata
+- **Smart Caching**: Database-level caching with `data_hash` validation and cache hit tracking
+- **Real Data Integration**: GPT analyses use actual student database records, not sample data
+- **Concise Format**: Emma Johnson format - exactly 3 recommendations per student
+- **Intervention Awareness**: GPT considers existing interventions stored in `interventions` table
+- **Performance Optimized**: Cache hits tracked, automatic invalidation on student data changes
 
-**Technical Implementation:**
-- **Frontend**: `src/mvp/static/js/components/analysis.js` - Core component with caching system
-- **Backend**: `src/mvp/api/gpt_enhanced_endpoints.py` - GPT API integration
-- **Services**: `src/mvp/services/gpt_oss_service.py` - GPT-5-nano service layer
-- **Caching**: Session-based with automatic invalidation when student data changes
+**Database Schema (gpt_insights table):**
+```sql
+CREATE TABLE gpt_insights (
+  id INTEGER PRIMARY KEY,
+  institution_id INTEGER,
+  student_id VARCHAR(100),
+  student_database_id INTEGER,
+  risk_level VARCHAR(20),
+  data_hash VARCHAR(64),          -- For cache invalidation
+  raw_response TEXT,              -- GPT raw output
+  formatted_html TEXT,            -- Processed for display
+  gpt_model VARCHAR(50),          -- Currently gpt-5-nano
+  tokens_used INTEGER,
+  generation_time_ms INTEGER,
+  is_cached BOOLEAN,              -- Cache status tracking
+  cache_hits INTEGER,             -- Performance metrics
+  last_accessed DATETIME,
+  created_at DATETIME,
+  updated_at DATETIME
+);
+```
 
-**Cost Optimization:**
-- Cache persists across navigation until student data changes
-- Refresh button allows manual regeneration when needed
-- Data hash prevents stale recommendations when interventions are added
+**Technical Stack:**
+- **Backend**: `src/mvp/api/gpt_enhanced_endpoints.py` - GPT API endpoints with database persistence
+- **Service Layer**: `src/mvp/services/gpt_oss_service.py` - OpenAI API integration with fallback handling
+- **Caching**: `src/mvp/services/gpt_cache_service.py` - Database-backed caching system
+- **Frontend**: `src/mvp/static/js/components/analysis.js` - Real-time GPT insight loading
+- **Database**: SQLite (development) / PostgreSQL (production) with full schema support
 
 ## Codebase Cleanup (Completed 2024-12)
 
@@ -232,21 +251,26 @@ The system implements a **hybrid architecture** supporting both development and 
 
 ### Database Architecture
 
-**Production PostgreSQL Schema** (6 tables):
+**Current Database Schema** (10 tables):
 ```sql
--- Core Tables
-institutions (id, name, code, type, timezone, active, timestamps)
-students (id, institution_id, student_id, grade_level, demographics, special_populations)
-predictions (id, student_id, risk_score, risk_category, model_metadata, explanation_data)
-interventions (id, student_id, type, status, outcome, roi_tracking)
-audit_logs (id, user_id, action, resource, compliance_data)
-model_metadata (id, version, performance_metrics, deployment_info)
+-- Core Tables (Verified Current)
+institutions       -- Institution management
+students          -- Student records with K-12 demographics
+predictions       -- ML model predictions and risk scores
+interventions     -- Intervention tracking and outcomes
+gpt_insights      -- GPT analysis cache and metadata (NEW)
+audit_logs        -- Security and compliance logging
+model_metadata    -- ML model version and performance data
+users             -- User authentication and authorization
+user_sessions     -- Session management
+alembic_version   -- Database migration tracking
 ```
 
-**Development SQLite Fallback**:
-- Automatic fallback when PostgreSQL unavailable
-- Compatible schema subset for local development
+**Development SQLite (Current Default)**:
+- Automatic fallback when PostgreSQL unavailable (DATABASE_URL not set)
+- Full schema compatibility with all 10 production tables
 - Zero-configuration setup for quick demos
+- File: `mvp_data.db` in project root
 
 ### Machine Learning Pipeline
 
@@ -299,16 +323,29 @@ risk_results = intervention_system.assess_student_risk(student_df)
 
 ### API Structure
 
-**MVP Endpoints** (`src/mvp/mvp_api.py`):
+**Current API Endpoints** (Modular Router Architecture):
 ```
-GET  /                           # Main web interface
-POST /api/mvp/analyze            # CSV upload and analysis (original model)
+# Core MVP (src/mvp/api/core.py)
+POST /api/mvp/analyze            # CSV upload and K-12 analysis
 POST /api/mvp/analyze-detailed   # Detailed analysis with explanations
-POST /api/mvp/analyze-k12        # K-12 gradebook analysis (ultra-advanced 81.5% AUC model)
-GET  /api/mvp/sample             # Load demo data
-GET  /api/mvp/stats              # Simple analytics
-GET  /api/mvp/explain/{id}       # Individual prediction explanation
-GET  /api/mvp/insights           # Global model insights
+GET  /api/mvp/sample             # Demo data with full feature set
+GET  /api/mvp/stats              # Analytics dashboard
+GET  /api/mvp/explain/{id}       # Prediction explanations
+
+# GPT Enhanced Analysis (src/mvp/api/gpt_enhanced_endpoints.py)
+POST /api/mvp/gpt-insights/check     # Check for cached GPT insights
+POST /api/mvp/gpt-insights/generate  # Generate new GPT analysis
+GET  /api/mvp/gpt-insights/{id}      # Retrieve specific GPT insight
+
+# Intervention Management (src/mvp/api/interventions.py)
+POST /api/interventions              # Create intervention
+GET  /api/interventions/student/{id} # Get student interventions
+PUT  /api/interventions/{id}/status  # Update intervention status
+DELETE /api/interventions/{id}       # Delete intervention
+
+# Health & Monitoring
+GET  /health                         # System health check
+GET  /docs                           # Interactive API documentation
 ```
 
 ### Explainable AI Features
@@ -378,18 +415,23 @@ except Exception as e:
 - `src/models/explainable_ai.py` - Explainable AI module
 
 ### UI Files
-- `src/mvp/templates/index.html` - Main web interface
-- `src/mvp/static/css/style.css` - Styling including explainable AI components
-- `src/mvp/static/js/app.js` - Core JavaScript functionality
-- `src/mvp/static/js/explainable-ui.js` - Explainable AI UI components
+- `src/mvp/templates/index.html` - Main web interface with GPT insights integration
+- `src/mvp/static/css/modern-style.css` - Modern UI styling
+- `src/mvp/static/css/bulk-actions.css` - Intervention management styles
+- `src/mvp/static/js/main.js` - Application initialization
+- `src/mvp/static/js/components/analysis.js` - Student analysis with GPT insights
+- `src/mvp/static/js/components/dashboard.js` - Analytics dashboard
+- `src/mvp/static/js/interventions.js` - Intervention management system
 
 ### Model Files
 - `results/models/` - Trained model artifacts (.pkl files)
 - `results/models/model_metadata.json` - Model performance metrics
 
 ### Configuration Files
-- `requirements.txt` - Simplified Python dependencies (9 packages)
-- `CLAUDE.md` - This development guide
+- `requirements.txt` - Production dependencies (~25 packages)
+- `package.json` - JavaScript testing dependencies
+- `alembic.ini` - Database migration configuration
+- `CLAUDE.md` - This development guide (2000+ lines)
 
 ## Development Workflow
 
@@ -491,7 +533,7 @@ docker compose -f docker-compose.prod.yml down
 
 **Debugging Command**: `python3 test_endpoints.py` to verify explainable AI functionality
 
-**Note**: Currently uses sample data for explanations since CSV uploads don't store complete student feature profiles. Future enhancement could extract actual student features from uploaded data.
+**Current Implementation**: The system now uses actual database student records for GPT analysis. When students are uploaded via CSV, they're stored in the `students` table with full K-12 demographic data, and GPT analyses reference this real data rather than sample features.
 
 ## PostgreSQL Migration & Deployment
 

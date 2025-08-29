@@ -1,6 +1,6 @@
 # 🎓 Student Success Prediction System
 
-An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes. Now featuring **GPT-5-nano enhanced AI insights** for personalized student recommendations.
+An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes. Features **GPT-enhanced AI insights** with database persistence and intelligent caching for personalized student recommendations.
 
 ## 🚀 Quick Start
 
@@ -17,30 +17,30 @@ python3 run_mvp.py
 
 ## ✨ What It Does
 
-- **🤖 AI Risk Prediction**: Identifies students at risk using 81.5% AUC K-12 specialized model
-- **🧠 GPT-5-Nano AI Insights**: Personalized recommendations with intelligent caching for cost savings
-- **📊 Explainable AI**: Shows why students are at risk with detailed, formatted explanations
-- **🎯 Intervention Management**: Create and track interventions with bulk operations
-- **📈 Real-Time Dashboard**: Live analytics and progress monitoring
-- **📚 Multi-Platform**: Works with Canvas LMS and generic CSV gradebook formats
+- **🤖 AI Risk Prediction**: Identifies students at risk using 81.5% AUC K-12 specialized neural network
+- **🧠 GPT AI Insights**: Database-backed personalized recommendations with intelligent caching
+- **📊 Explainable AI**: Shows why students are at risk with detailed, actionable explanations
+- **🎯 Intervention Management**: Create and track interventions with real-time status updates
+- **📈 Live Dashboard**: Real-time analytics and progress monitoring without page refreshes
+- **📚 Multi-Platform**: Canvas LMS, PowerSchool SIS, Google Classroom, and generic CSV support
 
 ## 📊 How It Works
 
-1. **Upload**: Canvas LMS gradebook or CSV file
-2. **Analyze**: AI processes student data and predicts risk levels  
-3. **Generate AI Insights**: Click "Generate AI Insights" for GPT-5-nano personalized recommendations
-4. **Explain**: Click "Explain Prediction" to see detailed risk factors
-5. **Intervene**: Create targeted interventions for at-risk students
-6. **Track**: Monitor progress with real-time updates
+1. **Upload**: Canvas LMS gradebook, PowerSchool export, or CSV file
+2. **Analyze**: K-12 specialized AI processes student data and predicts risk levels  
+3. **Generate AI Insights**: GPT analyzes actual student data for personalized recommendations
+4. **Explain**: View detailed risk factors and protective factors with confidence scores
+5. **Intervene**: Create and assign targeted interventions with status tracking
+6. **Monitor**: Track progress with real-time dashboard updates and intervention outcomes
 
 ## 🎯 Key Features
 
-### 🧠 GPT-5-Nano Enhanced AI Insights
-- **Personalized Recommendations**: Adaptive prompts based on individual student profiles
-- **Intelligent Caching**: Saves money by caching insights until student data changes
-- **Structured Formatting**: Beautiful cards with bullet points and expandable layout
-- **Intervention-Aware**: Recommendations consider existing interventions to avoid duplication
-- **Auto-Display**: Cached insights appear immediately, new insights generated on demand
+### 🧠 GPT-Enhanced AI Insights
+- **Database Integration**: Uses actual student records stored in database, not sample data
+- **Smart Caching**: Database-backed caching with automatic invalidation on data changes
+- **Emma Johnson Format**: Exactly 3 concise, actionable recommendations per student
+- **Intervention-Aware**: Considers existing interventions to build upon current efforts
+- **Performance Tracking**: Cache hits and generation time monitoring for optimization
 
 ### Individual & Bulk Operations  
 - Create interventions for single or multiple students
@@ -61,16 +61,19 @@ python3 run_mvp.py
 
 ## 🛠️ Technical Stack
 
-- **Backend**: Python/FastAPI with PostgreSQL
-- **Frontend**: JavaScript with modular components
-- **ML**: Neural Network (81.5% AUC) with explainable AI
-- **Testing**: 125+ tests covering components and API
+- **Backend**: Python/FastAPI with modular API architecture (6 specialized routers)
+- **Database**: PostgreSQL (production) with SQLite fallback (development)
+- **Frontend**: Modern JavaScript with 11+ modular components and real-time updates
+- **ML**: K-12 specialized neural network (81.5% AUC) with explainable AI
+- **GPT Integration**: OpenAI API with database persistence and intelligent caching
+- **Testing**: 125+ comprehensive tests covering components, API, and integration workflows
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](CLAUDE.md)**: Complete development guide
-- **[docs/](docs/)**: Technical documentation and guides
-- **[PRODUCTION_READINESS_ANALYSIS.md](PRODUCTION_READINESS_ANALYSIS.md)**: Security checklist
+- **[CLAUDE.md](CLAUDE.md)**: Comprehensive development guide (2000+ lines)
+- **[DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md)**: Repository navigation and architecture
+- **[docs/](docs/)**: Technical documentation, integration guides, and system analysis
+- **[PRODUCTION_READINESS_ASSESSMENT.md](PRODUCTION_READINESS_ASSESSMENT.md)**: Security and deployment checklist
 
 ---
 
