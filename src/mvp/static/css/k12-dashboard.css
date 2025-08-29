@@ -1,31 +1,35 @@
 /* K-12 Educational Dashboard - Tabbed Interface */
 
-/* Main dashboard container */
+/* Main dashboard container - Full width */
 .dashboard-grid {
     background: #f8fafc;
     min-height: calc(100vh - 180px);
     padding: 0;
+    width: 100%;
+    max-width: none;
 }
 
 .educator-dashboard {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
 }
 
-/* Tab Navigation */
+/* Tab Navigation - Full width */
 .dashboard-tabs {
     display: flex;
     background: #ffffff;
     border-bottom: 2px solid #e5e7eb;
-    padding: 0 20px;
+    padding: 0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%;
 }
 
 .dashboard-tab {
     background: none;
     border: none;
-    padding: 16px 24px;
+    padding: 16px 32px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -53,10 +57,12 @@
     font-size: 16px;
 }
 
-/* Tab Content */
+/* Tab Content - Full width */
 .dashboard-content {
     flex: 1;
-    padding: 20px;
+    padding: 0;
+    width: 100%;
+    max-width: none;
 }
 
 .tab-panel {
@@ -73,12 +79,13 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Overview Tab */
+/* Overview Tab - Full width */
 .overview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    max-width: 1200px;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+    padding: 24px;
+    width: 100%;
 }
 
 .overview-card {
@@ -235,46 +242,56 @@
     font-size: 16px;
 }
 
-/* Students Tab */
+/* Students Tab - Full width */
 .students-section {
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e5e7eb;
-    overflow: hidden;
+    width: 100%;
+    height: calc(100vh - 240px);
+    display: flex;
+    flex-direction: column;
 }
 
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid #e5e7eb;
-    background: #f9fafb;
+    padding: 20px 32px;
+    border-bottom: 2px solid #e5e7eb;
+    background: #f8fafc;
+    flex-shrink: 0;
 }
 
 .section-header h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     color: #111827;
 }
 
 .filter-controls {
     display: flex;
-    gap: 12px;
+    gap: 16px;
+    align-items: center;
+}
+
+.filter-controls::before {
+    content: "Filter by:";
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
 }
 
 .filter-select {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    padding: 10px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
     background: white;
     font-size: 14px;
     color: #374151;
     cursor: pointer;
-    min-width: 150px;
-    transition: border-color 0.2s ease;
+    min-width: 160px;
+    transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .filter-select:focus {
@@ -284,32 +301,43 @@
 }
 
 .filter-select:hover {
-    border-color: #9ca3af;
+    border-color: #3b82f6;
+    background: #f8fafc;
 }
 
-/* Student Table */
+/* Student Table - Full width */
 .student-table-container {
+    flex: 1;
     overflow-y: auto;
-    max-height: 600px;
+    width: 100%;
 }
 
 .student-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 .student-table th {
     background: #f9fafb;
-    padding: 12px 16px;
+    padding: 16px 20px;
     text-align: left;
     font-weight: 600;
     color: #374151;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 2px solid #e5e7eb;
     position: sticky;
     top: 0;
     z-index: 10;
 }
+
+.student-table th:nth-child(1) { width: 120px; } /* Student ID */
+.student-table th:nth-child(2) { width: 80px; }  /* Grade */
+.student-table th:nth-child(3) { width: 180px; } /* Risk Level */
+.student-table th:nth-child(4) { width: 100px; } /* Risk Score */
+.student-table th:nth-child(5) { width: 120px; } /* Study Skills */
+.student-table th:nth-child(6) { width: 120px; } /* Attendance */
+.student-table th:nth-child(7) { width: 150px; } /* Actions */
 
 .student-table td {
     padding: 12px 16px;
@@ -418,9 +446,11 @@
     text-align: center;
 }
 
-/* Alerts Tab */
+/* Alerts Tab - Full width */
 .alerts-section {
-    max-width: 800px;
+    width: 100%;
+    padding: 24px;
+    max-width: none;
 }
 
 .alerts-section h2 {
@@ -540,9 +570,11 @@
     font-weight: 500;
 }
 
-/* Reports Tab */
+/* Reports Tab - Full width */
 .reports-section {
-    max-width: 1000px;
+    width: 100%;
+    padding: 24px;
+    max-width: none;
 }
 
 .reports-section h2 {

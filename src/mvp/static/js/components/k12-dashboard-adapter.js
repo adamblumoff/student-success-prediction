@@ -548,6 +548,7 @@ class K12DashboardAdapter extends Component {
         
         // Re-bind events when switching to students tab
         if (targetTab === 'students') {
+          console.log('📋 Switching to Students tab, rebinding filters...');
           this.bindTableFilters(this.k12Students);
         }
       });
@@ -780,40 +781,70 @@ class K12DashboardAdapter extends Component {
   }
 
   bindTableFilters(students) {
-    const gradeFilter = this.element.querySelector('#grade-filter');
-    const riskFilter = this.element.querySelector('#risk-filter');
+    // Use a small delay to ensure DOM elements are available after tab switch
+    setTimeout(() => {
+      const gradeFilter = this.element.querySelector('#grade-filter');
+      const riskFilter = this.element.querySelector('#risk-filter');
 
-    if (gradeFilter) {
-      this.bindEvent(gradeFilter, 'change', (e) => {
-        this.filterTable(students, e.target.value, riskFilter.value);
-      });
-    }
+      console.log('🔧 Binding table filters...', { gradeFilter: !!gradeFilter, riskFilter: !!riskFilter });
 
-    if (riskFilter) {
-      this.bindEvent(riskFilter, 'change', (e) => {
-        this.filterTable(students, gradeFilter.value, e.target.value);
-      });
-    }
+      if (gradeFilter) {
+        // Remove any existing event listeners first
+        gradeFilter.replaceWith(gradeFilter.cloneNode(true));
+        const newGradeFilter = this.element.querySelector('#grade-filter');
+        
+        this.bindEvent(newGradeFilter, 'change', (e) => {
+          console.log('🔍 Grade filter changed to:', e.target.value);
+          const riskFilterCurrent = this.element.querySelector('#risk-filter');
+          this.filterTable(students, e.target.value, riskFilterCurrent ? riskFilterCurrent.value : '');
+        });
+      } else {
+        console.warn('⚠️ Grade filter element not found');
+      }
+
+      if (riskFilter) {
+        // Remove any existing event listeners first
+        riskFilter.replaceWith(riskFilter.cloneNode(true));
+        const newRiskFilter = this.element.querySelector('#risk-filter');
+        
+        this.bindEvent(newRiskFilter, 'change', (e) => {
+          console.log('🔍 Risk filter changed to:', e.target.value);
+          const gradeFilterCurrent = this.element.querySelector('#grade-filter');
+          this.filterTable(students, gradeFilterCurrent ? gradeFilterCurrent.value : '', e.target.value);
+        });
+      } else {
+        console.warn('⚠️ Risk filter element not found');
+      }
+    }, 50);
   }
 
   filterTable(students, gradeFilter, riskFilter) {
+    console.log('🔍 Filtering table with:', { gradeFilter, riskFilter });
     const rows = this.element.querySelectorAll('.student-row');
+    console.log('📋 Found', rows.length, 'student rows to filter');
     
+    let visibleCount = 0;
     rows.forEach(row => {
       const grade = row.dataset.grade;
       const risk = row.dataset.risk;
       
+      console.log('🔍 Row data:', { grade, risk, gradeFilter, riskFilter });
+      
       const gradeMatch = !gradeFilter || grade === gradeFilter;
       const riskMatch = !riskFilter || risk === riskFilter + '-risk';
       
-      row.style.display = (gradeMatch && riskMatch) ? '' : 'none';
+      const shouldShow = gradeMatch && riskMatch;
+      row.style.display = shouldShow ? '' : 'none';
+      
+      if (shouldShow) visibleCount++;
     });
 
+    console.log(`✅ Filtered ${visibleCount} visible rows out of ${rows.length} total rows`);
+
     // Update table footer
-    const visibleRows = this.element.querySelectorAll('.student-row[style=""], .student-row:not([style])').length;
     const footer = this.element.querySelector('.table-footer');
     if (footer) {
-      footer.textContent = `Showing ${visibleRows} of ${students.length} students`;
+      footer.textContent = `Showing ${visibleCount} of ${students.length} students`;
     }
   }
 
