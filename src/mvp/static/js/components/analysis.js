@@ -484,18 +484,11 @@ class Analysis extends Component {
   }
 
   async checkCachedInsights(studentId, riskLevel) {
-    console.log(`🔍 checkCachedInsights called for student ${studentId}, risk level: ${riskLevel}`);
     const container = document.getElementById(`gpt-insights-${studentId}`);
-    if (!container) {
-      console.warn(`⚠️ Container not found: gpt-insights-${studentId}`);
-      return;
-    }
+    if (!container) return;
     
     const contentDiv = container.querySelector('.gpt-insights-content');
-    if (!contentDiv) {
-      console.warn(`⚠️ Content div not found in container gpt-insights-${studentId}`);
-      return;
-    }
+    if (!contentDiv) return;
     
     // Check database for cached insights first
     await this.loadCachedInsightsFromDatabase(studentId, riskLevel, contentDiv);
@@ -782,15 +775,12 @@ Make each recommendation unique to this student's specific data and situation.`;
   async getComprehensiveStudentData(studentId, riskLevel) {
     // Find the correct student by ID from the students array, not from selectedStudent
     const allStudents = this.appState.getState().students || [];
-    console.log(`🔍 Looking for student ID: ${studentId} in ${allStudents.length} students`);
     const currentStudent = allStudents.find(s => 
       (s.student_id?.toString() === studentId?.toString()) || 
       (s.id?.toString() === studentId?.toString())
     );
     
     if (!currentStudent) {
-      console.error(`❌ Student not found in app state for ID: ${studentId}`);
-      console.log('Available students:', allStudents.map(s => ({ id: s.id, student_id: s.student_id, name: s.name })));
       // Fallback to selectedStudent if we can't find the specific student
       const fallbackStudent = this.appState.getState().selectedStudent;
       if (fallbackStudent) {
