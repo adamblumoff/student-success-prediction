@@ -80,7 +80,7 @@ def simple_auth(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
     expected_key = os.getenv("MVP_API_KEY", "dev-key-change-me")
     
     if not credentials or credentials.credentials != expected_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise HTTPException(status_code=401, detail="Authentication required - invalid API key")
     
     # For MVP, use default institution ID 1 (can be extended for multi-tenant)
     default_institution_id = int(os.getenv("DEFAULT_INSTITUTION_ID", "1"))

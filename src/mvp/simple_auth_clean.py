@@ -41,12 +41,20 @@ def simple_auth_check(
     
     # Check for API key in Authorization header
     if not credentials or not credentials.credentials:
-        raise HTTPException(status_code=401, detail="API key required")
+        raise HTTPException(
+            status_code=401, 
+            detail="Authentication required - invalid API key",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     
     # Validate API key
     expected_key = os.getenv("MVP_API_KEY", "dev-key-change-me")
     if credentials.credentials != expected_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        raise HTTPException(
+            status_code=401, 
+            detail="Authentication required - invalid API key",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     
     # Optional rate limiting (can be disabled by setting RATE_LIMIT_ENABLED=false)
     if os.getenv('RATE_LIMIT_ENABLED', 'true').lower() == 'true':
