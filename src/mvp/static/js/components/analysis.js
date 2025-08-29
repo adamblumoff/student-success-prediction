@@ -151,8 +151,18 @@ class Analysis extends Component {
         e.currentTarget.classList.add('selected');
         
         const studentId = e.currentTarget.dataset.studentId;
-        // Find student by database ID (which is what data-student-id contains)
-        const student = students.find(s => s.id?.toString() === studentId);
+        // Find student using robust matching logic - handles both database IDs and student IDs
+        const student = students.find(s => {
+          const dbId = s.id || s.database_id;
+          const stdId = s.student_id || s.original_student_id;
+          return (
+            dbId?.toString() === studentId ||           // Database ID match (preferred)
+            stdId?.toString() === studentId ||          // Student ID match (fallback)
+            s.id?.toString() === studentId ||           // Direct database ID
+            s.student_id?.toString() === studentId      // Direct student ID
+          );
+        });
+        
         if (student) {
           console.log('📋 Selected student:', student);
           this.appState.setState({ selectedStudent: student });
