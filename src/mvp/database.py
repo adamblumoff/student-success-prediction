@@ -284,7 +284,19 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                     students_to_create.append({
                         'institution_id': institution.id,
                         'student_id': student_id_str,
-                        'enrollment_status': 'active'
+                        'name': pred_data.get('name', 'Unknown'),  # Save student name from CSV
+                        'grade_level': str(pred_data.get('grade_level')) if pred_data.get('grade_level') else None,
+                        'enrollment_status': 'active',
+                        # Academic metrics from CSV
+                        'current_gpa': float(pred_data.get('current_gpa')) if pred_data.get('current_gpa') else None,
+                        'previous_gpa': float(pred_data.get('previous_gpa')) if pred_data.get('previous_gpa') else None,
+                        # Engagement metrics from CSV  
+                        'attendance_rate': float(pred_data.get('attendance_rate')) if pred_data.get('attendance_rate') else None,
+                        'study_hours_week': int(pred_data.get('study_hours_week')) if pred_data.get('study_hours_week') else None,
+                        'extracurricular': int(pred_data.get('extracurricular')) if pred_data.get('extracurricular') else None,
+                        # Family/background from CSV
+                        'parent_education': int(pred_data.get('parent_education')) if pred_data.get('parent_education') else None,
+                        'socioeconomic_status': int(pred_data.get('socioeconomic_status')) if pred_data.get('socioeconomic_status') else None
                     })
             
             # Batch upsert new students (PostgreSQL ON CONFLICT)
@@ -332,13 +344,29 @@ def save_predictions_batch(predictions_data: list, session_id: str):
                 student_id_str = str(pred_data['student_id'])
                 db_student_id = existing_student_lookup[student_id_str]
                 
+                # Store all CSV data as features for later use
+                csv_features = {
+                    'assignment_completion': pred_data.get('assignment_completion'),
+                    'quiz_average': pred_data.get('quiz_average'),
+                    'participation_score': pred_data.get('participation_score'),
+                    'late_submissions': pred_data.get('late_submissions'),
+                    'course_difficulty': pred_data.get('course_difficulty'),
+                    'current_gpa': pred_data.get('current_gpa'),
+                    'attendance_rate': pred_data.get('attendance_rate'),
+                    'previous_gpa': pred_data.get('previous_gpa'),
+                    'study_hours_week': pred_data.get('study_hours_week'),
+                    'extracurricular': pred_data.get('extracurricular'),
+                    'parent_education': pred_data.get('parent_education'),
+                    'socioeconomic_status': pred_data.get('socioeconomic_status')
+                }
+                
                 prediction_data = {
                     'risk_score': pred_data['risk_score'],
                     'risk_category': pred_data['risk_category'],
                     'success_probability': pred_data.get('success_probability'),
                     'session_id': session_id,
                     'data_source': 'csv_upload',
-                    'features_used': json.dumps(pred_data.get('features_data')),
+                    'features_used': json.dumps(csv_features),  # Store all CSV fields as JSON
                     'explanation': json.dumps(pred_data.get('explanation_data'))
                 }
                 

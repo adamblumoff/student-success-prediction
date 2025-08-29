@@ -353,6 +353,10 @@ class K12UltraPredictor:
             predictions = []
             
             for idx, student_row in gradebook_df.iterrows():
+                # Debug: Print available columns and student_row data
+                print(f"🔍 DEBUG - Available columns: {list(gradebook_df.columns)}")
+                print(f"🔍 DEBUG - Student row data: {dict(student_row)}")
+                
                 # Extract and engineer features for this student
                 student_features = self._extract_gradebook_features(pd.DataFrame([student_row]))
                 
@@ -397,7 +401,7 @@ class K12UltraPredictor:
                     risk_category = "High Risk"
                     risk_level = "danger"
                 
-                # Create result
+                # Create result - include ALL CSV fields for database storage
                 result = {
                     'student_id': student_row.get('student_id', student_row.get('id', student_row.get('ID', f'student_{idx}'))),
                     'name': student_row.get('name', student_row.get('student_name', student_row.get('Student', 'Unknown'))),
@@ -408,7 +412,18 @@ class K12UltraPredictor:
                     'risk_category': risk_category,
                     'risk_level': risk_level,
                     'confidence': float(abs(risk_prob - 0.5) * 2),
-                    'model_type': 'ultra_advanced'
+                    'model_type': 'ultra_advanced',
+                    # Include all CSV fields for database storage
+                    'assignment_completion': student_row.get('assignment_completion'),
+                    'quiz_average': student_row.get('quiz_average'),
+                    'participation_score': student_row.get('participation_score'),
+                    'late_submissions': student_row.get('late_submissions'),
+                    'course_difficulty': student_row.get('course_difficulty'),
+                    'previous_gpa': student_row.get('previous_gpa'),
+                    'study_hours_week': student_row.get('study_hours_week'),
+                    'extracurricular': student_row.get('extracurricular'),
+                    'parent_education': student_row.get('parent_education'),
+                    'socioeconomic_status': student_row.get('socioeconomic_status')
                 }
                 
                 predictions.append(result)
@@ -417,6 +432,8 @@ class K12UltraPredictor:
             
         except Exception as e:
             print(f"⚠️  Ultra-advanced prediction error: {e}")
+            print(f"🔍 DEBUG - DataFrame columns in except: {list(gradebook_df.columns)}")
+            print(f"🔍 DEBUG - DataFrame shape: {gradebook_df.shape}")
             # Return safe fallback results
             results = []
             for i, (idx, row) in enumerate(gradebook_df.iterrows()):
@@ -431,7 +448,18 @@ class K12UltraPredictor:
                     'risk_level': "warning",
                     'confidence': 0.0,
                     'error': str(e),
-                    'model_type': 'fallback'
+                    'model_type': 'fallback',
+                    # Include all CSV fields for database storage
+                    'assignment_completion': row.get('assignment_completion'),
+                    'quiz_average': row.get('quiz_average'),
+                    'participation_score': row.get('participation_score'),
+                    'late_submissions': row.get('late_submissions'),
+                    'course_difficulty': row.get('course_difficulty'),
+                    'previous_gpa': row.get('previous_gpa'),
+                    'study_hours_week': row.get('study_hours_week'),
+                    'extracurricular': row.get('extracurricular'),
+                    'parent_education': row.get('parent_education'),
+                    'socioeconomic_status': row.get('socioeconomic_status')
                 })
             return results
     

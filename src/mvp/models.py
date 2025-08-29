@@ -46,12 +46,26 @@ class Student(Base):
     # Student identification
     student_id = Column(String(100), nullable=False, index=True)  # External student ID
     sis_id = Column(String(100), index=True)  # SIS system ID
+    name = Column(String(255), index=True)  # Student name
     
     # Demographics
     grade_level = Column(String(10))  # K, 1, 2, ..., 12
     birth_date = Column(DateTime(timezone=True))
     gender = Column(String(10))
     ethnicity = Column(String(50))
+    
+    # Academic metrics (commonly stored at student level)
+    current_gpa = Column(Float)
+    previous_gpa = Column(Float)
+    
+    # Engagement metrics
+    attendance_rate = Column(Float)
+    study_hours_week = Column(Integer)
+    extracurricular = Column(Integer)  # Number of activities
+    
+    # Family/background
+    parent_education = Column(Integer)  # Education level scale
+    socioeconomic_status = Column(Integer)  # SES scale
     
     # Academic status
     enrollment_status = Column(String(20), default="active", index=True)

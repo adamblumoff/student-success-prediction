@@ -23,6 +23,7 @@ class Analysis extends Component {
     
     this.appState.subscribe('students', this.updateStudentList.bind(this));
     this.appState.subscribe('selectedStudent', this.updateStudentDetail.bind(this));
+    this.appState.subscribe('currentTab', this.handleTabChange.bind(this));
   }
 
   handleSearch(e) {
@@ -38,6 +39,58 @@ class Analysis extends Component {
     });
     
     this.filterStudents('', filter);
+  }
+
+  async handleTabChange(currentTab) {
+    // When switching to analyze tab, load existing students if we don't have any
+    if (currentTab === 'analyze') {
+      const currentState = this.appState.getState();
+      if (!currentState.students || currentState.students.length === 0) {
+        console.log('🔄 Analyze tab activated, loading existing students...');
+        await this.loadExistingStudents();
+      }
+    }
+  }
+
+  async loadExistingStudents() {
+    try {
+      console.log('📊 Loading existing students from database...');
+      
+      // Get auth token
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) {
+        console.warn('⚠️ No auth token found');
+        return;
+      }
+      
+      const response = await fetch('/api/mvp/load-existing-students', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Loaded existing students:', result);
+        
+        if (result.students && result.students.length > 0) {
+          // Update app state with loaded students
+          this.appState.setState({
+            students: result.students
+          });
+          
+          console.log(`✅ Successfully loaded ${result.students.length} existing students to analyze tab`);
+        } else {
+          console.log('ℹ️ No existing students found in database');
+        }
+      } else {
+        console.error('❌ Failed to load existing students:', response.status);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error loading existing students:', error);
+    }
   }
 
   filterStudents(query = '', riskFilter = 'all') {

@@ -241,7 +241,18 @@ async def analyze_student_data(
                 'grade_level': prediction.get('grade_level', 9),
                 'behavioral_incidents': prediction.get('discipline_incidents', 0),
                 'current_gpa': prediction.get('current_gpa', 2.5),  # Keep original field too
-                'discipline_incidents': prediction.get('discipline_incidents', 0)
+                'discipline_incidents': prediction.get('discipline_incidents', 0),
+                # Include ALL CSV fields for database storage
+                'assignment_completion': prediction.get('assignment_completion'),
+                'quiz_average': prediction.get('quiz_average'),
+                'participation_score': prediction.get('participation_score'),
+                'late_submissions': prediction.get('late_submissions'),
+                'course_difficulty': prediction.get('course_difficulty'),
+                'previous_gpa': prediction.get('previous_gpa'),
+                'study_hours_week': prediction.get('study_hours_week'),
+                'extracurricular': prediction.get('extracurricular'),
+                'parent_education': prediction.get('parent_education'),
+                'socioeconomic_status': prediction.get('socioeconomic_status')
             })
         
         # Log prediction metrics
@@ -289,10 +300,21 @@ async def analyze_student_data(
                             new_student = Student(
                                 institution_id=demo_institution.id,
                                 student_id=original_student_id,  # Use S001, S002, etc. from CSV
-                                grade_level=result.get('grade_level', 10),
+                                name=result.get('name', f'Student {original_student_id}'),  # Save student name from CSV
+                                grade_level=str(result.get('grade_level', 10)),
                                 gender='Unknown',
                                 ethnicity='Unknown',
-                                enrollment_status='Active'
+                                enrollment_status='Active',
+                                # Academic metrics from CSV
+                                current_gpa=float(result.get('current_gpa')) if result.get('current_gpa') else None,
+                                previous_gpa=float(result.get('previous_gpa')) if result.get('previous_gpa') else None,
+                                # Engagement metrics from CSV
+                                attendance_rate=float(result.get('attendance_rate')) if result.get('attendance_rate') else None,
+                                study_hours_week=int(result.get('study_hours_week')) if result.get('study_hours_week') else None,
+                                extracurricular=int(result.get('extracurricular')) if result.get('extracurricular') else None,
+                                # Family/background from CSV
+                                parent_education=int(result.get('parent_education')) if result.get('parent_education') else None,
+                                socioeconomic_status=int(result.get('socioeconomic_status')) if result.get('socioeconomic_status') else None
                             )
                             db.add(new_student)
                             db.flush()  # Check for errors before committing all
@@ -317,11 +339,27 @@ async def analyze_student_data(
             # Convert results to format expected by database
             db_results = []
             for result in results:
+                # Include all CSV data in the database record
                 db_results.append({
                     'student_id': result['student_id'],
                     'risk_score': result['risk_score'],
                     'risk_category': result['risk_category'],
-                    'success_probability': result['success_probability']
+                    'success_probability': result['success_probability'],
+                    # Pass through all CSV fields for storage
+                    'name': result.get('name'),
+                    'grade_level': result.get('grade_level'),
+                    'current_gpa': result.get('current_gpa'),
+                    'attendance_rate': result.get('attendance_rate'),
+                    'assignment_completion': result.get('assignment_completion'),
+                    'quiz_average': result.get('quiz_average'),
+                    'participation_score': result.get('participation_score'),
+                    'late_submissions': result.get('late_submissions'),
+                    'course_difficulty': result.get('course_difficulty'),
+                    'previous_gpa': result.get('previous_gpa'),
+                    'study_hours_week': result.get('study_hours_week'),
+                    'extracurricular': result.get('extracurricular'),
+                    'parent_education': result.get('parent_education'),
+                    'socioeconomic_status': result.get('socioeconomic_status')
                 })
             save_predictions_batch(db_results, session_id)
         except Exception as db_error:
@@ -1393,6 +1431,94 @@ async def check_existing_students(
             "message": "Defaulting to upload tab"
         })
 
+@router.get("/load-existing-students")
+async def load_existing_students(
+    current_user: dict = Depends(simple_auth_check),
+    db: Session = Depends(get_db)
+):
+    """Load existing students with their latest predictions for analyze tab display"""
+    try:
+        # Get demo institution (where CSV uploads are stored)
+        demo_institution = db.query(Institution).filter(
+            Institution.code == "MVP_DEMO"
+        ).first()
+        
+        if not demo_institution:
+            return JSONResponse({
+                "students": [], 
+                "count": 0,
+                "message": "No institution found"
+            })
+        
+        # Get students with their latest predictions
+        students_with_predictions = []
+        
+        # Query students for this institution
+        students = db.query(Student).filter(
+            Student.institution_id == demo_institution.id
+        ).all()
+        
+        for student in students:
+            # Get the latest prediction for this student
+            latest_prediction = db.query(Prediction).filter(
+                Prediction.student_id == student.id
+            ).order_by(desc(Prediction.created_at)).first()
+            
+            # Build student data structure matching CSV upload format
+            student_data = {
+                "id": student.id,  # Database ID for selections
+                "student_id": student.student_id,  # Display ID  
+                "name": student.name or f"Student {student.student_id}",  # Use actual name from database or fallback
+                "grade_level": student.grade_level,
+                "current_gpa": 2.5,  # Default since we don't store GPA in student table
+                "attendance_rate": 0.85,  # Default since we don't store attendance in student table
+            }
+            
+            if latest_prediction:
+                student_data.update({
+                    "risk_score": latest_prediction.risk_score,
+                    "risk_probability": latest_prediction.risk_score,
+                    "success_probability": latest_prediction.success_probability,
+                    "risk_category": latest_prediction.risk_category,
+                    "risk_level": "danger" if latest_prediction.risk_score >= 0.7 else "warning" if latest_prediction.risk_score >= 0.4 else "success",
+                    "confidence": latest_prediction.confidence_score,
+                    "model_type": latest_prediction.model_type,
+                    "prediction_date": latest_prediction.prediction_date.isoformat() if latest_prediction.prediction_date else None,
+                    "needs_intervention": latest_prediction.risk_score >= 0.5
+                })
+            else:
+                # Default values if no prediction exists
+                student_data.update({
+                    "risk_score": 0.5,
+                    "risk_probability": 0.5,
+                    "success_probability": 0.5,
+                    "risk_category": "Unknown",
+                    "risk_level": "warning",
+                    "confidence": 0.5,
+                    "model_type": "none",
+                    "prediction_date": None,
+                    "needs_intervention": False
+                })
+            
+            students_with_predictions.append(student_data)
+        
+        logger.info(f"Loaded {len(students_with_predictions)} existing students with predictions")
+        
+        return JSONResponse({
+            "students": students_with_predictions,
+            "count": len(students_with_predictions),
+            "institution": demo_institution.name,
+            "message": f"Loaded {len(students_with_predictions)} students with predictions"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading existing students: {e}")
+        return JSONResponse({
+            "students": [],
+            "count": 0,
+            "error": "Failed to load existing students",
+            "message": "Could not load student data"
+        })
 
 @router.get("/success-stories")
 async def get_success_stories(current_user: dict = Depends(simple_auth_check)):
