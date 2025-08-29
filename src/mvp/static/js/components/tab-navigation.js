@@ -44,8 +44,7 @@ class TabNavigation extends Component {
     const progressMap = {
       'upload': 20,
       'connect': 40,
-      'analyze': 60,
-      'dashboard': 80
+      'analyze': 80
     };
     
     const progress = progressMap[tab] || 20;
@@ -59,7 +58,7 @@ class TabNavigation extends Component {
   }
 
   updateTabStates(currentTab) {
-    const tabOrder = ['upload', 'connect', 'analyze', 'dashboard'];
+    const tabOrder = ['upload', 'connect', 'analyze'];
     const currentIndex = tabOrder.indexOf(currentTab);
     
     this.tabs.forEach(tab => {

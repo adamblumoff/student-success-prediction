@@ -1691,31 +1691,6 @@ body {
   }
 }
 
-/* =============================================================================
-   Dashboard Components
-   ============================================================================= */
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: var(--space-6);
-}
-
-.dashboard-card {
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-}
-
-.dashboard-card h3 {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--gray-900);
-  margin: 0 0 var(--space-4) 0;
-  text-align: center;
-}
 
 
 /* =============================================================================

@@ -179,7 +179,6 @@ class FileUpload extends Component {
           const tabNav = this.appState.components.get('tabNavigation');
           if (tabNav) {
             tabNav.enableTab('analyze');
-            tabNav.enableTab('dashboard');
           }
           
           // Show success message
@@ -309,7 +308,6 @@ class FileUpload extends Component {
     const tabNav = this.appState.components.get('tabNavigation');
     if (tabNav) {
       tabNav.enableTab('analyze');
-      tabNav.enableTab('dashboard');
     }
     
     // Show success message
@@ -421,18 +419,18 @@ class FileUpload extends Component {
     // First load sample data
     await this.loadSampleData();
     
-    // Then switch to dashboard for the demo experience
+    // Then switch to analysis for the demo experience
     setTimeout(() => {
-      this.appState.setState({ currentTab: 'dashboard' });
+      this.appState.setState({ currentTab: 'analyze' });
       
-      // Enable dashboard tab
+      // Enable analysis tab
       const tabNav = this.appState.components.get('tabNavigation');
       if (tabNav) {
-        tabNav.enableTab('dashboard');
+        tabNav.enableTab('analyze');
         }
       
       // Show demo notification
-      this.showNotification('🎯 Demo Mode: Showing interactive dashboard!', 'success');
+      this.showNotification('🎯 Demo Mode: Showing interactive analysis!', 'success');
     }, 1000); // Small delay to let sample data load first
   }
 

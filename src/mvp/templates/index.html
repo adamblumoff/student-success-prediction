@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="/static/css/modern-style.css">
     <link rel="stylesheet" href="/static/css/login.css">
     <link rel="stylesheet" href="/static/css/bulk-actions.css">
-    <link rel="stylesheet" href="/static/css/k12-dashboard.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -65,10 +64,6 @@
                 <button class="tab-button" data-tab="analyze" disabled>
                     <i class="fas fa-brain"></i>
                     <span>AI Analysis</span>
-                </button>
-                <button class="tab-button" data-tab="dashboard" disabled>
-                    <i class="fas fa-chart-dashboard"></i>
-                    <span>Dashboard</span>
                 </button>
             </div>
         </div>
@@ -306,25 +301,6 @@
                 </div>
             </section>
 
-            <!-- Dashboard Tab -->
-            <section class="tab-content" id="tab-dashboard">
-                <div class="content-header">
-                    <h2>Analytics Dashboard</h2>
-                    <p>Monitor class performance and intervention effectiveness</p>
-                </div>
-
-                <!-- Dashboard content will be populated here -->
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>Risk Distribution</h3>
-                        <canvas id="risk-chart"></canvas>
-                    </div>
-                    <div class="dashboard-card">
-                        <h3>Intervention Success</h3>
-                        <canvas id="success-chart"></canvas>
-                    </div>
-                </div>
-            </section>
 
 
         </div>
@@ -509,9 +485,6 @@
     <script src="/static/js/components/tab-navigation.js"></script>
     <script src="/static/js/components/file-upload.js?v=clickable-fix-20250827"></script>
     <script src="/static/js/components/analysis.js?v=gpt-fix-20250827-v2"></script>
-    <script src="/static/js/components/dashboard.js"></script>
-    <script src="/static/js/components/k12-dashboard.js"></script>
-    <script src="/static/js/components/k12-dashboard-adapter.js"></script>
     <script src="/static/js/components/loading-overlay.js"></script>
     <script src="/static/js/components/login.js"></script>
     

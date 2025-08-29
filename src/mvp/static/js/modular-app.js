@@ -51,9 +51,6 @@ class StudentSuccessApp {
       this.components.set('analysis', new Analysis('#tab-analyze', this.appState));
     }
 
-    if (document.querySelector('#tab-dashboard')) {
-      this.components.set('dashboard', new K12DashboardAdapter('#tab-dashboard', this.appState));
-    }
 
     if (document.querySelector('#tab-insights')) {
       this.components.set('insights', new Insights('#tab-insights', this.appState));
