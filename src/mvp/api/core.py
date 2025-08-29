@@ -1348,66 +1348,6 @@ def generate_useful_explanation(student, prediction, risk_score, risk_category):
         "model_info": "K-12 Ultra Advanced Model (81.5% accuracy)"
     }
 
-@router.get("/insights")
-async def get_model_insights(
-    current_user: dict = Depends(simple_auth_check),
-    k12_ultra_predictor = Depends(get_k12_ultra_predictor)
-):
-    """Get global model insights and feature importance for K-12 model"""
-    try:
-        
-        # Get K-12 model info and insights
-        model_info = k12_ultra_predictor.get_model_info()
-        
-        # Provide structure expected by tests ('insights' contains 'feature_importance')
-        feature_importance_list = [
-            {'feature': 'current_gpa', 'importance': 0.25},
-            {'feature': 'attendance_rate', 'importance': 0.18}
-        ]
-        insights = {
-            'feature_importance': feature_importance_list,
-            'category_importance': {
-                'assessment': 0.45,
-                'engagement': 0.32,
-                'demographics': 0.23
-            },
-            'top_risk_factors': [
-                {'feature': 'current_gpa', 'description': 'Low GPA (below 2.0)', 'category': 'academic'},
-                {'feature': 'attendance_rate', 'description': 'Poor attendance (below 80%)', 'category': 'engagement'}
-            ],
-            'protective_factors': ['Strong teacher relationships', 'Consistent attendance']
-        }
-        
-        return JSONResponse({
-            'insights': insights,
-            'model_performance': {
-                'auc_score': model_info.get('auc_score', 0.815),
-                'accuracy': model_info.get('accuracy', 0.78),
-                'precision': model_info.get('precision', 0.76),
-                'recall': model_info.get('recall', 0.82),
-                'model_name': 'K-12 Ultra-Advanced',
-                'features_count': 41
-            },
-            'message': 'Global insights generated'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error getting K-12 model insights: {e}")
-        # Fallback insights if K-12 model fails
-        return JSONResponse({
-            'feature_importance': [
-                {'feature': 'current_gpa', 'importance': 0.25, 'category': 'Academic'},
-                {'feature': 'attendance_rate', 'importance': 0.18, 'category': 'Engagement'}
-            ],
-            'insights': {
-                'top_risk_factors': ['Low GPA', 'Poor attendance'],
-                'protective_factors': ['Family support', 'Teacher relationships']
-            },
-            'model_performance': {
-                'auc_score': 0.815,
-                'model_name': 'K-12 Ultra-Advanced (Fallback)'
-            }
-        })
 
 
 @router.get("/success-stories")

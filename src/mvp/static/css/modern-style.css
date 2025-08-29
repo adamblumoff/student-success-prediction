@@ -1717,50 +1717,6 @@ body {
   text-align: center;
 }
 
-.insights-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-6);
-}
-
-.insight-card {
-  background: white;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-}
-
-.insight-card h3 {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--gray-900);
-  margin: 0 0 var(--space-4) 0;
-}
-
-.metric-display {
-  font-size: var(--font-size-3xl);
-  font-weight: 700;
-  color: var(--primary-600);
-  margin: var(--space-4) 0;
-}
-
-.factor-list {
-  list-style: none;
-  padding: 0;
-  margin: var(--space-4) 0;
-  text-align: left;
-}
-
-.factor-list li {
-  padding: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-2);
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  border-left: 3px solid var(--primary-500);
-  font-size: var(--font-size-sm);
-}
 
 /* =============================================================================
    Utility Classes

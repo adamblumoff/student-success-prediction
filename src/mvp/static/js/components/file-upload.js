@@ -189,7 +189,6 @@ class FileUpload extends Component {
     if (tabNav) {
       tabNav.enableTab('analyze');
       tabNav.enableTab('dashboard');
-      tabNav.enableTab('insights');
     }
     
     // Show success message
@@ -305,15 +304,14 @@ class FileUpload extends Component {
     setTimeout(() => {
       this.appState.setState({ currentTab: 'dashboard' });
       
-      // Enable dashboard and insights tabs
+      // Enable dashboard tab
       const tabNav = this.appState.components.get('tabNavigation');
       if (tabNav) {
         tabNav.enableTab('dashboard');
-        tabNav.enableTab('insights');
-      }
+        }
       
       // Show demo notification
-      this.showNotification('🎯 Demo Mode: Showing interactive dashboard with AI insights!', 'success');
+      this.showNotification('🎯 Demo Mode: Showing interactive dashboard!', 'success');
     }, 1000); // Small delay to let sample data load first
   }
 
