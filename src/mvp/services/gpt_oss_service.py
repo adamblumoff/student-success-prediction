@@ -74,10 +74,15 @@ class GPTOSSService:
         
         # Educational context prompts
         self.system_prompts = {
-            'student_analysis': """You are an expert educational data analyst and K-12 intervention specialist. 
-You analyze student data to provide actionable insights for educators and administrators. 
-Focus on evidence-based recommendations, grade-appropriate interventions, and FERPA-compliant analysis.
-Always consider the whole student including academic, behavioral, and social-emotional factors.""",
+            'student_analysis': """You are a K-12 intervention specialist. Provide exactly 3 concise, actionable recommendations using this exact format:
+
+1) [Intervention title]
+- What to do: [One specific action sentence]
+- Why it's needed for THIS student: [One sentence using their specific data like GPA, attendance, etc.]  
+- How to implement: [2-3 bullet points with concrete steps]
+- Timeline: [Specific timeframe like "This week" or "Next 2 weeks"]
+
+Be extremely concise and practical. Use the student's actual data in your reasoning.""",
             
             'intervention_planning': """You are a K-12 intervention coordinator with expertise in educational support strategies.
 Your role is to develop comprehensive, research-based intervention plans that are practical and implementable.
@@ -407,15 +412,7 @@ Based on your analysis, provide specific recommendations for the educator."""
         
         # Analysis request
         prompt_parts.append("""
-\nPlease provide a comprehensive analysis including:
-1. Current risk assessment and protective factors
-2. Priority intervention recommendations with specific strategies
-3. Timeline and resource requirements
-4. Expected outcomes and success metrics
-5. Family engagement recommendations
-6. Progress monitoring suggestions
-
-Focus on actionable, evidence-based recommendations appropriate for K-12 educational settings.""")
+\nProvide exactly 3 specific recommendations for this student. Each must be personalized to their data.""")
         
         full_prompt = "\n".join(prompt_parts)
         

@@ -374,9 +374,12 @@ async def get_quick_student_insight(
         
         prompt_parts.extend([
             "",
-            "Please provide a brief, focused answer to the question based on the student data.",
-            "Keep the response practical and actionable for K-12 educators.",
-            "If the data is insufficient to answer the question, indicate what additional information would be helpful."
+            "Format each recommendation as:",
+            "1) [Action title]",
+            "- What to do: [One specific action]", 
+            "- Why it's needed for THIS student: [Brief explanation using their data]",
+            "- How to implement: [2-3 concrete steps]",
+            "- Timeline: [When to start/complete]"
         ])
         
         insight_prompt = "\n".join(prompt_parts)
