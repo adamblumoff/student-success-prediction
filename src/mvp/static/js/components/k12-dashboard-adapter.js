@@ -7,6 +7,7 @@
 
 class K12DashboardAdapter extends Component {
   init() {
+    console.log('🚀 K12DashboardAdapter: Initializing...');
     this.k12Dashboard = null;
     this.mockAuthenticatedUser = {
       role: 'teacher',
@@ -17,10 +18,13 @@ class K12DashboardAdapter extends Component {
     
     this.appState.subscribe('students', this.updateDashboard.bind(this));
     this.appState.subscribe('currentTab', this.handleTabChange.bind(this));
+    console.log('✅ K12DashboardAdapter: Initialized and subscribed to app state changes');
   }
 
   handleTabChange(currentTab) {
+    console.log('🔄 K12DashboardAdapter: Tab changed to', currentTab);
     if (currentTab === 'dashboard') {
+      console.log('🎯 K12DashboardAdapter: Dashboard tab activated, rendering...');
       // Small delay to ensure DOM is ready
       setTimeout(() => {
         this.renderK12Dashboard();
@@ -35,9 +39,12 @@ class K12DashboardAdapter extends Component {
   }
 
   renderK12Dashboard(students = null) {
+    console.log('📊 K12DashboardAdapter: renderK12Dashboard called with', students ? students.length : 'null', 'students');
+    
     // Check if we should fetch real data from database
     if (!students) {
       students = this.appState.getState().students;
+      console.log('📋 K12DashboardAdapter: Got', students ? students.length : 'null', 'students from app state');
     }
     
     // If no students in app state, fetch from database
@@ -229,7 +236,7 @@ class K12DashboardAdapter extends Component {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('api_key') || 'dev-key-change-me'}`
+          'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
         }
       });
 
