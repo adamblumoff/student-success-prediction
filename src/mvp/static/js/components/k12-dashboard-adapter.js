@@ -41,15 +41,10 @@ class K12DashboardAdapter extends Component {
   renderK12Dashboard(students = null) {
     console.log('📊 K12DashboardAdapter: renderK12Dashboard called with', students ? students.length : 'null', 'students');
     
-    // Check if we should fetch real data from database
-    if (!students) {
-      students = this.appState.getState().students;
-      console.log('📋 K12DashboardAdapter: Got', students ? students.length : 'null', 'students from app state');
-    }
-    
-    // If no students in app state, fetch from database
-    if (!students || students.length === 0) {
-      console.log('🔄 No students in app state, fetching real data from database...');
+    // For K-12 dashboard, ALWAYS fetch fresh real data from database
+    // This ensures we show real student data, not sample/demo data
+    if (!students || !this.isK12Format(students)) {
+      console.log('🔄 K12DashboardAdapter: Fetching fresh real student data from database...');
       this.fetchRealStudentData();
       return;
     }
