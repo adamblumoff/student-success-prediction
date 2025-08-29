@@ -165,10 +165,14 @@ class FileUpload extends Component {
         console.log('✅ Loaded all students:', result);
         
         if (result.students && result.students.length > 0) {
+          // Preserve existing insights before updating students
+          this.preserveInsightsCache();
+          
           // Update application state with all students
           this.appState.setState({
             students: result.students,
-            currentTab: 'analyze'
+            currentTab: 'analyze',
+            preserveInsightsCache: true  // Flag to prevent cache cleanup
           });
           
           // Enable analysis tab and subsequent tabs
@@ -182,6 +186,13 @@ class FileUpload extends Component {
           this.showNotification(`CSV processed! Showing all ${result.students.length} students.`, 'success');
           
           console.log(`✅ Successfully loaded ${result.students.length} total students after CSV upload`);
+          
+          // Clear the preserve flag after a short delay to ensure rendering is complete
+          setTimeout(() => {
+            this.restoreInsightsIfNeeded();
+            this.appState.setState({ preserveInsightsCache: false });
+            console.log('🔄 Cleared preserve insights cache flag');
+          }, 100);
         } else {
           console.log('ℹ️ No students found in database');
           this.showNotification('CSV processed but no students found in database.', 'warning');
@@ -197,6 +208,55 @@ class FileUpload extends Component {
       console.error('Error loading all students:', error);
       // Fallback to success message since CSV was processed
       this.showNotification('CSV processed successfully! Switch tabs to see all data.', 'success');
+    }
+  }
+
+  // Preserve insights cache during student list updates
+  preserveInsightsCache() {
+    const insightsBackup = {};
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('quick-insights-')) {
+        insightsBackup[key] = sessionStorage.getItem(key);
+      }
+    }
+    
+    // Store backup with timestamp to restore later
+    sessionStorage.setItem('insights_backup', JSON.stringify({
+      timestamp: Date.now(),
+      insights: insightsBackup
+    }));
+    
+    console.log('💾 Preserved', Object.keys(insightsBackup).length, 'insights before loading all students');
+  }
+
+  // Restore insights from backup if any were lost during student list update
+  restoreInsightsIfNeeded() {
+    const backupData = sessionStorage.getItem('insights_backup');
+    if (!backupData) return;
+    
+    try {
+      const backup = JSON.parse(backupData);
+      let restoredCount = 0;
+      
+      // Check each backed up insight and restore if missing
+      for (const [key, value] of Object.entries(backup.insights)) {
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, value);
+          restoredCount++;
+        }
+      }
+      
+      // Clean up backup
+      sessionStorage.removeItem('insights_backup');
+      
+      if (restoredCount > 0) {
+        console.log('🔄 Restored', restoredCount, 'insights from backup');
+      } else {
+        console.log('✅ All insights were preserved - no restoration needed');
+      }
+    } catch (error) {
+      console.warn('Failed to restore insights from backup:', error);
     }
   }
 

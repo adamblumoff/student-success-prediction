@@ -894,6 +894,13 @@ Make each recommendation unique to this student's specific data and situation.`;
   }
 
   cleanOldCacheEntries(studentId, riskLevel, currentDataHash) {
+    // Check if we should preserve insights cache (CSV upload flow)
+    const preserveCache = this.appState.getState().preserveInsightsCache;
+    if (preserveCache) {
+      console.log('💾 Skipping cache cleanup - preserving insights during CSV upload flow');
+      return;
+    }
+    
     // Remove old cache entries for this student with different data hashes
     const keysToRemove = [];
     for (let i = 0; i < sessionStorage.length; i++) {
