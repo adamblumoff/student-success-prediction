@@ -210,14 +210,14 @@ class Analysis extends Component {
     this.loadStudentInterventions(student);
     
     // Check for cached Quick AI Insights
-    const studentId = student.student_id || student.id || 'Unknown';
+    const studentId = student.id || student.student_id || 'Unknown';
     const risk = student.risk_score || student.success_probability || 0;
     const riskLevel = risk >= 0.7 ? 'High Risk' : risk >= 0.4 ? 'Medium Risk' : 'Low Risk';
     await this.checkCachedInsights(studentId, riskLevel);
   }
 
   renderStudentDetail(student) {
-    const studentId = student.student_id || student.id || 'Unknown';
+    const studentId = student.id || student.student_id || 'Unknown';
     const risk = student.risk_score || student.success_probability || 0;
     const successProb = 1 - risk;
     const riskLevel = risk >= 0.7 ? 'High Risk' : risk >= 0.4 ? 'Medium Risk' : 'Low Risk';
