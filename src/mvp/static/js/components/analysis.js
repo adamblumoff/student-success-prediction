@@ -151,9 +151,13 @@ class Analysis extends Component {
         e.currentTarget.classList.add('selected');
         
         const studentId = e.currentTarget.dataset.studentId;
-        const student = students.find(s => (s.student_id || s.id)?.toString() === studentId);
+        // Find student by database ID (which is what data-student-id contains)
+        const student = students.find(s => s.id?.toString() === studentId);
         if (student) {
+          console.log('📋 Selected student:', student);
           this.appState.setState({ selectedStudent: student });
+        } else {
+          console.warn('❌ Could not find student with ID:', studentId);
         }
       });
     });
