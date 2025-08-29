@@ -101,7 +101,7 @@ function safeRefreshInterventions(studentId) {
             const containerStudentId = container.id.replace('interventions-list-', '');
             if (containerStudentId && containerStudentId !== studentId) {
                 console.log(`📋 Refreshing additional container for student ${containerStudentId}`);
-                loadInterventionsForContainer(parseInt(containerStudentId), container);
+                loadInterventionsForContainer(containerStudentId, container);
             }
         });
         
@@ -460,7 +460,7 @@ async function handleInterventionSubmit(event, studentId) {
     
     // Convert FormData to JSON
     const data = {
-        student_id: parseInt(studentId),
+        student_id: studentId, // Keep as-is to support both string and integer IDs
         intervention_type: formData.get('intervention_type'),
         title: formData.get('title'),
         description: formData.get('description'),
