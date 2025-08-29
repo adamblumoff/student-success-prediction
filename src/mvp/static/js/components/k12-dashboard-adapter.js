@@ -293,84 +293,47 @@ class K12DashboardAdapter extends Component {
     const insights = this.calculateEducatorInsights(students, metadata);
     
     dashboardElement.innerHTML = `
-      <!-- Critical Alerts Section -->
-      <div class="educator-section critical-alerts">
-        <div class="section-header">
-          <h3><i class="fas fa-exclamation-triangle"></i> Immediate Action Required</h3>
+      <div class="educator-dashboard-panels">
+        <!-- Left Panel: Critical Alerts -->
+        <div class="dashboard-panel alerts-panel">
+          <h3><i class="fas fa-exclamation-triangle"></i> Critical Alerts</h3>
+          ${this.renderCompactAlerts(insights)}
         </div>
-        <div class="alert-cards">
-          ${this.renderCriticalAlerts(insights)}
-        </div>
-      </div>
 
-      <!-- Grade-Level Performance Overview -->
-      <div class="educator-section grade-overview">
-        <div class="section-header">
-          <h3><i class="fas fa-chart-bar"></i> Grade-Level Risk Analysis</h3>
-          <div class="view-toggle">
-            <button class="btn-toggle active" data-view="chart">Chart View</button>
-            <button class="btn-toggle" data-view="table">Data Table</button>
+        <!-- Center Panel: Student Data Table -->
+        <div class="dashboard-panel main-panel">
+          <div class="panel-header">
+            <h3><i class="fas fa-users"></i> Students by Priority</h3>
+            <div class="filter-controls">
+              <select id="grade-filter" class="filter-select">
+                <option value="">All Grades</option>
+                <option value="9">Grade 9</option>
+                <option value="10">Grade 10</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+              </select>
+              <select id="risk-filter" class="filter-select">
+                <option value="">All Risk Levels</option>
+                <option value="high">High Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="low">Low Risk</option>
+              </select>
+            </div>
           </div>
+          ${this.renderStudentTable(students)}
         </div>
-        <div class="grade-visualization">
-          <div class="chart-container">
-            <canvas id="grade-risk-chart"></canvas>
-          </div>
-          <div class="grade-insights">
-            ${this.renderGradeInsights(insights)}
-          </div>
-        </div>
-      </div>
 
-      <!-- Intervention Priority Matrix -->
-      <div class="educator-section intervention-matrix">
-        <div class="section-header">
-          <h3><i class="fas fa-users"></i> Intervention Priority Students</h3>
-        </div>
-        <div class="priority-grid">
-          ${this.renderInterventionPriorities(students)}
-        </div>
-      </div>
-
-      <!-- Progress Trends -->
-      <div class="educator-section progress-trends">
-        <div class="section-header">
-          <h3><i class="fas fa-trending-up"></i> Academic Progress Indicators</h3>
-        </div>
-        <div class="trends-container">
-          ${this.renderProgressTrends(insights)}
-        </div>
-      </div>
-
-      <!-- Quick Actions Panel -->
-      <div class="educator-section quick-actions">
-        <div class="section-header">
+        <!-- Right Panel: Actions & Summary -->
+        <div class="dashboard-panel actions-panel">
           <h3><i class="fas fa-lightning-bolt"></i> Quick Actions</h3>
-        </div>
-        <div class="action-buttons">
-          <button class="action-btn" data-action="generate-report">
-            <i class="fas fa-file-pdf"></i>
-            Generate Risk Report
-          </button>
-          <button class="action-btn" data-action="schedule-meetings">
-            <i class="fas fa-calendar-alt"></i>
-            Schedule Parent Meetings
-          </button>
-          <button class="action-btn" data-action="create-interventions">
-            <i class="fas fa-plus-circle"></i>
-            Create Bulk Interventions
-          </button>
-          <button class="action-btn" data-action="export-data">
-            <i class="fas fa-download"></i>
-            Export to CSV
-          </button>
+          ${this.renderActionPanel(insights, students)}
         </div>
       </div>
     `;
 
-    // Initialize interactive charts
-    this.initializeCharts(insights);
+    // Bind events for functional buttons
     this.bindDashboardEvents();
+    this.bindTableFilters(students);
   }
 
   calculateEducatorInsights(students, metadata) {
@@ -426,7 +389,7 @@ class K12DashboardAdapter extends Component {
     };
   }
 
-  renderCriticalAlerts(insights) {
+  renderCompactAlerts(insights) {
     const alerts = [];
     
     // Critical Grade 12 situation
@@ -434,370 +397,446 @@ class K12DashboardAdapter extends Component {
     if (grade12 && grade12.highRisk > 0) {
       const riskPercent = ((grade12.highRisk / grade12.total) * 100).toFixed(0);
       alerts.push(`
-        <div class="alert-card critical">
-          <div class="alert-icon"><i class="fas fa-graduation-cap"></i></div>
-          <div class="alert-content">
-            <h4>Grade 12 Graduation Risk</h4>
-            <p><strong>${grade12.highRisk} of ${grade12.total} seniors (${riskPercent}%)</strong> are at high risk of not graduating</p>
-            <div class="alert-action">
-              <button class="btn btn-danger btn-sm" onclick="focusGrade(12)">Review Grade 12 Students</button>
-            </div>
+        <div class="compact-alert critical">
+          <i class="fas fa-graduation-cap"></i>
+          <div>
+            <strong>Graduation Risk:</strong> ${grade12.highRisk}/${grade12.total} seniors (${riskPercent}%)
+            <button class="mini-btn" data-action="focus-grade-12">Review</button>
           </div>
         </div>
       `);
     }
 
-    // Grade 10 medium risk concentration
-    const grade10 = insights.gradeAnalysis[10];
-    if (grade10 && (grade10.mediumRisk / grade10.total) > 0.8) {
-      const riskPercent = ((grade10.mediumRisk / grade10.total) * 100).toFixed(0);
+    // Study skills alert
+    if (insights.avgStudySkills < 3.5) {
       alerts.push(`
-        <div class="alert-card warning">
-          <div class="alert-icon"><i class="fas fa-chart-line"></i></div>
-          <div class="alert-content">
-            <h4>Grade 10 Performance Decline</h4>
-            <p><strong>${grade10.mediumRisk} of ${grade10.total} sophomores (${riskPercent}%)</strong> showing concerning performance patterns</p>
-            <div class="alert-action">
-              <button class="btn btn-warning btn-sm" onclick="analyzeGrade10Trends()">Analyze Trends</button>
-            </div>
+        <div class="compact-alert warning">
+          <i class="fas fa-book"></i>
+          <div>
+            <strong>Study Skills:</strong> ${insights.avgStudySkills.toFixed(1)}/5.0 school average
+            <button class="mini-btn" data-action="improve-study-skills">Plan</button>
           </div>
         </div>
       `);
     }
 
-    // Low study skills alert
-    if (insights.avgStudySkills < 3.0) {
-      alerts.push(`
-        <div class="alert-card info">
-          <div class="alert-icon"><i class="fas fa-book"></i></div>
-          <div class="alert-content">
-            <h4>Study Skills Development Needed</h4>
-            <p>Average study skills rating is <strong>${insights.avgStudySkills.toFixed(1)}/5.0</strong> - consider school-wide study skills program</p>
-            <div class="alert-action">
-              <button class="btn btn-primary btn-sm" onclick="planStudySkillsProgram()">Plan Program</button>
-            </div>
-          </div>
-        </div>
-      `);
-    }
-
-    return alerts.length > 0 ? alerts.join('') : '<div class="no-alerts"><i class="fas fa-check-circle"></i> No critical alerts at this time</div>';
+    return alerts.length > 0 ? alerts.join('') : '<div class="no-alerts">✅ No critical alerts</div>';
   }
 
-  renderGradeInsights(insights) {
-    const grades = Object.keys(insights.gradeAnalysis).sort((a, b) => parseInt(a) - parseInt(b));
-    
-    return grades.map(grade => {
-      const analysis = insights.gradeAnalysis[grade];
-      const riskPercent = ((analysis.highRisk + analysis.mediumRisk) / analysis.total * 100).toFixed(0);
-      const studySkills = analysis.avgStudySkills.toFixed(1);
-      
-      return `
-        <div class="grade-insight-card">
-          <div class="grade-header">
-            <h4>Grade ${grade}</h4>
-            <span class="student-count">${analysis.total} students</span>
-          </div>
-          <div class="risk-breakdown">
-            <div class="risk-bar">
-              <div class="risk-segment high" style="width: ${(analysis.highRisk/analysis.total*100)}%"></div>
-              <div class="risk-segment medium" style="width: ${(analysis.mediumRisk/analysis.total*100)}%"></div>
-              <div class="risk-segment low" style="width: ${(analysis.lowRisk/analysis.total*100)}%"></div>
-            </div>
-            <div class="risk-stats">
-              <span class="high-risk">${analysis.highRisk} high</span>
-              <span class="medium-risk">${analysis.mediumRisk} medium</span>
-              <span class="low-risk">${analysis.lowRisk} low risk</span>
-            </div>
-          </div>
-          <div class="grade-metrics">
-            <div class="metric">
-              <label>At Risk %</label>
-              <value class="${riskPercent > 50 ? 'danger' : riskPercent > 25 ? 'warning' : 'success'}">${riskPercent}%</value>
-            </div>
-            <div class="metric">
-              <label>Study Skills</label>
-              <value class="${studySkills < 3 ? 'danger' : studySkills < 4 ? 'warning' : 'success'}">${studySkills}/5</value>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  renderInterventionPriorities(students) {
+  renderStudentTable(students) {
     // Sort students by priority: Grade 12 high risk first, then by risk score
     const priorityStudents = students
-      .filter(s => s.needs_intervention || s.risk_score >= 0.6)
       .sort((a, b) => {
         // Grade 12 high risk gets highest priority
         if (a.grade_level === 12 && a.risk_score >= 0.7) return -1;
         if (b.grade_level === 12 && b.risk_score >= 0.7) return 1;
         // Then sort by risk score
         return b.risk_score - a.risk_score;
-      })
-      .slice(0, 8); // Show top 8 priority students
+      });
 
-    return priorityStudents.map((student, index) => {
-      const priorityLevel = index < 3 ? 'urgent' : index < 6 ? 'high' : 'medium';
-      const priorityIcon = priorityLevel === 'urgent' ? 'fas fa-fire' : 
-                          priorityLevel === 'high' ? 'fas fa-exclamation' : 
-                          'fas fa-flag';
-      
-      return `
-        <div class="priority-student-card ${priorityLevel}">
-          <div class="priority-indicator">
-            <i class="${priorityIcon}"></i>
-            <span class="priority-rank">#${index + 1}</span>
-          </div>
-          <div class="student-info">
-            <div class="student-header">
-              <span class="student-id">${student.student_id}</span>
-              <span class="grade-badge">Grade ${student.grade_level}</span>
-            </div>
-            <div class="risk-info">
-              <span class="risk-score">${(student.risk_score * 100).toFixed(0)}% risk</span>
-              <span class="risk-category">${student.risk_category}</span>
-            </div>
-            <div class="quick-actions">
-              <button class="quick-btn" onclick="createIntervention('${student.student_id}')" title="Create Intervention">
-                <i class="fas fa-plus"></i>
-              </button>
-              <button class="quick-btn" onclick="scheduleConference('${student.student_id}')" title="Schedule Conference">
-                <i class="fas fa-calendar"></i>
-              </button>
-              <button class="quick-btn" onclick="viewDetails('${student.student_id}')" title="View Details">
-                <i class="fas fa-eye"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    return `
+      <div class="student-table-container">
+        <table class="student-table" id="student-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Grade</th>
+              <th>Risk Level</th>
+              <th>Risk Score</th>
+              <th>Study Skills</th>
+              <th>Attendance</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${priorityStudents.slice(0, 20).map(student => this.renderStudentRow(student)).join('')}
+          </tbody>
+        </table>
+        ${priorityStudents.length > 20 ? `<div class="table-footer">Showing top 20 of ${priorityStudents.length} students</div>` : ''}
+      </div>
+    `;
   }
 
-  renderProgressTrends(insights) {
+  renderStudentRow(student) {
+    const riskClass = student.risk_score >= 0.7 ? 'high-risk' : 
+                     student.risk_score >= 0.4 ? 'medium-risk' : 'low-risk';
+    const isPriority = student.grade_level === 12 && student.risk_score >= 0.7;
+
     return `
-      <div class="trends-grid">
-        <div class="trend-card">
-          <div class="trend-header">
-            <h4>Overall Risk Distribution</h4>
+      <tr class="student-row ${riskClass} ${isPriority ? 'priority' : ''}" data-student-id="${student.student_id}" data-grade="${student.grade_level}" data-risk="${riskClass}">
+        <td class="student-id">${student.student_id}</td>
+        <td class="grade">${student.grade_level}</td>
+        <td class="risk-category">
+          <span class="risk-badge ${riskClass}">${student.risk_category}</span>
+        </td>
+        <td class="risk-score">${(student.risk_score * 100).toFixed(0)}%</td>
+        <td class="study-skills">${student.study_skills_rating || 'N/A'}</td>
+        <td class="attendance">${(student.attendance_rate * 100).toFixed(0)}%</td>
+        <td class="actions">
+          <button class="table-btn" data-action="create-intervention" data-student="${student.student_id}" title="Create Intervention">
+            <i class="fas fa-plus"></i>
+          </button>
+          <button class="table-btn" data-action="schedule-meeting" data-student="${student.student_id}" title="Schedule Meeting">
+            <i class="fas fa-calendar"></i>
+          </button>
+          <button class="table-btn" data-action="view-details" data-student="${student.student_id}" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  renderActionPanel(insights, students) {
+    const highRiskStudents = students.filter(s => s.risk_score >= 0.7);
+    const mediumRiskStudents = students.filter(s => s.risk_score >= 0.4 && s.risk_score < 0.7);
+
+    return `
+      <div class="action-sections">
+        <!-- Summary Stats -->
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-number high-risk">${insights.overallHighRisk}</span>
+            <span class="stat-label">High Risk</span>
           </div>
-          <div class="trend-chart">
-            <div class="donut-chart" id="risk-distribution-chart"></div>
-            <div class="trend-stats">
-              <div class="stat-item high-risk">
-                <span class="stat-value">${insights.overallHighRisk}</span>
-                <span class="stat-label">High Risk</span>
-              </div>
-              <div class="stat-item medium-risk">
-                <span class="stat-value">${insights.overallMediumRisk}</span>
-                <span class="stat-label">Medium Risk</span>
-              </div>
-              <div class="stat-item low-risk">
-                <span class="stat-value">${insights.overallLowRisk}</span>
-                <span class="stat-label">Low Risk</span>
-              </div>
-            </div>
+          <div class="stat-item">
+            <span class="stat-number medium-risk">${insights.overallMediumRisk}</span>
+            <span class="stat-label">Medium Risk</span>
           </div>
-        </div>
-        
-        <div class="trend-card">
-          <div class="trend-header">
-            <h4>Intervention Impact</h4>
-          </div>
-          <div class="impact-metrics">
-            <div class="metric-large">
-              <span class="metric-number">${insights.interventionNeeded}</span>
-              <span class="metric-label">Students Need Support</span>
-              <span class="metric-percent">${((insights.interventionNeeded / insights.totalStudents) * 100).toFixed(1)}% of total</span>
-            </div>
-            <div class="intervention-breakdown">
-              <div class="breakdown-item">
-                <span class="item-label">Immediate Action</span>
-                <span class="item-value">${insights.overallHighRisk}</span>
-              </div>
-              <div class="breakdown-item">
-                <span class="item-label">Monitor Closely</span>
-                <span class="item-value">${insights.overallMediumRisk}</span>
-              </div>
-            </div>
+          <div class="stat-item">
+            <span class="stat-number low-risk">${insights.overallLowRisk}</span>
+            <span class="stat-label">Low Risk</span>
           </div>
         </div>
 
-        <div class="trend-card">
-          <div class="trend-header">
-            <h4>Study Skills Assessment</h4>
-          </div>
-          <div class="skills-gauge">
-            <div class="gauge-container">
-              <div class="gauge-chart" data-value="${insights.avgStudySkills}"></div>
-              <div class="gauge-center">
-                <span class="gauge-value">${insights.avgStudySkills.toFixed(1)}</span>
-                <span class="gauge-label">/ 5.0</span>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="action-btn primary" data-action="export-high-risk" data-count="${highRiskStudents.length}">
+            <i class="fas fa-download"></i>
+            Export High Risk (${highRiskStudents.length})
+          </button>
+          <button class="action-btn secondary" data-action="bulk-interventions" data-count="${highRiskStudents.length}">
+            <i class="fas fa-plus-circle"></i>
+            Create Interventions (${highRiskStudents.length})
+          </button>
+          <button class="action-btn tertiary" data-action="schedule-meetings" data-count="${highRiskStudents.length}">
+            <i class="fas fa-calendar-alt"></i>
+            Schedule Meetings (${highRiskStudents.length})
+          </button>
+          <button class="action-btn info" data-action="generate-report">
+            <i class="fas fa-file-pdf"></i>
+            Generate Report
+          </button>
+        </div>
+
+        <!-- Grade Breakdown -->
+        <div class="grade-breakdown">
+          <h4>By Grade Level</h4>
+          ${Object.keys(insights.gradeAnalysis).sort((a, b) => parseInt(a) - parseInt(b)).map(grade => {
+            const analysis = insights.gradeAnalysis[grade];
+            return `
+              <div class="grade-stat">
+                <span class="grade-label">Grade ${grade}</span>
+                <span class="grade-counts">
+                  <span class="high-count">${analysis.highRisk}</span>/<span class="total-count">${analysis.total}</span>
+                </span>
               </div>
-            </div>
-            <div class="skills-recommendation">
-              ${insights.avgStudySkills < 3 ? 
-                '<span class="rec-priority">High Priority:</span> Implement study skills curriculum' :
-                insights.avgStudySkills < 4 ?
-                '<span class="rec-medium">Medium Priority:</span> Targeted study skills support' :
-                '<span class="rec-good">Good:</span> Maintain current study skills programs'
-              }
-            </div>
-          </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
   }
 
-  initializeCharts(insights) {
-    // Grade-level risk chart
-    setTimeout(() => {
-      const ctx = document.getElementById('grade-risk-chart');
-      if (ctx) {
-        this.createGradeRiskChart(ctx, insights);
-      }
-    }, 100);
-  }
-
-  createGradeRiskChart(canvas, insights) {
-    const grades = Object.keys(insights.gradeAnalysis).sort((a, b) => parseInt(a) - parseInt(b));
-    const highRiskData = grades.map(g => insights.gradeAnalysis[g].highRisk);
-    const mediumRiskData = grades.map(g => insights.gradeAnalysis[g].mediumRisk);
-    const lowRiskData = grades.map(g => insights.gradeAnalysis[g].lowRisk);
-
-    // Simple canvas-based chart (or integrate Chart.js if available)
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width = canvas.offsetWidth * 2; // Retina display
-    const height = canvas.height = canvas.offsetHeight * 2;
-    canvas.style.width = canvas.offsetWidth + 'px';
-    canvas.style.height = canvas.offsetHeight + 'px';
-    ctx.scale(2, 2);
-
-    // Draw stacked bar chart
-    this.drawStackedBarChart(ctx, {
-      labels: grades.map(g => `Grade ${g}`),
-      datasets: [
-        { label: 'High Risk', data: highRiskData, color: '#dc2626' },
-        { label: 'Medium Risk', data: mediumRiskData, color: '#f59e0b' },
-        { label: 'Low Risk', data: lowRiskData, color: '#16a34a' }
-      ]
-    });
-  }
-
-  drawStackedBarChart(ctx, data) {
-    const padding = 40;
-    const chartWidth = ctx.canvas.width / 2 - padding * 2;
-    const chartHeight = ctx.canvas.height / 2 - padding * 2;
-    const barWidth = chartWidth / data.labels.length * 0.8;
-    const spacing = chartWidth / data.labels.length * 0.2;
-
-    // Find max value for scaling
-    const maxValue = Math.max(...data.labels.map((_, i) => 
-      data.datasets.reduce((sum, dataset) => sum + dataset.data[i], 0)
-    ));
-
-    // Draw bars
-    data.labels.forEach((label, i) => {
-      let currentY = padding + chartHeight;
-      const x = padding + i * (barWidth + spacing);
-      
-      data.datasets.forEach(dataset => {
-        const value = dataset.data[i];
-        const barHeight = (value / maxValue) * chartHeight;
-        
-        ctx.fillStyle = dataset.color;
-        ctx.fillRect(x, currentY - barHeight, barWidth, barHeight);
-        
-        currentY -= barHeight;
-      });
-
-      // Draw label
-      ctx.fillStyle = '#374151';
-      ctx.font = '12px system-ui';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x + barWidth / 2, padding + chartHeight + 20);
-    });
-
-    // Draw legend
-    let legendX = padding;
-    data.datasets.forEach(dataset => {
-      ctx.fillStyle = dataset.color;
-      ctx.fillRect(legendX, 10, 15, 15);
-      ctx.fillStyle = '#374151';
-      ctx.font = '12px system-ui';
-      ctx.textAlign = 'left';
-      ctx.fillText(dataset.label, legendX + 20, 22);
-      legendX += ctx.measureText(dataset.label).width + 40;
-    });
-  }
 
   bindDashboardEvents() {
-    // Quick action buttons
-    this.element.querySelectorAll('.action-btn').forEach(btn => {
+    // Action buttons
+    this.element.querySelectorAll('.action-btn, .mini-btn, .table-btn').forEach(btn => {
       this.bindEvent(btn, 'click', (e) => {
-        const action = e.target.closest('.action-btn').dataset.action;
-        this.handleQuickAction(action);
-      });
-    });
-
-    // View toggle buttons
-    this.element.querySelectorAll('.btn-toggle').forEach(btn => {
-      this.bindEvent(btn, 'click', (e) => {
-        const view = e.target.dataset.view;
-        this.switchView(view, e.target);
+        const action = e.target.closest('button').dataset.action;
+        const studentId = e.target.closest('button').dataset.student;
+        const count = e.target.closest('button').dataset.count;
+        this.handleAction(action, studentId, count);
       });
     });
   }
 
-  handleQuickAction(action) {
+  bindTableFilters(students) {
+    const gradeFilter = this.element.querySelector('#grade-filter');
+    const riskFilter = this.element.querySelector('#risk-filter');
+
+    if (gradeFilter) {
+      this.bindEvent(gradeFilter, 'change', (e) => {
+        this.filterTable(students, e.target.value, riskFilter.value);
+      });
+    }
+
+    if (riskFilter) {
+      this.bindEvent(riskFilter, 'change', (e) => {
+        this.filterTable(students, gradeFilter.value, e.target.value);
+      });
+    }
+  }
+
+  filterTable(students, gradeFilter, riskFilter) {
+    const rows = this.element.querySelectorAll('.student-row');
+    
+    rows.forEach(row => {
+      const grade = row.dataset.grade;
+      const risk = row.dataset.risk;
+      
+      const gradeMatch = !gradeFilter || grade === gradeFilter;
+      const riskMatch = !riskFilter || risk === riskFilter + '-risk';
+      
+      row.style.display = (gradeMatch && riskMatch) ? '' : 'none';
+    });
+
+    // Update table footer
+    const visibleRows = this.element.querySelectorAll('.student-row[style=""], .student-row:not([style])').length;
+    const footer = this.element.querySelector('.table-footer');
+    if (footer) {
+      footer.textContent = `Showing ${visibleRows} of ${students.length} students`;
+    }
+  }
+
+  handleAction(action, studentId = null, count = null) {
+    console.log(`🎯 Handling action: ${action}${studentId ? ` for student ${studentId}` : ''}${count ? ` (${count} students)` : ''}`);
+    
     switch (action) {
+      case 'focus-grade-12':
+        this.focusGrade(12);
+        break;
+      case 'improve-study-skills':
+        this.planStudySkillsProgram();
+        break;
+      case 'export-high-risk':
+        this.exportHighRiskStudents();
+        break;
+      case 'bulk-interventions':
+        this.createBulkInterventions(count);
+        break;
+      case 'schedule-meetings':
+        this.scheduleParentMeetings(count);
+        break;
       case 'generate-report':
         this.generateRiskReport();
         break;
-      case 'schedule-meetings':
-        this.scheduleParentMeetings();
+      case 'create-intervention':
+        this.createIndividualIntervention(studentId);
         break;
-      case 'create-interventions':
-        this.createBulkInterventions();
+      case 'schedule-meeting':
+        this.scheduleIndividualMeeting(studentId);
         break;
-      case 'export-data':
-        this.exportDashboardData();
+      case 'view-details':
+        this.viewStudentDetails(studentId);
         break;
     }
   }
 
-  generateRiskReport() {
-    console.log('📋 Generating risk report for educators...');
-    alert('Risk report generation would integrate with school systems - demo functionality');
+  focusGrade(grade) {
+    const gradeFilter = this.element.querySelector('#grade-filter');
+    if (gradeFilter) {
+      gradeFilter.value = grade.toString();
+      gradeFilter.dispatchEvent(new Event('change'));
+    }
+    this.showNotification(`Filtered to show Grade ${grade} students`, 'info');
   }
 
-  scheduleParentMeetings() {
-    console.log('📅 Scheduling parent meetings for high-risk students...');
-    alert('Parent meeting scheduling would integrate with calendar systems - demo functionality');
+  planStudySkillsProgram() {
+    const message = 'Study Skills Program Recommendations:\n\n' +
+                   '• Implement weekly study skills workshops\n' +
+                   '• Partner with learning specialists\n' +
+                   '• Create peer tutoring programs\n' +
+                   '• Develop study strategy assessments';
+    alert(message);
+    console.log('📚 Study skills program recommendations generated');
   }
 
-  createBulkInterventions() {
-    console.log('🎯 Creating bulk interventions...');
-    alert('Bulk intervention creation would integrate with student management systems - demo functionality');
-  }
-
-  exportDashboardData() {
-    console.log('📊 Exporting dashboard data...');
-    
-    const csvData = this.k12Students.map(student => ({
+  exportHighRiskStudents() {
+    const highRiskStudents = this.k12Students.filter(s => s.risk_score >= 0.7);
+    const csvData = highRiskStudents.map(student => ({
       'Student ID': student.student_id,
       'Grade Level': student.grade_level,
       'Risk Score': (student.risk_score * 100).toFixed(1) + '%',
       'Risk Category': student.risk_category,
-      'Needs Intervention': student.needs_intervention ? 'Yes' : 'No',
       'Study Skills Rating': student.study_skills_rating || 'N/A',
-      'Attendance Rate': (student.attendance_rate * 100).toFixed(1) + '%'
+      'Attendance Rate': (student.attendance_rate * 100).toFixed(1) + '%',
+      'Behavioral Concerns': student.behavioral_concerns?.join(', ') || 'None'
     }));
 
     const csv = this.convertToCSV(csvData);
-    this.downloadCSV(csv, 'educator-dashboard-data.csv');
+    this.downloadCSV(csv, `high-risk-students-${new Date().toISOString().split('T')[0]}.csv`);
+    this.showNotification(`Exported ${csvData.length} high-risk students to CSV`, 'success');
+  }
+
+  createBulkInterventions(count) {
+    const message = `Bulk Intervention Creation:\n\n` +
+                   `• Selected ${count} high-risk students\n` +
+                   `• Suggested interventions: Academic support, Study skills, Attendance monitoring\n` +
+                   `• Next step: Review individual student needs\n\n` +
+                   `This would integrate with your school's SIS to create actual intervention records.`;
+    alert(message);
+    this.showNotification(`Bulk intervention plan created for ${count} students`, 'success');
+  }
+
+  scheduleParentMeetings(count) {
+    const message = `Parent Meeting Scheduling:\n\n` +
+                   `• ${count} high-risk students identified\n` +
+                   `• Recommended meeting type: Academic conference\n` +
+                   `• Timeline: Within 2 weeks\n` +
+                   `• Topics: Risk factors, intervention plans, home support\n\n` +
+                   `This would integrate with your calendar system to schedule actual meetings.`;
+    alert(message);
+    this.showNotification(`Meeting schedule prepared for ${count} families`, 'success');
+  }
+
+  generateRiskReport() {
+    const insights = this.calculateEducatorInsights(this.k12Students, this.k12Metadata);
+    const reportData = {
+      timestamp: new Date().toLocaleString(),
+      totalStudents: insights.totalStudents,
+      highRisk: insights.overallHighRisk,
+      mediumRisk: insights.overallMediumRisk,
+      lowRisk: insights.overallLowRisk,
+      avgStudySkills: insights.avgStudySkills.toFixed(1),
+      gradeBreakdown: insights.gradeAnalysis
+    };
+
+    console.log('📋 Risk Report Generated:', reportData);
+    
+    const reportText = `STUDENT RISK ASSESSMENT REPORT
+Generated: ${reportData.timestamp}
+
+SUMMARY:
+Total Students: ${reportData.totalStudents}
+High Risk: ${reportData.highRisk} (${((reportData.highRisk/reportData.totalStudents)*100).toFixed(1)}%)
+Medium Risk: ${reportData.mediumRisk} (${((reportData.mediumRisk/reportData.totalStudents)*100).toFixed(1)}%)
+Low Risk: ${reportData.lowRisk} (${((reportData.lowRisk/reportData.totalStudents)*100).toFixed(1)}%)
+
+Average Study Skills: ${reportData.avgStudySkills}/5.0
+
+GRADE-LEVEL ANALYSIS:
+${Object.entries(reportData.gradeBreakdown).map(([grade, data]) => 
+  `Grade ${grade}: ${data.highRisk} high risk / ${data.total} total`
+).join('\n')}`;
+
+    this.downloadTextFile(reportText, `risk-assessment-report-${new Date().toISOString().split('T')[0]}.txt`);
+    this.showNotification('Risk assessment report generated', 'success');
+  }
+
+  createIndividualIntervention(studentId) {
+    const student = this.k12Students.find(s => s.student_id === studentId);
+    if (!student) return;
+
+    const interventionPlan = this.generateInterventionPlan(student);
+    const message = `Intervention Plan for ${studentId}:\n\n${interventionPlan}`;
+    alert(message);
+    this.showNotification(`Intervention plan created for ${studentId}`, 'success');
+  }
+
+  scheduleIndividualMeeting(studentId) {
+    const student = this.k12Students.find(s => s.student_id === studentId);
+    if (!student) return;
+
+    const message = `Schedule Meeting for ${studentId}:\n\n` +
+                   `Risk Level: ${student.risk_category}\n` +
+                   `Grade: ${student.grade_level}\n` +
+                   `Recommended: Parent/Teacher conference\n` +
+                   `Timeline: Within 1 week for high-risk students\n\n` +
+                   `This would integrate with your calendar system.`;
+    alert(message);
+    this.showNotification(`Meeting scheduled for ${studentId}`, 'success');
+  }
+
+  viewStudentDetails(studentId) {
+    const student = this.k12Students.find(s => s.student_id === studentId);
+    if (!student) return;
+
+    const details = `STUDENT PROFILE: ${studentId}
+
+Grade Level: ${student.grade_level}
+Risk Score: ${(student.risk_score * 100).toFixed(1)}%
+Risk Category: ${student.risk_category}
+Study Skills: ${student.study_skills_rating || 'N/A'}/5.0
+Attendance Rate: ${(student.attendance_rate * 100).toFixed(1)}%
+
+Behavioral Concerns: ${student.behavioral_concerns?.join(', ') || 'None'}
+Special Populations: ${Object.entries(student.special_populations || {})
+  .filter(([key, value]) => value)
+  .map(([key, value]) => key.replace('_', ' '))
+  .join(', ') || 'None'}
+
+Current Interventions: ${student.interventions?.length > 0 ? student.interventions.join(', ') : 'None'}`;
+
+    alert(details);
+    console.log(`📊 Viewed details for student ${studentId}`, student);
+  }
+
+  generateInterventionPlan(student) {
+    const interventions = [];
+    
+    if (student.risk_score >= 0.7) {
+      interventions.push('• Academic Support Program (daily check-ins)');
+      interventions.push('• Progress monitoring (weekly assessments)');
+    }
+    
+    if (student.attendance_rate < 0.85) {
+      interventions.push('• Attendance improvement plan');
+      interventions.push('• Family engagement support');
+    }
+    
+    if (student.study_skills_rating < 3.0) {
+      interventions.push('• Study skills development workshop');
+      interventions.push('• Peer tutoring program');
+    }
+    
+    if (student.grade_level === 12) {
+      interventions.push('• Graduation pathway review');
+      interventions.push('• Credit recovery assessment');
+    }
+
+    return interventions.length > 0 ? interventions.join('\n') : '• Standard academic support monitoring';
+  }
+
+  showNotification(message, type = 'info') {
+    // Try to use existing notification system
+    if (window.notificationSystem) {
+      const typeMap = {
+        'success': 'success',
+        'info': 'info', 
+        'warning': 'warning',
+        'error': 'error'
+      };
+      window.notificationSystem.show(message, typeMap[type] || 'info');
+    } else {
+      // Fallback to console and temporary UI notification
+      console.log(`📢 ${type.toUpperCase()}: ${message}`);
+      
+      // Create temporary notification
+      const notification = document.createElement('div');
+      notification.className = `temp-notification ${type}`;
+      notification.textContent = message;
+      notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; z-index: 10000;
+        padding: 12px 20px; border-radius: 6px; color: white;
+        background: ${type === 'success' ? '#16a34a' : type === 'warning' ? '#f59e0b' : type === 'error' ? '#dc2626' : '#3b82f6'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-weight: 500; max-width: 300px;
+      `;
+      
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+  }
+
+  downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
   convertToCSV(data) {
