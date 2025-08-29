@@ -251,6 +251,66 @@ async def analyze_student_data(
             processing_time=round(prediction_time * 1000, 2)
         )
         
+        # Persist students to database so intervention system can find them
+        logger.info(f"🔄 Starting student persistence for {len(results)} students")
+        try:
+            with get_db_session() as db:
+                # Get or create demo institution
+                demo_institution = db.query(Institution).filter(
+                    Institution.code == "MVP_DEMO"
+                ).first()
+                
+                if not demo_institution:
+                    demo_institution = Institution(
+                        name="Demo Educational District",
+                        code="MVP_DEMO",
+                        type="K12_District",
+                        timezone="America/New_York",
+                        active=True
+                    )
+                    db.add(demo_institution)
+                    db.commit()
+                    db.refresh(demo_institution)
+                
+                students_created = 0
+                for result in results:
+                    original_student_id = str(result.get('original_student_id', result['student_id']))  # Use original CSV student ID (S001, etc.)
+                    logger.info(f"📝 Processing student persistence for: {original_student_id}")
+                    
+                    # Check if student already exists
+                    existing_student = db.query(Student).filter(
+                        Student.institution_id == demo_institution.id,
+                        Student.student_id == original_student_id
+                    ).first()
+                    
+                    if not existing_student:
+                        # Create new student from CSV prediction data
+                        try:
+                            new_student = Student(
+                                institution_id=demo_institution.id,
+                                student_id=original_student_id,  # Use S001, S002, etc. from CSV
+                                grade_level=result.get('grade_level', 10),
+                                gender='Unknown',
+                                ethnicity='Unknown',
+                                enrollment_status='Active'
+                            )
+                            db.add(new_student)
+                            db.flush()  # Check for errors before committing all
+                            students_created += 1
+                        except Exception as student_insert_error:
+                            logger.warning(f"Could not create student {original_student_id}: {student_insert_error}")
+                            db.rollback()
+                            continue
+                
+                if students_created > 0:
+                    db.commit()
+                    logger.info(f"✅ Persisted {students_created} new students to database")
+                else:
+                    logger.info("✅ All students already exist in database")
+                    
+        except Exception as student_error:
+            logger.error(f"Error persisting students to database: {student_error}")
+        
         # Save predictions to database (if available)
         try:
             session_id = f"upload_{datetime.now().strftime('%Y%m%d_%H%M%S')}"

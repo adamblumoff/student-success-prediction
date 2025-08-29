@@ -7,7 +7,7 @@ Student intervention tracking and management
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, validator
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from datetime import datetime, timedelta
@@ -30,7 +30,7 @@ def get_db() -> Session:
         yield session
 
 class InterventionCreate(BaseModel):
-    student_id: int
+    student_id: Union[int, str]  # Accept both integer and string student IDs
     intervention_type: str
     title: str
     description: Optional[str] = None
@@ -69,7 +69,7 @@ class InterventionResponse(BaseModel):
 
 # Bulk Operation Models
 class BulkInterventionCreate(BaseModel):
-    student_ids: List[int]
+    student_ids: List[Union[int, str]]  # Accept both integer and string student IDs
     intervention_type: str
     title: str
     description: Optional[str] = None
@@ -384,11 +384,21 @@ async def create_intervention(
     """Create a new intervention for a student"""
     try:
         # Get student to verify they exist and get institution
-        # Try to find by database ID first, then by student_id string
-        student = db.query(Student).filter(Student.id == intervention_data.student_id).first()
+        # Handle both integer database IDs and string student IDs
+        student = None
+        
+        # Try database ID first if input is numeric
+        if isinstance(intervention_data.student_id, int) or (isinstance(intervention_data.student_id, str) and intervention_data.student_id.isdigit()):
+            try:
+                student_db_id = int(intervention_data.student_id)
+                student = db.query(Student).filter(Student.id == student_db_id).first()
+            except (ValueError, TypeError):
+                pass
+        
+        # If not found by database ID, try by student_id string (CSV upload case)
         if not student:
-            # Try finding by student_id string (CSV upload case)
             student = db.query(Student).filter(Student.student_id == str(intervention_data.student_id)).first()
+            
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
         
