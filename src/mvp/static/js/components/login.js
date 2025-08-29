@@ -300,13 +300,9 @@ class LoginComponent extends Component {
     async handleLogout() {
         try {
             const token = sessionStorage.getItem('auth_token');
+            // Simple logout - just clear session storage since there's no server endpoint
             if (token) {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                console.log('🔐 Logging out user');
             }
         } catch (error) {
             console.error('Logout error:', error);

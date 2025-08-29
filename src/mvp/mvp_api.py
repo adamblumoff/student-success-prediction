@@ -171,10 +171,8 @@ templates = Jinja2Templates(directory=str(templates_dir))
 # Removed unused database auth router - using simple API key auth only
 app.include_router(interventions_router, prefix="/api", tags=["Interventions"])
 app.include_router(core_router, prefix="/api/mvp", tags=["Core MVP"])
-app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])  # provides /api/lms/canvas/*
-app.include_router(canvas_router, prefix="/api/lms/canvas", tags=["Canvas LMS"])
-app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])  # provides /api/sis/powerschool/*
-app.include_router(powerschool_router, prefix="/api/sis/powerschool", tags=["PowerSchool SIS"])
+app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])  # provides /api/lms/*
+app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])  # provides /api/sis/*
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
 app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
