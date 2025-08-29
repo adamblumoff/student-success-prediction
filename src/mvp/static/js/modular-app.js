@@ -52,7 +52,7 @@ class StudentSuccessApp {
     }
 
     if (document.querySelector('#tab-dashboard')) {
-      this.components.set('dashboard', new Dashboard('#tab-dashboard', this.appState));
+      this.components.set('dashboard', new K12DashboardAdapter('#tab-dashboard', this.appState));
     }
 
     if (document.querySelector('#tab-insights')) {
