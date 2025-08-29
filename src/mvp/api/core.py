@@ -1350,6 +1350,50 @@ def generate_useful_explanation(student, prediction, risk_score, risk_category):
 
 
 
+@router.get("/check-existing-students")
+async def check_existing_students(
+    current_user: dict = Depends(simple_auth_check),
+    db: Session = Depends(get_db)
+):
+    """Check if user has existing students in database for smart landing page routing"""
+    try:
+        # Get demo institution (where CSV uploads are stored)
+        demo_institution = db.query(Institution).filter(
+            Institution.code == "MVP_DEMO"
+        ).first()
+        
+        if not demo_institution:
+            return JSONResponse({
+                "has_students": False, 
+                "count": 0,
+                "message": "No institution found"
+            })
+        
+        # Count students for this institution
+        student_count = db.query(Student).filter(
+            Student.institution_id == demo_institution.id
+        ).count()
+        
+        logger.info(f"Existing students check: found {student_count} students for institution {demo_institution.name}")
+        
+        return JSONResponse({
+            "has_students": student_count > 0,
+            "count": student_count,
+            "institution": demo_institution.name,
+            "message": f"Found {student_count} existing students" if student_count > 0 else "No existing students found"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking existing students: {e}")
+        # Always fail safe to upload tab
+        return JSONResponse({
+            "has_students": False, 
+            "count": 0,
+            "error": "Failed to check existing students",
+            "message": "Defaulting to upload tab"
+        })
+
+
 @router.get("/success-stories")
 async def get_success_stories(current_user: dict = Depends(simple_auth_check)):
     """Get success stories and case studies"""

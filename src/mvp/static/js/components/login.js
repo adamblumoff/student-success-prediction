@@ -117,6 +117,9 @@ class LoginComponent extends Component {
         
         // Show success message briefly
         this.showSuccess('Welcome back!');
+        
+        // Smart landing page - check for existing students
+        this.checkAndSetInitialTab();
     }
 
     checkAuthStatus() {
@@ -132,11 +135,57 @@ class LoginComponent extends Component {
                 });
                 document.body.classList.add('logged-in');
                 this.updateHeaderUI(user);
+                
+                // Smart landing page - check for existing students
+                this.checkAndSetInitialTab();
             } catch (error) {
                 this.logout();
             }
         } else {
             document.body.classList.add('login-active');
+        }
+    }
+
+    async checkAndSetInitialTab() {
+        try {
+            console.log('🔍 Checking for existing students to determine landing page...');
+            
+            const token = sessionStorage.getItem('auth_token');
+            if (!token) {
+                console.warn('⚠️ No auth token found, defaulting to upload tab');
+                return;
+            }
+
+            const response = await fetch('/api/mvp/check-existing-students', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('🔍 Student check result:', result);
+                
+                if (result.has_students && result.count > 0) {
+                    // User has existing students, go to analyze tab
+                    console.log(`✅ Found ${result.count} existing students, redirecting to analyze tab`);
+                    this.appState.setState({ currentTab: 'analyze' });
+                } else {
+                    // No students found, keep default upload tab
+                    console.log('📁 No existing students found, staying on upload tab');
+                    this.appState.setState({ currentTab: 'upload' });
+                }
+            } else {
+                // API failed, fall back to upload tab
+                console.warn('⚠️ Failed to check existing students, defaulting to upload tab');
+                this.appState.setState({ currentTab: 'upload' });
+            }
+        } catch (error) {
+            // Error checking students, fail safe to upload tab
+            console.error('❌ Error checking existing students:', error);
+            console.warn('⚠️ Defaulting to upload tab due to error');
+            this.appState.setState({ currentTab: 'upload' });
         }
     }
 
