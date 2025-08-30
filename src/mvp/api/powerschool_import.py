@@ -114,8 +114,17 @@ async def import_powerschool_schools(
         
         logger.info(f"Starting PowerSchool import for schools: {selected_school_ids}")
         
-        # Generate mock student data
-        all_students = powerschool_data_generator.generate_powerschool_students(count=120)
+        # Calculate total expected students for selected schools
+        schools_info = powerschool_data_generator.get_schools_summary()
+        total_expected = 0
+        for school in schools_info:
+            if school['id'] in selected_school_ids:
+                total_expected += school['expected_students']
+        
+        # Generate the correct number of students to match UI expectations
+        # Cap at reasonable limit for demo purposes
+        students_to_generate = min(total_expected, 500)
+        all_students = powerschool_data_generator.generate_powerschool_students(count=students_to_generate)
         
         # Filter students by selected schools
         filtered_students = [
@@ -139,22 +148,27 @@ async def import_powerschool_schools(
         predictions_created = 0
         
         with get_db_session() as db:
-            # Ensure institution exists
-            institution = db.query(Institution).filter_by(name="Sample School District").first()
-            if not institution:
-                institution = Institution(
-                    name="Sample School District",
-                    code="SAMPLE_DISTRICT",
-                    type="K-12 District"
+            # Use the same demo institution as Canvas integration
+            demo_institution = db.query(Institution).filter(
+                Institution.code == "MVP_DEMO"
+            ).first()
+            
+            if not demo_institution:
+                demo_institution = Institution(
+                    name="Demo Educational District",
+                    code="MVP_DEMO",
+                    type="K12_District",
+                    timezone="America/New_York",
+                    active=True
                 )
-                db.add(institution)
+                db.add(demo_institution)
                 db.flush()
             
             for ps_student in filtered_students:
                 try:
                     # Convert PowerSchool format to database Student model
                     student = Student(
-                        institution_id=institution.id,
+                        institution_id=demo_institution.id,
                         student_id=ps_student['student_id'],
                         sis_id=ps_student['student_id'],
                         name=ps_student['full_name'],
@@ -191,7 +205,7 @@ async def import_powerschool_schools(
                         
                         prediction = Prediction(
                             student_id=student.student_id,
-                            institution_id=institution.id,
+                            institution_id=demo_institution.id,
                             model_version="powerschool_import_v1",
                             prediction_type="risk_assessment",
                             risk_score=risk_score,
