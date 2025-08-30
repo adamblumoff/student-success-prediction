@@ -125,6 +125,7 @@ from src.mvp.api.core import router as core_router
 # Removed unused database auth router
 from src.mvp.api.interventions import router as interventions_router
 from src.mvp.api.canvas_endpoints import router as canvas_router
+from src.mvp.api.canvas_import import router as canvas_import_router
 from src.mvp.api.powerschool_endpoints import router as powerschool_router
 from src.mvp.api.google_classroom_v2 import router as google_classroom_router
 from src.mvp.api.combined_endpoints import router as combined_router
@@ -172,6 +173,7 @@ templates = Jinja2Templates(directory=str(templates_dir))
 app.include_router(interventions_router, prefix="/api", tags=["Interventions"])
 app.include_router(core_router, prefix="/api/mvp", tags=["Core MVP"])
 app.include_router(canvas_router, prefix="/api/lms", tags=["Canvas LMS"])  # provides /api/lms/*
+app.include_router(canvas_import_router, prefix="/api", tags=["Canvas Import"])  # provides /api/canvas-import/*
 app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])  # provides /api/sis/*
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])

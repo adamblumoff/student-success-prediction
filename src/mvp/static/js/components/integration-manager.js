@@ -287,47 +287,88 @@ class IntegrationManager {
         const progressDetails = document.getElementById('progress-details');
         const progressSteps = document.querySelectorAll('.progress-step');
 
-        for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
+        try {
+            for (let i = 0; i < steps.length - 1; i++) { // Don't do the last step yet
+                const step = steps[i];
+                
+                // Update progress bar
+                progressFill.style.width = `${step.progress}%`;
+                progressDetails.textContent = step.text;
+                
+                // Update step indicators
+                progressSteps.forEach((stepEl, index) => {
+                    if (index <= i) {
+                        stepEl.classList.add('active');
+                    }
+                });
+                
+                // Wait before next step
+                await new Promise(resolve => setTimeout(resolve, 1200));
+            }
             
-            // Update progress bar
-            progressFill.style.width = `${step.progress}%`;
-            progressDetails.textContent = step.text;
+            // Now do the actual data import
+            await this.processCanvasData(selectedCourses);
             
-            // Update step indicators
+            // Complete the final step
+            const finalStep = steps[steps.length - 1];
+            progressFill.style.width = `${finalStep.progress}%`;
+            progressDetails.textContent = finalStep.text;
             progressSteps.forEach((stepEl, index) => {
-                if (index <= i) {
+                if (index <= steps.length - 1) {
                     stepEl.classList.add('active');
                 }
             });
             
-            // Wait before next step
-            await new Promise(resolve => setTimeout(resolve, 1200));
-        }
-
-        // On completion, simulate actual data import
-        await this.processCanvasData(selectedCourses);
-        
-        setTimeout(() => {
+            // Wait a moment to show completion, then close
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
             this.completeCanvasConnection();
-        }, 1000);
+            
+        } catch (error) {
+            console.error('Import process failed:', error);
+            progressDetails.textContent = 'Import failed. Please try again.';
+            
+            // Close modal after error display
+            setTimeout(() => {
+                this.closeModal();
+            }, 3000);
+        }
     }
 
     async processCanvasData(selectedCourses) {
         try {
-            // Use our existing sample data to simulate Canvas import
-            const response = await fetch('/api/mvp/sample', {
+            // Call the real Canvas import endpoint
+            const response = await fetch('/api/canvas-import/import-courses', {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('api_key')}`
-                }
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                },
+                body: JSON.stringify({
+                    course_ids: selectedCourses,
+                    options: {
+                        generate_predictions: true,
+                        include_gradebook: true,
+                        include_submissions: true
+                    }
+                })
             });
             
             if (response.ok) {
-                // This simulates importing Canvas data by using our sample data
-                console.log('Canvas data imported successfully');
+                const result = await response.json();
+                console.log('Canvas data imported successfully:', result);
+                
+                // Store import summary for display
+                this.lastImportSummary = result.summary;
+                
+                return result;
+            } else {
+                const error = await response.json();
+                throw new Error(error.detail || 'Canvas import failed');
             }
         } catch (error) {
-            console.error('Error simulating Canvas import:', error);
+            console.error('Error importing Canvas data:', error);
+            throw error;
         }
     }
 
@@ -341,9 +382,15 @@ class IntegrationManager {
         statusBadge.textContent = 'Connected';
         statusBadge.className = 'status-badge connected';
         
-        // Show success notification
-        if (window.notificationSystem) {
-            notificationSystem.showNotification('Canvas LMS connected successfully! Student data imported.', 'success');
+        // Show success notification with import details
+        if (window.notificationSystem && this.lastImportSummary) {
+            const summary = this.lastImportSummary;
+            notificationSystem.showNotification(
+                `Canvas LMS connected! Imported ${summary.students_imported} students from ${summary.courses_imported} courses.`, 
+                'success'
+            );
+        } else if (window.notificationSystem) {
+            notificationSystem.showNotification('Canvas LMS connected successfully!', 'success');
         }
 
         // Refresh the dashboard if we're on the dashboard tab
@@ -379,11 +426,11 @@ class IntegrationManager {
                                     <span>Courses</span>
                                 </div>
                                 <div class="stat">
-                                    <strong>156</strong>
+                                    <strong id="canvas-student-count">0</strong>
                                     <span>Students</span>
                                 </div>
                                 <div class="stat">
-                                    <strong>2 hours ago</strong>
+                                    <strong>Just now</strong>
                                     <span>Last Sync</span>
                                 </div>
                             </div>
@@ -410,6 +457,29 @@ class IntegrationManager {
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         this.currentModal = document.getElementById('canvas-management-modal');
+        
+        // Update student count with real data
+        this.updateCanvasStudentCount();
+    }
+
+    async updateCanvasStudentCount() {
+        try {
+            const response = await fetch('/api/canvas-import/import-status', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const countElement = document.getElementById('canvas-student-count');
+                if (countElement) {
+                    countElement.textContent = data.total_canvas_students || 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting Canvas student count:', error);
+        }
     }
 
     async syncCanvasData() {
