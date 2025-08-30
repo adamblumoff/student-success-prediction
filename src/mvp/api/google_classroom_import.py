@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from typing import List, Dict, Any, Optional
 import json
 import logging
+import os
 from datetime import datetime
 
 # Import authentication  
@@ -34,7 +35,7 @@ def get_current_user(request: Request):
             raise HTTPException(status_code=401, detail="Invalid authorization format")
         
         token = auth_header.split(" ")[1]
-        expected_token = "0dUHi4QroC1GfgnbibLbqowUnv2YFWIe"  # Should match frontend
+        expected_token = os.getenv('MVP_API_KEY', 'dev-key-change-me')
         
         if token != expected_token:
             raise HTTPException(status_code=401, detail="Invalid API key")
