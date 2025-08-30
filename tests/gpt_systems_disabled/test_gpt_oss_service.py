@@ -34,26 +34,48 @@ def mock_openai_client():
     # Mock Chat Completions API response (standard OpenAI format)
     mock_chat_response = Mock()
     mock_chat_response.choices = [Mock()]
-    mock_chat_response.choices[0].message.content = """1. **Academic Support Focus**
-   - Schedule weekly math tutoring sessions with peer mentor
+    mock_chat_response.choices[0].message.content = """1) Academic Support Plan
+- What to do: Schedule weekly tutoring sessions for core subjects.
+- Why it's needed for THIS student: With a 2.1 GPA and 67% assignment completion, additional support is critical.
+- How to implement: Contact school counselor to arrange math tutoring.
+- Timeline: This week
 
-2. **Family Engagement Strategy** 
-   - Send bi-weekly progress updates to parents via email
+2) Attendance Intervention
+- What to do: Implement daily check-ins with homeroom teacher.
+- Why it's needed for THIS student: 73% attendance rate indicates consistent absences.
+- How to implement: Assign attendance buddy and establish morning routine.
+- Timeline: Starting Monday
 
-3. **Behavioral Monitoring Plan**
-   - Implement daily check-in system with guidance counselor"""
+3) Behavioral Support System
+- What to do: Create individualized behavior contract with clear expectations.
+- Why it's needed for THIS student: 2 behavioral incidents suggest need for structure.
+- How to implement: Meet with student to establish expectations and rewards.
+- Timeline: Next 2 weeks"""
     mock_chat_response.usage.total_tokens = 156
     
     # Mock Responses API response (OpenAI GPT-5-nano format)
+    mock_output_item = Mock()
+    mock_output_item.content = """1) Academic Support Plan
+- What to do: Schedule weekly tutoring sessions for core subjects.
+- Why it's needed for THIS student: With a 2.1 GPA and 67% assignment completion, additional support is critical.
+- How to implement: Contact school counselor to arrange math tutoring.
+- Timeline: This week
+
+2) Attendance Intervention
+- What to do: Implement daily check-ins with homeroom teacher.
+- Why it's needed for THIS student: 73% attendance rate indicates consistent absences.
+- How to implement: Assign attendance buddy and establish morning routine.
+- Timeline: Starting Monday
+
+3) Behavioral Support System
+- What to do: Create individualized behavior contract with clear expectations.
+- Why it's needed for THIS student: 2 behavioral incidents suggest need for structure.
+- How to implement: Meet with student to establish expectations and rewards.
+- Timeline: Next 2 weeks"""
+    
     mock_responses_response = Mock()
-    mock_responses_response.content = """1. **Academic Support Focus**
-   - Schedule weekly math tutoring sessions with peer mentor
-
-2. **Family Engagement Strategy** 
-   - Send bi-weekly progress updates to parents via email
-
-3. **Behavioral Monitoring Plan**
-   - Implement daily check-in system with guidance counselor"""
+    mock_responses_response.output = [mock_output_item]
+    mock_responses_response.usage.total_tokens = 156
     
     mock_client.chat.completions.create.return_value = mock_chat_response
     mock_client.responses.create.return_value = mock_responses_response
@@ -64,9 +86,10 @@ def mock_openai_client():
 def mock_cache_service():
     """Mock GPT cache service for testing"""
     mock_cache = Mock(spec=GPTCacheService)
-    mock_cache.get_cached_response.return_value = None
-    mock_cache.cache_response.return_value = True
-    mock_cache.clear_cache.return_value = True
+    mock_cache.get_cached_analysis.return_value = None
+    mock_cache.cache_analysis_result.return_value = True
+    mock_cache.invalidate_student_cache.return_value = 0
+    mock_cache.get_cache_statistics.return_value = {"hits": 0, "misses": 0, "hit_rate": 0.0}
     return mock_cache
 
 @pytest.fixture
@@ -76,6 +99,8 @@ def gpt_service(mock_openai_client, mock_cache_service):
         mock_openai.return_value = mock_openai_client
         service = GPTOSSService(api_key="test-key")
         service.cache_service = mock_cache_service
+        service.client = mock_openai_client
+        service.is_initialized = True
         return service
 
 @pytest.fixture
@@ -128,12 +153,15 @@ class TestEmmaJohnsonFormat:
     
     def test_emma_johnson_format_validation(self, gpt_service, sample_student_data):
         """Test response follows Emma Johnson format: 3 recommendations, 1 bullet each"""
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         
-        # Should be 3 numbered recommendations
-        lines = response.strip().split('\n')
-        recommendation_lines = [line for line in lines if line.strip().startswith(('1.', '2.', '3.'))]
-        assert len(recommendation_lines) == 3, f"Expected 3 recommendations, got {len(recommendation_lines)}"
+        # Extract analysis text from response dict
+        analysis_text = response.get('analysis', '')
+        
+        # Should be 3 numbered recommendations (using 1) 2) 3) format)
+        lines = analysis_text.strip().split('\n')
+        recommendation_lines = [line for line in lines if line.strip().startswith(('1)', '2)', '3)'))]
+        assert len(recommendation_lines) == 3, f"Expected 3 recommendations, got {len(recommendation_lines)}. Analysis: {analysis_text[:200]}..."
         
         # Each should have exactly 1 implementation bullet
         for i in range(1, 4):
@@ -143,7 +171,7 @@ class TestEmmaJohnsonFormat:
     
     def test_educational_content_appropriateness(self, gpt_service, sample_student_data):
         """Test recommendations are appropriate for K-12 educational context"""
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         
         # Should contain educational terminology
         educational_terms = [
@@ -172,8 +200,8 @@ class TestEmmaJohnsonFormat:
             'attendance_rate': 0.85, 'risk_category': 'Medium Risk'
         }
         
-        elementary_response = gpt_service.generate_student_recommendations(elementary_student)
-        high_school_response = gpt_service.generate_student_recommendations(high_school_student)
+        elementary_response = gpt_service.analyze_student_comprehensive(elementary_student)
+        high_school_response = gpt_service.analyze_student_comprehensive(high_school_student)
         
         # Elementary should focus on foundational skills
         assert any(term in elementary_response.lower() for term in ['reading', 'basic', 'foundational', 'family'])
@@ -208,7 +236,7 @@ class TestCostManagement:
         """Test that caching prevents duplicate API calls"""
         # First call - should hit API
         mock_cache_service.get_cached_response.return_value = None
-        response1 = gpt_service.generate_student_recommendations(sample_student_data)
+        response1 = gpt_service.analyze_student_comprehensive(sample_student_data)
         
         # Verify API was called
         assert gpt_service.client.responses.create.called
@@ -225,7 +253,7 @@ class TestCostManagement:
         }
         mock_cache_service.get_cached_response.return_value = cached_response
         
-        response2 = gpt_service.generate_student_recommendations(sample_student_data)
+        response2 = gpt_service.analyze_student_comprehensive(sample_student_data)
         
         # Verify API was NOT called again
         assert not gpt_service.client.responses.create.called
@@ -246,7 +274,7 @@ class TestCostManagement:
     
     def test_token_usage_tracking(self, gpt_service, sample_student_data):
         """Test token usage is properly tracked and reported"""
-        response_data = gpt_service.generate_student_recommendations(sample_student_data)
+        response_data = gpt_service.analyze_student_comprehensive(sample_student_data)
         
         # Should track token usage (mocked to return 156 tokens)
         assert hasattr(gpt_service, 'last_token_usage')
@@ -282,7 +310,7 @@ class TestErrorHandling:
         gpt_service.client.responses.create.side_effect = Exception("API Error")
         
         # Should return fallback response, not crash
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         assert response is not None
         assert "unable to generate" in response.lower() or "error" in response.lower()
     
@@ -294,7 +322,7 @@ class TestErrorHandling:
         gpt_service.client.responses.create.side_effect = RateLimitError("Rate limited")
         
         # Should implement exponential backoff or return cached response
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         assert response is not None
     
     def test_invalid_api_key_handling(self, sample_student_data):
@@ -306,7 +334,7 @@ class TestErrorHandling:
             mock_openai.return_value = mock_client
             
             service = GPTOSSService(api_key="invalid-key")
-            response = service.generate_student_recommendations(sample_student_data)
+            response = service.analyze_student_comprehensive(sample_student_data)
             
             # Should handle gracefully
             assert response is not None
@@ -318,7 +346,7 @@ class TestErrorHandling:
         # Mock timeout error
         gpt_service.client.responses.create.side_effect = requests.Timeout("Request timed out")
         
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         assert response is not None
 
 class TestDataPrivacy:
@@ -327,7 +355,7 @@ class TestDataPrivacy:
     def test_no_pii_in_logs(self, gpt_service, sample_student_data):
         """Test that no PII is logged during GPT processing"""
         with patch('src.mvp.services.gpt_oss_service.logger') as mock_logger:
-            gpt_service.generate_student_recommendations(sample_student_data)
+            gpt_service.analyze_student_comprehensive(sample_student_data)
             
             # Check all log calls for PII
             for call in mock_logger.info.call_args_list + mock_logger.error.call_args_list:
@@ -349,7 +377,7 @@ class TestDataPrivacy:
         
         # Mock the OpenAI call to capture what data is actually sent
         with patch.object(gpt_service.client.responses, 'create') as mock_create:
-            gpt_service.generate_student_recommendations(student_with_pii)
+            gpt_service.analyze_student_comprehensive(student_with_pii)
             
             # Check the prompt sent to GPT
             call_args = mock_create.call_args
@@ -369,7 +397,7 @@ class TestPerformance:
     def test_response_time_requirements(self, gpt_service, sample_student_data):
         """Test response time meets educational software requirements"""
         start_time = time.time()
-        response = gpt_service.generate_student_recommendations(sample_student_data)
+        response = gpt_service.analyze_student_comprehensive(sample_student_data)
         end_time = time.time()
         
         response_time = end_time - start_time
@@ -389,7 +417,7 @@ class TestPerformance:
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             futures = [
-                executor.submit(gpt_service.generate_student_recommendations, student)
+                executor.submit(gpt_service.analyze_student_comprehensive, student)
                 for student in students
             ]
             
@@ -411,7 +439,7 @@ class TestIntegrationWithEducationalSystems:
             'missing_assignments': 2
         }
         
-        response = gpt_service.generate_student_recommendations(canvas_data)
+        response = gpt_service.analyze_student_comprehensive(canvas_data)
         
         # Should handle Canvas-specific data fields
         assert 'assignment' in response.lower() or 'submission' in response.lower()
@@ -427,7 +455,7 @@ class TestIntegrationWithEducationalSystems:
             'discipline_incidents': 1
         }
         
-        response = gpt_service.generate_student_recommendations(powerschool_data)
+        response = gpt_service.analyze_student_comprehensive(powerschool_data)
         
         # Should handle SIS-specific data fields
         assert 'credit' in response.lower() or 'attendance' in response.lower()

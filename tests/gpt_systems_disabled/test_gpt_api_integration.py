@@ -45,7 +45,7 @@ def mock_gpt_service():
 3. **Behavioral Monitoring Plan**
    - Implement daily check-in system with guidance counselor"""
     
-    mock_service.generate_student_recommendations.return_value = emma_johnson_response
+    mock_service.analyze_student_comprehensive.return_value = emma_johnson_response
     mock_service.estimate_cost.return_value = 0.0001
     mock_service.last_token_usage = 156
     
@@ -104,8 +104,8 @@ class TestGPTInsightsEndpoints:
         assert data["format"] == "emma-johnson"
         
         # Verify GPT service was called with correct data
-        mock_gpt_service.generate_student_recommendations.assert_called_once()
-        call_args = mock_gpt_service.generate_student_recommendations.call_args[0][0]
+        mock_gpt_service.analyze_student_comprehensive.assert_called_once()
+        call_args = mock_gpt_service.analyze_student_comprehensive.call_args[0][0]
         assert call_args['student_id'] == '1309'
         assert call_args['gpa'] == 2.1
         assert call_args['attendance_rate'] == 0.73
@@ -146,7 +146,7 @@ class TestGPTInsightsEndpoints:
         """Test handling of GPT service errors"""
         # Mock GPT service error
         mock_service = Mock()
-        mock_service.generate_student_recommendations.side_effect = Exception("GPT API Error")
+        mock_service.analyze_student_comprehensive.side_effect = Exception("GPT API Error")
         mock_get_gpt_service.return_value = mock_service
         
         with patch('src.mvp.database.Database') as mock_db:
@@ -205,7 +205,7 @@ class TestGPTCachingIntegration:
             assert response.status_code == 200
             
             # Verify GPT service was NOT called (cache hit)
-            mock_gpt_service.generate_student_recommendations.assert_not_called()
+            mock_gpt_service.analyze_student_comprehensive.assert_not_called()
             
             # Verify cache was checked
             mock_cache_service.get_cached_response.assert_called_once()
@@ -237,7 +237,7 @@ class TestGPTCachingIntegration:
             assert response.status_code == 200
             
             # Verify GPT service WAS called (cache miss)
-            mock_gpt_service.generate_student_recommendations.assert_called_once()
+            mock_gpt_service.analyze_student_comprehensive.assert_called_once()
             
             # Verify result was cached
             mock_cache_service.store_response.assert_called_once()
@@ -294,7 +294,7 @@ class TestEmmaJohnsonFormatValidation:
 3. **Behavioral Intervention Plan**
    - Implement daily check-in meetings with school counselor"""
         
-        mock_service.generate_student_recommendations.return_value = educational_response
+        mock_service.analyze_student_comprehensive.return_value = educational_response
         mock_get_gpt_service.return_value = mock_service
         
         with patch('src.mvp.database.Database') as mock_db:
@@ -450,7 +450,7 @@ class TestGradeLevelSpecificIntegration:
 3. **Behavioral Rewards System**
    - Implement daily sticker chart with teacher recognition"""
         
-        mock_service.generate_student_recommendations.return_value = elementary_response
+        mock_service.analyze_student_comprehensive.return_value = elementary_response
         mock_get_gpt_service.return_value = mock_service
         
         with patch('src.mvp.database.Database') as mock_db:
@@ -490,7 +490,7 @@ class TestGradeLevelSpecificIntegration:
 3. **Credit Recovery Plan**
    - Complete summer school courses to stay on graduation track"""
         
-        mock_service.generate_student_recommendations.return_value = high_school_response
+        mock_service.analyze_student_comprehensive.return_value = high_school_response
         mock_get_gpt_service.return_value = mock_service
         
         with patch('src.mvp.database.Database') as mock_db:
