@@ -129,6 +129,7 @@ from src.mvp.api.canvas_import import router as canvas_import_router
 from src.mvp.api.powerschool_endpoints import router as powerschool_router
 from src.mvp.api.powerschool_import import router as powerschool_import_router
 from src.mvp.api.google_classroom_v2 import router as google_classroom_router
+from src.mvp.api.google_classroom_import import router as google_classroom_import_router
 from src.mvp.api.combined_endpoints import router as combined_router
 from src.mvp.api.notifications_endpoints import router as notifications_router
 from src.mvp.api.health import router as health_router
@@ -178,6 +179,7 @@ app.include_router(canvas_import_router, prefix="/api", tags=["Canvas Import"]) 
 app.include_router(powerschool_router, prefix="/api/sis", tags=["PowerSchool SIS"])  # provides /api/sis/*
 app.include_router(powerschool_import_router, tags=["PowerSchool Import"])  # provides /api/powerschool-import/*
 app.include_router(google_classroom_router, prefix="/api/google", tags=["Google Classroom"])
+app.include_router(google_classroom_import_router, tags=["Google Classroom Import"])  # provides /api/google-classroom-import/*
 app.include_router(combined_router, prefix="/api/integration", tags=["Combined Integration"])
 app.include_router(notifications_router, prefix="/api", tags=["Real-time Notifications"])
 app.include_router(gpt_enhanced_router, prefix="/api/gpt", tags=["GPT-Enhanced AI Analysis"])

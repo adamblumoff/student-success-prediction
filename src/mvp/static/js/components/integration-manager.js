@@ -33,7 +33,7 @@ class IntegrationManager {
                 this.showPowerSchoolConnectionModal(card);
                 break;
             case 'google':
-                this.showComingSoonModal('Google Classroom');
+                this.showGoogleClassroomConnectionModal(card);
                 break;
         }
     }
@@ -1113,6 +1113,561 @@ class IntegrationManager {
     }
 
     // ===== END POWERSCHOOL INTEGRATION METHODS =====
+
+    // ===== GOOGLE CLASSROOM INTEGRATION METHODS =====
+    
+    showGoogleClassroomConnectionModal(card) {
+        const statusBadge = card.querySelector('#google-status');
+        const isConnected = statusBadge.textContent === 'Connected';
+
+        if (isConnected) {
+            this.showGoogleClassroomManagementModal(card);
+            return;
+        }
+
+        const modalHtml = `
+            <div class="modal-overlay" id="google-classroom-connection-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Connect to Google Classroom</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="connection-form">
+                            <div class="form-group">
+                                <label for="google-service-key">Service Account Key (JSON)</label>
+                                <textarea id="google-service-key" 
+                                         rows="6"
+                                         placeholder="Paste your Google Service Account JSON key here...">{
+  "type": "service_account",
+  "project_id": "demo-classroom-project",
+  "private_key_id": "demo123",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nDEMO_KEY_CONTENT\n-----END PRIVATE KEY-----",
+  "client_email": "classroom-service@demo-project.iam.gserviceaccount.com",
+  "client_id": "123456789",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token"
+}</textarea>
+                                <small>Generate from Google Cloud Console → IAM & Admin → Service Accounts</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="google-domain">School Domain</label>
+                                <input type="text" 
+                                       id="google-domain" 
+                                       placeholder="yourschool.edu"
+                                       value="demo-school.edu">
+                                <small>Your school's Google Workspace domain</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="google-admin-email">Admin Email</label>
+                                <input type="email" 
+                                       id="google-admin-email" 
+                                       placeholder="admin@yourschool.edu"
+                                       value="admin@demo-school.edu">
+                                <small>Google Workspace admin email for delegation</small>
+                            </div>
+
+                            <div class="connection-status" id="google-connection-status" style="display: none;">
+                                <!-- Status messages appear here -->
+                            </div>
+                            
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" onclick="integrationManager.closeModal()">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-primary" id="test-google-connection-btn" onclick="integrationManager.testGoogleClassroomConnection()">
+                                    <i class="fas fa-plug"></i>
+                                    Test Connection
+                                </button>
+                                <button class="btn btn-success" id="connect-google-btn" style="display: none;" onclick="integrationManager.connectToGoogleClassroom()">
+                                    <i class="fas fa-check"></i>
+                                    Connect & Import Classrooms
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('google-classroom-connection-modal');
+    }
+
+    async testGoogleClassroomConnection() {
+        const testBtn = document.getElementById('test-google-connection-btn');
+        const connectBtn = document.getElementById('connect-google-btn');
+        const statusDiv = document.getElementById('google-connection-status');
+
+        // Show loading state
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+        testBtn.disabled = true;
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<div class="status-loading">Testing Google Classroom connection...</div>';
+
+        try {
+            // Get form values
+            const serviceAccountKey = document.getElementById('google-service-key').value;
+            const domain = document.getElementById('google-domain').value;
+            const adminEmail = document.getElementById('google-admin-email').value;
+
+            // Test connection
+            const response = await fetch('/api/google-classroom-import/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                },
+                body: JSON.stringify({
+                    service_account_key: serviceAccountKey,
+                    domain: domain,
+                    admin_email: adminEmail
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Store connection info for later use
+                this.googleClassroomConnectionData = result;
+
+                statusDiv.innerHTML = `
+                    <div class="status-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Connection Successful!</strong>
+                        <br>Found ${result.classrooms_found} classrooms in ${result.service_info.district_name}
+                    </div>
+                `;
+
+                testBtn.style.display = 'none';
+                connectBtn.style.display = 'inline-flex';
+            } else {
+                throw new Error(result.detail || 'Connection failed');
+            }
+
+        } catch (error) {
+            console.error('Google Classroom connection test failed:', error);
+            statusDiv.innerHTML = `
+                <div class="status-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <strong>Connection Failed</strong>
+                    <br>${error.message}
+                </div>
+            `;
+
+            testBtn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            testBtn.disabled = false;
+        }
+    }
+
+    async connectToGoogleClassroom() {
+        const connectBtn = document.getElementById('connect-google-btn');
+        const statusDiv = document.getElementById('google-connection-status');
+
+        // Show loading
+        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+        connectBtn.disabled = true;
+
+        // Simulate connection process
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        this.showGoogleClassroomSelectionModal();
+    }
+
+    showGoogleClassroomSelectionModal() {
+        this.closeModal();
+
+        // Use classrooms from connection test
+        const classrooms = this.googleClassroomConnectionData?.classrooms || [
+            { id: 'GC001', name: 'Mrs. Johnson\'s 3rd Grade', subject: 'Elementary', grade_level: '3', teacher: 'Mrs. Sarah Johnson', expected_students: 24 },
+            { id: 'GC002', name: 'Mr. Davis\'s 5th Grade Math', subject: 'Mathematics', grade_level: '5', teacher: 'Mr. Michael Davis', expected_students: 26 },
+            { id: 'GC003', name: 'Ms. Rodriguez\'s 7th Grade Science', subject: 'Science', grade_level: '7', teacher: 'Ms. Maria Rodriguez', expected_students: 28 },
+            { id: 'GC004', name: 'Mr. Thompson\'s High School English', subject: 'English', grade_level: '10', teacher: 'Mr. Robert Thompson', expected_students: 32 },
+            { id: 'GC005', name: 'Mrs. Wilson\'s AP Biology', subject: 'Biology', grade_level: '11', teacher: 'Mrs. Jennifer Wilson', expected_students: 22 }
+        ];
+
+        const classroomOptions = classrooms.map(classroom => `
+            <div class="classroom-option">
+                <label class="checkbox-container">
+                    <input type="checkbox" value="${classroom.id}" checked>
+                    <span class="checkmark"></span>
+                    <div class="classroom-info">
+                        <h4>${classroom.name}</h4>
+                        <p>${classroom.expected_students} students • ${classroom.subject}</p>
+                        <span class="classroom-code">Teacher: ${classroom.teacher}</span>
+                    </div>
+                </label>
+            </div>
+        `).join('');
+
+        const modalHtml = `
+            <div class="modal-overlay" id="google-classroom-selection-modal">
+                <div class="modal-container large">
+                    <div class="modal-header">
+                        <h3>Select Classrooms to Import</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <p>Select which Google Classrooms you'd like to import student data from:</p>
+                        
+                        <div class="classroom-selection">
+                            ${classroomOptions}
+                        </div>
+                        
+                        <div class="import-options">
+                            <h4>Import Options</h4>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include assignment grades
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include participation data
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include submission patterns
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox">
+                                <span class="checkmark"></span>
+                                Include guardian contacts
+                            </label>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button class="btn btn-secondary" onclick="integrationManager.closeModal()">
+                                Cancel
+                            </button>
+                            <button class="btn btn-primary" onclick="integrationManager.importSelectedGoogleClassrooms()">
+                                <i class="fas fa-download"></i>
+                                Import Selected Classrooms
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('google-classroom-selection-modal');
+    }
+
+    async importSelectedGoogleClassrooms() {
+        const selectedClassrooms = Array.from(document.querySelectorAll('.classroom-option input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selectedClassrooms.length === 0) {
+            alert('Please select at least one classroom to import.');
+            return;
+        }
+
+        this.closeModal();
+        this.showGoogleClassroomImportProgress(selectedClassrooms);
+    }
+
+    showGoogleClassroomImportProgress(selectedClassrooms) {
+        const modalHtml = `
+            <div class="modal-overlay" id="google-classroom-import-progress-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Importing Google Classroom Data</h3>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="import-progress">
+                            <div class="progress-step active">
+                                <i class="fas fa-download"></i>
+                                <span>Fetching classroom data...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-users"></i>
+                                <span>Processing student records...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Analyzing participation patterns...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-check"></i>
+                                <span>Import complete!</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="google-classroom-progress-fill"></div>
+                        </div>
+                        
+                        <div class="progress-details" id="google-classroom-progress-details">
+                            Connecting to Google Classroom...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('google-classroom-import-progress-modal');
+        
+        this.simulateGoogleClassroomImportProcess(selectedClassrooms);
+    }
+
+    async simulateGoogleClassroomImportProcess(selectedClassrooms) {
+        const steps = [
+            { text: 'Fetching classroom data...', progress: 25 },
+            { text: 'Processing student records...', progress: 50 },
+            { text: 'Analyzing participation patterns...', progress: 75 },
+            { text: 'Import complete!', progress: 100 }
+        ];
+
+        const progressFill = document.getElementById('google-classroom-progress-fill');
+        const progressDetails = document.getElementById('google-classroom-progress-details');
+        const progressSteps = document.querySelectorAll('.progress-step');
+
+        try {
+            for (let i = 0; i < steps.length - 1; i++) {
+                const step = steps[i];
+                
+                progressFill.style.width = `${step.progress}%`;
+                progressDetails.textContent = step.text;
+                
+                progressSteps.forEach((stepEl, index) => {
+                    if (index <= i) {
+                        stepEl.classList.add('active');
+                    }
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1200));
+            }
+            
+            // Do the actual data import
+            await this.processGoogleClassroomData(selectedClassrooms);
+            
+            // Complete the final step
+            const finalStep = steps[steps.length - 1];
+            progressFill.style.width = `${finalStep.progress}%`;
+            progressDetails.textContent = finalStep.text;
+            progressSteps.forEach((stepEl, index) => {
+                if (index <= steps.length - 1) {
+                    stepEl.classList.add('active');
+                }
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            this.completeGoogleClassroomConnection();
+            
+        } catch (error) {
+            console.error('Google Classroom import process failed:', error);
+            progressDetails.textContent = 'Import failed. Please try again.';
+            
+            setTimeout(() => {
+                this.closeModal();
+            }, 3000);
+        }
+    }
+
+    async processGoogleClassroomData(selectedClassrooms) {
+        try {
+            const response = await fetch('/api/google-classroom-import/import-classrooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                },
+                body: JSON.stringify({
+                    classroom_ids: selectedClassrooms,
+                    options: {
+                        generate_predictions: true,
+                        include_assignments: true,
+                        include_participation: true,
+                        include_submissions: true
+                    }
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Google Classroom data imported successfully:', result);
+                
+                this.lastGoogleClassroomImportSummary = result.summary;
+                
+                return result;
+            } else {
+                const error = await response.json();
+                throw new Error(error.detail || 'Google Classroom import failed');
+            }
+        } catch (error) {
+            console.error('Error importing Google Classroom data:', error);
+            throw error;
+        }
+    }
+
+    completeGoogleClassroomConnection() {
+        this.closeModal();
+        
+        // Update Google Classroom integration card status
+        const googleClassroomCard = document.querySelector('.integration-card[data-integration="google"]');
+        const statusBadge = googleClassroomCard.querySelector('#google-status');
+        
+        statusBadge.textContent = 'Connected';
+        statusBadge.className = 'status-badge connected';
+        
+        // Show success notification with import details
+        if (window.notificationSystem && this.lastGoogleClassroomImportSummary) {
+            const summary = this.lastGoogleClassroomImportSummary;
+            notificationSystem.showNotification(
+                `Google Classroom connected! Imported ${summary.students_imported} students from ${summary.classrooms_imported} classrooms.`, 
+                'success'
+            );
+        } else if (window.notificationSystem) {
+            notificationSystem.showNotification('Google Classroom connected successfully!', 'success');
+        }
+
+        // Auto-navigate to AI Analysis tab after successful import
+        if (window.modernApp && window.modernApp.appState) {
+            setTimeout(() => {
+                window.modernApp.appState.setState({ currentTab: 'analyze' });
+            }, 1000);
+        }
+
+        // Refresh the dashboard if we're on the dashboard tab
+        const dashboardTab = document.getElementById('tab-dashboard');
+        if (dashboardTab && !dashboardTab.classList.contains('hidden')) {
+            if (window.dashboardComponent) {
+                dashboardComponent.refreshData();
+            }
+        }
+    }
+
+    showGoogleClassroomManagementModal(card) {
+        const modalHtml = `
+            <div class="modal-overlay" id="google-classroom-management-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Manage Google Classroom Connection</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="connection-info">
+                            <div class="status-indicator connected">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Connected to Google Classroom</span>
+                            </div>
+                            
+                            <div class="connection-stats">
+                                <div class="stat">
+                                    <strong>5</strong>
+                                    <span>Classrooms</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="google-classroom-student-count">0</strong>
+                                    <span>Students</span>
+                                </div>
+                                <div class="stat">
+                                    <strong>Just now</strong>
+                                    <span>Last Sync</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="management-actions">
+                            <button class="btn btn-primary" onclick="integrationManager.syncGoogleClassroomData()">
+                                <i class="fas fa-sync"></i>
+                                Sync Now
+                            </button>
+                            <button class="btn btn-secondary" onclick="integrationManager.showGoogleClassroomManagement()">
+                                <i class="fas fa-cogs"></i>
+                                Manage Classrooms
+                            </button>
+                            <button class="btn btn-danger" onclick="integrationManager.disconnectGoogleClassroom()">
+                                <i class="fas fa-unlink"></i>
+                                Disconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('google-classroom-management-modal');
+        
+        this.updateGoogleClassroomStudentCount();
+    }
+
+    async updateGoogleClassroomStudentCount() {
+        try {
+            const response = await fetch('/api/google-classroom-import/import-status', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const countElement = document.getElementById('google-classroom-student-count');
+                if (countElement) {
+                    countElement.textContent = data.total_students || 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting Google Classroom student count:', error);
+        }
+    }
+
+    async syncGoogleClassroomData() {
+        const syncBtn = document.querySelector('.management-actions .btn-primary');
+        const originalText = syncBtn.innerHTML;
+        
+        syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+        syncBtn.disabled = true;
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        syncBtn.innerHTML = '<i class="fas fa-check"></i> Synced!';
+        
+        setTimeout(() => {
+            syncBtn.innerHTML = originalText;
+            syncBtn.disabled = false;
+        }, 1000);
+
+        if (window.notificationSystem) {
+            notificationSystem.showNotification('Google Classroom data synced successfully!', 'success');
+        }
+    }
+
+    disconnectGoogleClassroom() {
+        if (confirm('Are you sure you want to disconnect from Google Classroom? This will not delete existing student data.')) {
+            const googleClassroomCard = document.querySelector('.integration-card[data-integration="google"]');
+            const statusBadge = googleClassroomCard.querySelector('#google-status');
+            
+            statusBadge.textContent = 'Not Connected';
+            statusBadge.className = 'status-badge';
+            
+            this.closeModal();
+            
+            if (window.notificationSystem) {
+                notificationSystem.showNotification('Google Classroom disconnected successfully.', 'info');
+            }
+        }
+    }
+
+    // ===== END GOOGLE CLASSROOM INTEGRATION METHODS =====
 
     generateMockCanvasData() {
         return {
