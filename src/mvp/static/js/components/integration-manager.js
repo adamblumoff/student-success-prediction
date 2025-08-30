@@ -342,7 +342,7 @@ class IntegrationManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 },
                 body: JSON.stringify({
                     course_ids: selectedCourses,
@@ -474,7 +474,7 @@ class IntegrationManager {
         try {
             const response = await fetch('/api/canvas-import/import-status', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 }
             });
             
@@ -667,7 +667,7 @@ class IntegrationManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 },
                 body: JSON.stringify({
                     server_url: serverUrl,
@@ -929,7 +929,7 @@ class IntegrationManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 },
                 body: JSON.stringify({
                     school_ids: selectedSchools,
@@ -1059,7 +1059,7 @@ class IntegrationManager {
         try {
             const response = await fetch('/api/powerschool-import/import-status', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 }
             });
             
@@ -1221,7 +1221,7 @@ class IntegrationManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 },
                 body: JSON.stringify({
                     service_account_key: serviceAccountKey,
@@ -1484,7 +1484,7 @@ class IntegrationManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 },
                 body: JSON.stringify({
                     classroom_ids: selectedClassrooms,
@@ -1614,7 +1614,7 @@ class IntegrationManager {
         try {
             const response = await fetch('/api/google-classroom-import/import-status', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                    'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
                 }
             });
             

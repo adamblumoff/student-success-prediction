@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 
 # Import authentication  
-from src.mvp.simple_auth import simple_auth
+from src.mvp.simple_auth_clean import simple_auth_check
 
 # Import mock data generator
 from src.mvp.services.google_classroom_mock_data import google_classroom_data_generator
@@ -27,27 +27,10 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/api/google-classroom-import", tags=["Google Classroom"])
 
-def get_current_user(request: Request):
-    """Simple authentication for Google Classroom endpoints"""
-    try:
-        auth_header = request.headers.get("authorization", "")
-        if not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid authorization format")
-        
-        token = auth_header.split(" ")[1]
-        expected_token = os.getenv('MVP_API_KEY', 'dev-key-change-me')
-        
-        if token != expected_token:
-            raise HTTPException(status_code=401, detail="Invalid API key")
-        
-        return {"user": "google_classroom_user"}
-        
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(status_code=401, detail="Authentication failed")
+# Using standard authentication from simple_auth_clean
 
 @router.get("/classrooms")
-async def get_google_classrooms(current_user: dict = Depends(get_current_user)):
+async def get_google_classrooms(current_user: dict = Depends(simple_auth_check)):
     """Get list of available Google Classrooms"""
     try:
         classrooms = google_classroom_data_generator.get_classrooms_summary()
@@ -65,7 +48,7 @@ async def get_google_classrooms(current_user: dict = Depends(get_current_user)):
 @router.post("/test-connection")
 async def test_google_classroom_connection(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Test Google Classroom connection with provided credentials"""
     try:
@@ -103,7 +86,7 @@ async def test_google_classroom_connection(
 @router.post("/import-classrooms")
 async def import_google_classrooms(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Import student data from selected Google Classrooms"""
     try:
@@ -242,7 +225,7 @@ async def import_google_classrooms(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/import-status")
-async def get_google_classroom_import_status(current_user: dict = Depends(get_current_user)):
+async def get_google_classroom_import_status(current_user: dict = Depends(simple_auth_check)):
     """Get current Google Classroom import status and statistics"""
     try:
         with get_db_session() as db:
