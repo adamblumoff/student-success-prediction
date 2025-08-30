@@ -1,0 +1,445 @@
+/**
+ * Integration Modal Styles
+ * Styles for LMS connection modals and workflows
+ */
+
+/* Modal Base Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-container {
+    background: white;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-xl);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+.modal-container.large {
+    max-width: 700px;
+}
+
+.modal-header {
+    padding: var(--space-6);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.modal-content {
+    padding: var(--space-6);
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--gray-100);
+}
+
+/* Connection Form Styles */
+.connection-form .form-group {
+    margin-bottom: var(--space-5);
+}
+
+.connection-form label {
+    display: block;
+    font-weight: 500;
+    color: var(--gray-700);
+    margin-bottom: var(--space-2);
+}
+
+.connection-form input[type="url"],
+.connection-form input[type="password"] {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.connection-form input[type="url"]:focus,
+.connection-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.connection-form small {
+    display: block;
+    color: var(--gray-500);
+    margin-top: var(--space-1);
+    font-size: 0.875rem;
+}
+
+/* Connection Status */
+.connection-status {
+    margin: var(--space-4) 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+}
+
+.status-loading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--blue-700);
+    background: var(--blue-50);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+}
+
+.status-loading::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--blue-300);
+    border-top: 2px solid var(--blue-700);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.status-success {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    color: var(--green-700);
+    background: var(--green-50);
+    border: 1px solid var(--green-200);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+}
+
+.status-success i {
+    color: var(--green-600);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Course Selection */
+.course-selection {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: var(--space-4) 0;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+}
+
+.course-option {
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.course-option:last-child {
+    border-bottom: none;
+}
+
+.course-option .checkbox-container {
+    display: flex;
+    align-items: center;
+    padding: var(--space-4);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.course-option .checkbox-container:hover {
+    background: var(--gray-50);
+}
+
+.course-option input[type="checkbox"] {
+    margin: 0;
+    margin-right: var(--space-3);
+}
+
+.course-info h4 {
+    margin: 0 0 var(--space-1) 0;
+    font-weight: 500;
+    color: var(--gray-900);
+}
+
+.course-info p {
+    margin: 0 0 var(--space-2) 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.course-code {
+    display: inline-block;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Import Options */
+.import-options {
+    background: var(--gray-50);
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    margin: var(--space-4) 0;
+}
+
+.import-options h4 {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--gray-900);
+    font-weight: 500;
+}
+
+.import-options .checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--space-2);
+    cursor: pointer;
+}
+
+.import-options .checkbox-container:last-child {
+    margin-bottom: 0;
+}
+
+.import-options input[type="checkbox"] {
+    margin: 0;
+    margin-right: var(--space-3);
+}
+
+/* Import Progress */
+.import-progress {
+    margin: var(--space-6) 0;
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--gray-50);
+    color: var(--gray-500);
+    transition: all 0.3s ease;
+}
+
+.progress-step.active {
+    background: var(--blue-50);
+    color: var(--blue-700);
+}
+
+.progress-step.active i {
+    color: var(--blue-600);
+}
+
+.progress-step:last-child.active {
+    background: var(--green-50);
+    color: var(--green-700);
+}
+
+.progress-step:last-child.active i {
+    color: var(--green-600);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin: var(--space-4) 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-500), var(--blue-600));
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+    width: 0%;
+}
+
+.progress-details {
+    text-align: center;
+    color: var(--gray-600);
+    font-weight: 500;
+    margin-top: var(--space-2);
+}
+
+/* Management Modal */
+.connection-info {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    font-weight: 500;
+}
+
+.status-indicator.connected {
+    background: var(--green-50);
+    color: var(--green-700);
+    border: 1px solid var(--green-200);
+}
+
+.status-indicator i {
+    font-size: 1.125rem;
+}
+
+.connection-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-8);
+}
+
+.connection-stats .stat {
+    text-align: center;
+}
+
+.connection-stats .stat strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--gray-900);
+    font-weight: 700;
+}
+
+.connection-stats .stat span {
+    display: block;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    margin-top: var(--space-1);
+}
+
+.management-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Coming Soon Modal */
+.coming-soon-content {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+}
+
+.coming-soon-content i {
+    font-size: 3rem;
+    color: var(--gray-400);
+    margin-bottom: var(--space-4);
+}
+
+.coming-soon-content h4 {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+.coming-soon-content p {
+    margin: 0 0 var(--space-2) 0;
+    color: var(--gray-600);
+}
+
+/* Status Badge Updates */
+.status-badge.connected {
+    background: var(--green-100);
+    color: var(--green-700);
+    border: 1px solid var(--green-200);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-container {
+        width: 95%;
+        margin: var(--space-4);
+    }
+    
+    .modal-header,
+    .modal-content {
+        padding: var(--space-4);
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+    
+    .connection-stats {
+        gap: var(--space-4);
+    }
+    
+    .management-actions {
+        flex-direction: column;
+    }
+    
+    .management-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
