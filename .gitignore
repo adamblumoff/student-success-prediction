@@ -101,6 +101,22 @@ htmlcov/
 .coverage
 .pytest_cache/
 
+# Playwright test results
+test-results/
+tests/e2e/playwright-report/
+tests/e2e/screenshots/
+ui_analysis_screenshots/
+ui_analysis_report.md
+analyze_ui_layout.js
+test_ui_manual.js
+test_progress_bar.js
+playwright-report/
+*.png
+*.jpg
+*.jpeg
+*.webm
+*.mp4
+
 # Backup and old files
 *_old.py
 *_backup.py

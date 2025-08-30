@@ -200,6 +200,10 @@ body {
   position: sticky;
   top: var(--header-height);
   z-index: 40;
+  /* Ensure navigation is always visible */
+  min-height: 48px;
+  display: block;
+  width: 100%;
 }
 
 .tabs-wrapper {
@@ -251,18 +255,143 @@ body {
   font-size: var(--font-size-base);
 }
 
+/* Mobile navigation fixes */
 @media (max-width: 768px) {
+  .nav-tabs {
+    position: sticky;
+    top: var(--header-height);
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-height: 52px;
+    padding: 0 8px;
+    display: block !important;
+    visibility: visible !important;
+    width: 100%;
+    z-index: 40;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  
+  .tabs-wrapper {
+    display: flex !important;
+    justify-content: space-around;
+    width: 100%;
+    min-height: 52px;
+    visibility: visible !important;
+  }
+  
   .tab-button {
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--font-size-xs);
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 12px;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    border: none;
+    color: var(--gray-600);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    visibility: visible !important;
   }
   
   .tab-button span {
-    display: none;
+    display: block !important;
+    font-size: 10px;
+    margin-top: 2px;
+    text-align: center;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    visibility: visible !important;
   }
   
   .tab-button i {
-    font-size: var(--font-size-lg);
+    font-size: 16px;
+    margin-bottom: 2px;
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .tab-button.active {
+    color: var(--primary-600);
+    border-bottom-color: var(--primary-600);
+    background-color: var(--primary-50);
+  }
+  
+  .tab-button:disabled {
+    color: var(--gray-400);
+    opacity: 0.6;
+  }
+  
+  /* Mobile header optimizations */
+  .header {
+    height: 56px;
+    padding: 0 12px;
+  }
+}
+
+/* Smaller mobile devices */
+@media (max-width: 480px) {
+  .tab-button span {
+    font-size: 9px;
+  }
+  
+  .tab-button i {
+    font-size: 14px;
+  }
+  
+  .nav-tabs {
+    padding: 0 4px;
+  }
+}
+
+/* Large mobile devices */
+@media (min-width: 481px) and (max-width: 768px) {
+  .tab-button span {
+    font-size: 11px;
+  }
+  
+  .tab-button i {
+    font-size: 16px;
+  }
+}
+
+/* Mobile header optimizations - moved to main mobile query above */
+  
+  .header-content {
+    gap: 8px;
+  }
+  
+  .logo h1 {
+    font-size: 18px;
+  }
+  
+  .logo p {
+    font-size: 12px;
+  }
+  
+  .header-actions {
+    gap: 8px;
+  }
+  
+  .btn-icon {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+/* Update CSS variables for mobile */
+@media (max-width: 768px) {
+  :root {
+    --header-height: 56px;
+    --nav-height: 52px;
   }
 }
 
@@ -275,6 +404,10 @@ body {
   background-color: var(--gray-200);
   position: relative;
   overflow: hidden;
+  /* Ensure progress bar is always visible */
+  display: block;
+  width: 100%;
+  z-index: 35;
 }
 
 .progress-fill {
