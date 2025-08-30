@@ -62,16 +62,8 @@ function initializeDeleteAllStudents() {
           // Success - show results
           alert(`✅ Success!\n\n${result.message}\n\nDeleted:\n- ${result.deleted_count} students\n- ${result.predictions_deleted} predictions\n- ${result.interventions_deleted} interventions\n- ${result.gpt_insights_deleted} GPT insights`);
           
-          // Refresh the current tab to show empty state
-          if (window.modernApp && window.modernApp.components.dashboard) {
-            window.modernApp.components.dashboard.refreshData();
-          }
-          
-          // Clear any displayed student data
-          const studentList = document.getElementById('student-list');
-          if (studentList) {
-            studentList.innerHTML = '<p class="no-students">No students found. Upload data to begin analysis.</p>';
-          }
+          // Refresh the entire page to show clean state
+          location.reload();
           
         } else {
           // Error from API
