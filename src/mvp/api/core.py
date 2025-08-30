@@ -1975,3 +1975,56 @@ async def get_session_gpt_insights(
     except Exception as e:
         logger.error(f"Error retrieving session insights: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve session insights")
+
+@router.delete("/students/all")
+async def delete_all_students(request: Request):
+    """Delete all students from the database - use with caution!"""
+    try:
+        # Manual authentication check
+        current_user = simple_auth_check(request, None)
+        
+        # Import database modules
+        from mvp.database import get_db_session
+        from mvp.models import Student, Prediction, Intervention, GPTInsight
+        
+        with get_db_session() as db:
+            # Get count before deletion for reporting
+            student_count = db.query(Student).count()
+            
+            if student_count == 0:
+                return JSONResponse({
+                    'success': True,
+                    'message': 'Database already clean - no students to delete',
+                    'deleted_count': 0
+                })
+            
+            # Delete in proper order to handle foreign key constraints
+            # 1. Clear GPT insights first
+            gpt_insights_deleted = db.query(GPTInsight).delete()
+            
+            # 2. Delete interventions
+            interventions_deleted = db.query(Intervention).delete()
+            
+            # 3. Delete predictions
+            predictions_deleted = db.query(Prediction).delete()
+            
+            # 4. Delete students (main table)
+            students_deleted = db.query(Student).delete()
+            
+            # Commit all deletions
+            db.commit()
+            
+            logger.info(f"Database cleared by user: {students_deleted} students, {predictions_deleted} predictions, {interventions_deleted} interventions, {gpt_insights_deleted} GPT insights")
+            
+            return JSONResponse({
+                'success': True,
+                'message': f'Successfully deleted all {students_deleted} students and related data',
+                'deleted_count': students_deleted,
+                'predictions_deleted': predictions_deleted,
+                'interventions_deleted': interventions_deleted,
+                'gpt_insights_deleted': gpt_insights_deleted
+            })
+        
+    except Exception as e:
+        logger.error(f"Error deleting all students: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete students: {str(e)}")

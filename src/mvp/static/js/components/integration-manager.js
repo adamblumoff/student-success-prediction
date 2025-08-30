@@ -393,6 +393,14 @@ class IntegrationManager {
             notificationSystem.showNotification('Canvas LMS connected successfully!', 'success');
         }
 
+        // Auto-navigate to AI Analysis tab after successful import
+        if (window.modernApp && window.modernApp.appState) {
+            // Small delay to ensure notifications are visible before navigation
+            setTimeout(() => {
+                window.modernApp.appState.setState({ currentTab: 'analyze' });
+            }, 1000);
+        }
+
         // Refresh the dashboard if we're on the dashboard tab
         const dashboardTab = document.getElementById('tab-dashboard');
         if (dashboardTab && !dashboardTab.classList.contains('hidden')) {

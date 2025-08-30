@@ -1133,3 +1133,54 @@ button[type="submit"],
         margin-left: 0;
     }
 }
+
+/* ========== DELETE ALL STUDENTS BUTTON ========== */
+
+.delete-all-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.delete-all-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.delete-all-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+.delete-all-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(220, 38, 38, 0.3);
+}
+
+.delete-all-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.delete-all-btn i {
+    font-size: 16px;
+}
+
+.delete-all-btn:hover i {
+    transform: scale(1.1);
+}
