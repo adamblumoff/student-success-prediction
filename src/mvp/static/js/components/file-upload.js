@@ -8,7 +8,6 @@ class FileUpload extends Component {
     this.fileInput = document.getElementById('file-input');
     this.uploadZone = document.getElementById('upload-zone');
     this.sampleButton = document.getElementById('load-sample');
-    this.demoButton = document.getElementById('start-demo');
     
     // Initialize exactly like the working version
     this.initializeAuthentication();
@@ -25,9 +24,6 @@ class FileUpload extends Component {
       this.bindEvent(this.sampleButton, 'click', this.loadSampleData);
     }
     
-    if (this.demoButton) {
-      this.bindEvent(this.demoButton, 'click', this.startDemo);
-    }
   }
 
   // EXACT REPLICA of working authentication
@@ -415,24 +411,6 @@ class FileUpload extends Component {
     console.log('✅ Students rendered to container successfully');
   }
 
-  async startDemo() {
-    // First load sample data
-    await this.loadSampleData();
-    
-    // Then switch to analysis for the demo experience
-    setTimeout(() => {
-      this.appState.setState({ currentTab: 'analyze' });
-      
-      // Enable analysis tab
-      const tabNav = this.appState.components.get('tabNavigation');
-      if (tabNav) {
-        tabNav.enableTab('analyze');
-        }
-      
-      // Show demo notification
-      this.showNotification('🎯 Demo Mode: Showing interactive analysis!', 'success');
-    }, 1000); // Small delay to let sample data load first
-  }
 
   showLoading(show) {
     this.appState.setState({

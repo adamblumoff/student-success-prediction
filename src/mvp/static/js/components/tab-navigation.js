@@ -42,12 +42,12 @@ class TabNavigation extends Component {
 
   updateProgressForTab(tab) {
     const progressMap = {
-      'upload': 20,
-      'connect': 40,
-      'analyze': 80
+      'upload': 33,
+      'connect': 66,
+      'analyze': 100
     };
     
-    const progress = progressMap[tab] || 20;
+    const progress = progressMap[tab] || 33;
     this.appState.setState({ ui: { ...this.appState.getState().ui, progress } });
   }
 
