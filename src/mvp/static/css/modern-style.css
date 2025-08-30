@@ -439,13 +439,14 @@ body {
    ============================================================================= */
 
 .main-content {
-  padding: var(--space-8) 0;
+  padding: var(--space-12) 0;
   min-height: calc(100vh - var(--header-height) - var(--nav-height));
 }
 
 .content-header {
   text-align: center;
-  margin-bottom: var(--space-10);
+  margin-bottom: var(--space-16);
+  padding: 0 var(--space-4);
 }
 
 .content-header h2 {
@@ -489,10 +490,29 @@ body {
 .ai-showcase-card {
   background: linear-gradient(135deg, var(--primary-50) 0%, var(--accent-50) 100%);
   border: 1px solid var(--primary-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-8);
-  margin-bottom: var(--space-10);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-12);
+  margin-bottom: var(--space-16);
   text-align: center;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-showcase-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+  z-index: 0;
+}
+
+.ai-showcase-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .showcase-header {
@@ -558,24 +578,29 @@ body {
 
 .upload-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
 }
 
 .upload-card {
   background: white;
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-8);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-10);
   text-align: center;
   transition: all var(--transition-base);
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .upload-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary-300);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-400);
 }
 
 .upload-card.primary {
@@ -584,16 +609,32 @@ body {
 }
 
 .upload-icon {
-  width: 4rem;
-  height: 4rem;
-  background: var(--primary-100);
-  border-radius: var(--radius-xl);
+  width: 5rem;
+  height: 5rem;
+  background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+  border-radius: var(--radius-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--space-6) auto;
+  margin: 0 auto var(--space-8) auto;
   color: var(--primary-600);
-  font-size: var(--font-size-2xl);
+  font-size: 2rem;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.upload-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.upload-card:hover .upload-icon::before {
+  opacity: 0.1;
 }
 
 .upload-card h3 {
@@ -617,21 +658,39 @@ body {
   z-index: 10 !important;
 }
 
-/* Specifically fix the primary button styling in upload cards */
+/* Enhanced primary button styling in upload cards */
 .upload-card .btn-primary {
-  background: #2563eb !important; /* Force blue background */
-  background: var(--primary-600) !important;
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%) !important;
   color: white !important;
-  border: 2px solid #2563eb !important;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
-  margin-top: 8px !important;
+  border: 2px solid var(--primary-600) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+  margin-top: var(--space-6) !important;
+  padding: var(--space-4) var(--space-8) !important;
+  font-weight: 600 !important;
+  font-size: var(--font-size-base) !important;
+  border-radius: var(--radius-xl) !important;
+  min-width: 140px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.upload-card .btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-600) 100%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .upload-card .btn-primary:hover {
-  background: #1d4ed8 !important; /* Force darker blue on hover */
-  background: var(--primary-700) !important;
-  border-color: #1d4ed8 !important;
-  box-shadow: 0 4px 8px rgba(29, 78, 216, 0.3) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4) !important;
+  border-color: var(--primary-700) !important;
+}
+
+.upload-card .btn-primary:hover::before {
+  opacity: 1;
 }
 
 .upload-zone {
@@ -670,21 +729,41 @@ body {
 .integration-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-6);
-  margin-bottom: var(--space-10);
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
 }
 
 .integration-card {
   background: white;
   border: 1px solid var(--gray-200);
-  border-radius: var(--radius-xl);
-  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
   transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.integration-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
 }
 
 .integration-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-200);
+}
+
+.integration-card:hover::before {
+  opacity: 1;
 }
 
 .integration-header {
