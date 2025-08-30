@@ -4,7 +4,7 @@ Canvas Import API Endpoints
 Handles importing Canvas mock data into the database
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from typing import List, Dict, Any, Optional
 import logging
@@ -15,7 +15,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from mvp.security import get_current_user_secure as get_current_user
+from mvp.simple_auth import simple_auth
 from mvp.database import get_db_session
 from mvp.models import Student, Institution, Prediction
 from mvp.services.canvas_mock_data import CanvasMockDataGenerator
@@ -24,23 +24,28 @@ from models.intervention_system import InterventionRecommendationSystem
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canvas-import", tags=["Canvas Import"])
 
-from pydantic import BaseModel
-from typing import Optional
-
-class CanvasImportRequest(BaseModel):
-    course_ids: List[str]
-    options: Optional[Dict[str, Any]] = {}
+def get_current_user(request: Request):
+    """Simple authentication dependency"""
+    auth_header = request.headers.get('authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        from fastapi.security import HTTPAuthorizationCredentials
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        return simple_auth(credentials)
+    
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 @router.post("/import-courses")
 async def import_canvas_courses(
-    request_data: CanvasImportRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """Import selected Canvas courses as mock student data"""
     
     try:
-        selected_course_ids = request_data.course_ids
-        import_options = request_data.options
+        body = await request.json()
+        selected_course_ids = body.get('course_ids', [])
+        import_options = body.get('options', {})
         
         logger.info(f"Starting Canvas import for courses: {selected_course_ids}")
         
