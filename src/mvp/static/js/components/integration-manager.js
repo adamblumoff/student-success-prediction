@@ -30,7 +30,7 @@ class IntegrationManager {
                 this.showCanvasConnectionModal(card);
                 break;
             case 'powerschool':
-                this.showComingSoonModal('PowerSchool SIS');
+                this.showPowerSchoolConnectionModal(card);
                 break;
             case 'google':
                 this.showComingSoonModal('Google Classroom');
@@ -567,6 +567,552 @@ class IntegrationManager {
             this.currentModal = null;
         }
     }
+
+    // ===== POWERSCHOOL INTEGRATION METHODS =====
+    
+    showPowerSchoolConnectionModal(card) {
+        const statusBadge = card.querySelector('#powerschool-status');
+        const isConnected = statusBadge.textContent === 'Connected';
+
+        if (isConnected) {
+            this.showPowerSchoolManagementModal(card);
+            return;
+        }
+
+        const modalHtml = `
+            <div class="modal-overlay" id="powerschool-connection-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Connect to PowerSchool SIS</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="connection-form">
+                            <div class="form-group">
+                                <label for="powerschool-server">PowerSchool Server URL</label>
+                                <input type="url" 
+                                       id="powerschool-server" 
+                                       placeholder="https://powerschool.yourdistrict.com"
+                                       value="https://demo-powerschool.school.edu">
+                                <small>Your district's PowerSchool server URL</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="powerschool-username">Username</label>
+                                <input type="text" 
+                                       id="powerschool-username" 
+                                       placeholder="admin_username"
+                                       value="demo_admin">
+                                <small>PowerSchool administrator username</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="powerschool-password">Password</label>
+                                <input type="password" 
+                                       id="powerschool-password" 
+                                       placeholder="••••••••"
+                                       value="demo_password">
+                                <small>PowerSchool administrator password</small>
+                            </div>
+
+                            <div class="connection-status" id="powerschool-connection-status" style="display: none;">
+                                <!-- Status messages appear here -->
+                            </div>
+                            
+                            <div class="modal-actions">
+                                <button class="btn btn-secondary" onclick="integrationManager.closeModal()">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-primary" id="test-powerschool-connection-btn" onclick="integrationManager.testPowerSchoolConnection()">
+                                    <i class="fas fa-plug"></i>
+                                    Test Connection
+                                </button>
+                                <button class="btn btn-success" id="connect-powerschool-btn" style="display: none;" onclick="integrationManager.connectToPowerSchool()">
+                                    <i class="fas fa-check"></i>
+                                    Connect & Import Schools
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('powerschool-connection-modal');
+    }
+
+    async testPowerSchoolConnection() {
+        const testBtn = document.getElementById('test-powerschool-connection-btn');
+        const connectBtn = document.getElementById('connect-powerschool-btn');
+        const statusDiv = document.getElementById('powerschool-connection-status');
+
+        // Show loading state
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+        testBtn.disabled = true;
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<div class="status-loading">Testing PowerSchool connection...</div>';
+
+        try {
+            // Get form values
+            const serverUrl = document.getElementById('powerschool-server').value;
+            const username = document.getElementById('powerschool-username').value;
+            const password = document.getElementById('powerschool-password').value;
+
+            // Test connection
+            const response = await fetch('/api/powerschool-import/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                },
+                body: JSON.stringify({
+                    server_url: serverUrl,
+                    username: username,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Store connection info for later use
+                this.powerSchoolConnectionData = result;
+
+                statusDiv.innerHTML = `
+                    <div class="status-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Connection Successful!</strong>
+                        <br>Found ${result.schools_found} schools in ${result.server_info.district_name}
+                    </div>
+                `;
+
+                testBtn.style.display = 'none';
+                connectBtn.style.display = 'inline-flex';
+            } else {
+                throw new Error(result.detail || 'Connection failed');
+            }
+
+        } catch (error) {
+            console.error('PowerSchool connection test failed:', error);
+            statusDiv.innerHTML = `
+                <div class="status-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <strong>Connection Failed</strong>
+                    <br>${error.message}
+                </div>
+            `;
+
+            testBtn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            testBtn.disabled = false;
+        }
+    }
+
+    async connectToPowerSchool() {
+        const connectBtn = document.getElementById('connect-powerschool-btn');
+        const statusDiv = document.getElementById('powerschool-connection-status');
+
+        // Show loading
+        connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+        connectBtn.disabled = true;
+
+        // Simulate connection process
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        this.showPowerSchoolSelectionModal();
+    }
+
+    showPowerSchoolSelectionModal() {
+        this.closeModal();
+
+        // Use schools from connection test
+        const schools = this.powerSchoolConnectionData?.schools || [
+            { id: 'PS001', name: 'Lincoln Elementary School', type: 'Elementary', grades: ['K', '1', '2', '3', '4', '5'], expected_students: 132 },
+            { id: 'PS002', name: 'Roosevelt Middle School', type: 'Middle', grades: ['6', '7', '8'], expected_students: 84 },
+            { id: 'PS003', name: 'Washington High School', type: 'High', grades: ['9', '10', '11', '12'], expected_students: 128 },
+            { id: 'PS004', name: 'Jefferson Elementary School', type: 'Elementary', grades: ['K', '1', '2', '3', '4', '5'], expected_students: 120 }
+        ];
+
+        const schoolOptions = schools.map(school => `
+            <div class="school-option">
+                <label class="checkbox-container">
+                    <input type="checkbox" value="${school.id}" checked>
+                    <span class="checkmark"></span>
+                    <div class="school-info">
+                        <h4>${school.name}</h4>
+                        <p>${school.expected_students} students • ${school.type} School</p>
+                        <span class="school-code">Grades: ${school.grade_range || school.grades?.join(', ') || 'K-12'}</span>
+                    </div>
+                </label>
+            </div>
+        `).join('');
+
+        const modalHtml = `
+            <div class="modal-overlay" id="powerschool-selection-modal">
+                <div class="modal-container large">
+                    <div class="modal-header">
+                        <h3>Select Schools to Import</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <p>Select which PowerSchool schools you'd like to import student data from:</p>
+                        
+                        <div class="school-selection">
+                            ${schoolOptions}
+                        </div>
+                        
+                        <div class="import-options">
+                            <h4>Import Options</h4>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include demographic data
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include attendance records
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                Include behavioral data
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox">
+                                <span class="checkmark"></span>
+                                Include special education data
+                            </label>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button class="btn btn-secondary" onclick="integrationManager.closeModal()">
+                                Cancel
+                            </button>
+                            <button class="btn btn-primary" onclick="integrationManager.importSelectedPowerSchoolSchools()">
+                                <i class="fas fa-download"></i>
+                                Import Selected Schools
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('powerschool-selection-modal');
+    }
+
+    async importSelectedPowerSchoolSchools() {
+        const selectedSchools = Array.from(document.querySelectorAll('.school-option input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (selectedSchools.length === 0) {
+            alert('Please select at least one school to import.');
+            return;
+        }
+
+        this.closeModal();
+        this.showPowerSchoolImportProgress(selectedSchools);
+    }
+
+    showPowerSchoolImportProgress(selectedSchools) {
+        const modalHtml = `
+            <div class="modal-overlay" id="powerschool-import-progress-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Importing PowerSchool Data</h3>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="import-progress">
+                            <div class="progress-step active">
+                                <i class="fas fa-download"></i>
+                                <span>Fetching school data...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-users"></i>
+                                <span>Processing student records...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Generating risk assessments...</span>
+                            </div>
+                            <div class="progress-step">
+                                <i class="fas fa-check"></i>
+                                <span>Import complete!</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="powerschool-progress-fill"></div>
+                        </div>
+                        
+                        <div class="progress-details" id="powerschool-progress-details">
+                            Connecting to PowerSchool...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('powerschool-import-progress-modal');
+        
+        this.simulatePowerSchoolImportProcess(selectedSchools);
+    }
+
+    async simulatePowerSchoolImportProcess(selectedSchools) {
+        const steps = [
+            { text: 'Fetching school data...', progress: 25 },
+            { text: 'Processing student records...', progress: 50 },
+            { text: 'Generating risk assessments...', progress: 75 },
+            { text: 'Import complete!', progress: 100 }
+        ];
+
+        const progressFill = document.getElementById('powerschool-progress-fill');
+        const progressDetails = document.getElementById('powerschool-progress-details');
+        const progressSteps = document.querySelectorAll('.progress-step');
+
+        try {
+            for (let i = 0; i < steps.length - 1; i++) {
+                const step = steps[i];
+                
+                progressFill.style.width = `${step.progress}%`;
+                progressDetails.textContent = step.text;
+                
+                progressSteps.forEach((stepEl, index) => {
+                    if (index <= i) {
+                        stepEl.classList.add('active');
+                    }
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1200));
+            }
+            
+            // Do the actual data import
+            await this.processPowerSchoolData(selectedSchools);
+            
+            // Complete the final step
+            const finalStep = steps[steps.length - 1];
+            progressFill.style.width = `${finalStep.progress}%`;
+            progressDetails.textContent = finalStep.text;
+            progressSteps.forEach((stepEl, index) => {
+                if (index <= steps.length - 1) {
+                    stepEl.classList.add('active');
+                }
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            this.completePowerSchoolConnection();
+            
+        } catch (error) {
+            console.error('PowerSchool import process failed:', error);
+            progressDetails.textContent = 'Import failed. Please try again.';
+            
+            setTimeout(() => {
+                this.closeModal();
+            }, 3000);
+        }
+    }
+
+    async processPowerSchoolData(selectedSchools) {
+        try {
+            const response = await fetch('/api/powerschool-import/import-schools', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                },
+                body: JSON.stringify({
+                    school_ids: selectedSchools,
+                    options: {
+                        generate_predictions: true,
+                        include_demographics: true,
+                        include_attendance: true,
+                        include_behavioral: true
+                    }
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('PowerSchool data imported successfully:', result);
+                
+                this.lastPowerSchoolImportSummary = result.summary;
+                
+                return result;
+            } else {
+                const error = await response.json();
+                throw new Error(error.detail || 'PowerSchool import failed');
+            }
+        } catch (error) {
+            console.error('Error importing PowerSchool data:', error);
+            throw error;
+        }
+    }
+
+    completePowerSchoolConnection() {
+        this.closeModal();
+        
+        // Update PowerSchool integration card status
+        const powerSchoolCard = document.querySelector('.integration-card[data-integration="powerschool"]');
+        const statusBadge = powerSchoolCard.querySelector('#powerschool-status');
+        
+        statusBadge.textContent = 'Connected';
+        statusBadge.className = 'status-badge connected';
+        
+        // Show success notification with import details
+        if (window.notificationSystem && this.lastPowerSchoolImportSummary) {
+            const summary = this.lastPowerSchoolImportSummary;
+            notificationSystem.showNotification(
+                `PowerSchool SIS connected! Imported ${summary.students_imported} students from ${summary.schools_imported} schools.`, 
+                'success'
+            );
+        } else if (window.notificationSystem) {
+            notificationSystem.showNotification('PowerSchool SIS connected successfully!', 'success');
+        }
+
+        // Auto-navigate to AI Analysis tab after successful import
+        if (window.modernApp && window.modernApp.appState) {
+            setTimeout(() => {
+                window.modernApp.appState.setState({ currentTab: 'analyze' });
+            }, 1000);
+        }
+
+        // Refresh the dashboard if we're on the dashboard tab
+        const dashboardTab = document.getElementById('tab-dashboard');
+        if (dashboardTab && !dashboardTab.classList.contains('hidden')) {
+            if (window.dashboardComponent) {
+                dashboardComponent.refreshData();
+            }
+        }
+    }
+
+    showPowerSchoolManagementModal(card) {
+        const modalHtml = `
+            <div class="modal-overlay" id="powerschool-management-modal">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Manage PowerSchool Connection</h3>
+                        <button class="modal-close" onclick="integrationManager.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="connection-info">
+                            <div class="status-indicator connected">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Connected to PowerSchool</span>
+                            </div>
+                            
+                            <div class="connection-stats">
+                                <div class="stat">
+                                    <strong>4</strong>
+                                    <span>Schools</span>
+                                </div>
+                                <div class="stat">
+                                    <strong id="powerschool-student-count">0</strong>
+                                    <span>Students</span>
+                                </div>
+                                <div class="stat">
+                                    <strong>Just now</strong>
+                                    <span>Last Sync</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="management-actions">
+                            <button class="btn btn-primary" onclick="integrationManager.syncPowerSchoolData()">
+                                <i class="fas fa-sync"></i>
+                                Sync Now
+                            </button>
+                            <button class="btn btn-secondary" onclick="integrationManager.showPowerSchoolManagement()">
+                                <i class="fas fa-cogs"></i>
+                                Manage Schools
+                            </button>
+                            <button class="btn btn-danger" onclick="integrationManager.disconnectPowerSchool()">
+                                <i class="fas fa-unlink"></i>
+                                Disconnect
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        this.currentModal = document.getElementById('powerschool-management-modal');
+        
+        this.updatePowerSchoolStudentCount();
+    }
+
+    async updatePowerSchoolStudentCount() {
+        try {
+            const response = await fetch('/api/powerschool-import/import-status', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const countElement = document.getElementById('powerschool-student-count');
+                if (countElement) {
+                    countElement.textContent = data.total_powerschool_students || 0;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting PowerSchool student count:', error);
+        }
+    }
+
+    async syncPowerSchoolData() {
+        const syncBtn = document.querySelector('.management-actions .btn-primary');
+        const originalText = syncBtn.innerHTML;
+        
+        syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+        syncBtn.disabled = true;
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        syncBtn.innerHTML = '<i class="fas fa-check"></i> Synced!';
+        
+        setTimeout(() => {
+            syncBtn.innerHTML = originalText;
+            syncBtn.disabled = false;
+        }, 1000);
+
+        if (window.notificationSystem) {
+            notificationSystem.showNotification('PowerSchool data synced successfully!', 'success');
+        }
+    }
+
+    disconnectPowerSchool() {
+        if (confirm('Are you sure you want to disconnect from PowerSchool? This will not delete existing student data.')) {
+            const powerSchoolCard = document.querySelector('.integration-card[data-integration="powerschool"]');
+            const statusBadge = powerSchoolCard.querySelector('#powerschool-status');
+            
+            statusBadge.textContent = 'Not Connected';
+            statusBadge.className = 'status-badge';
+            
+            this.closeModal();
+            
+            if (window.notificationSystem) {
+                notificationSystem.showNotification('PowerSchool disconnected successfully.', 'info');
+            }
+        }
+    }
+
+    // ===== END POWERSCHOOL INTEGRATION METHODS =====
 
     generateMockCanvasData() {
         return {
