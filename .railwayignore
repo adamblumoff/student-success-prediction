@@ -1,0 +1,44 @@
+# Development files
+mvp_data.db
+*.db
+
+# Cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+
+# Logs
+logs/
+*.log
+
+# Test files and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+test_reports/
+
+# Environment files (these will be set via Railway's environment variables)
+.env.local
+.env.development
+.env.production
+
+# Documentation that's not needed in production
+docs/
+README.md
+DIRECTORY_STRUCTURE.md
