@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 
 # Import authentication  
-from src.mvp.simple_auth import simple_auth
+from src.mvp.simple_auth_clean import simple_auth_check
 
 # Import mock data generator
 from src.mvp.services.powerschool_mock_data import powerschool_data_generator
@@ -26,27 +26,10 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/api/powerschool-import", tags=["PowerSchool SIS"])
 
-def get_current_user(request: Request):
-    """Simple authentication for PowerSchool endpoints"""
-    try:
-        auth_header = request.headers.get("authorization", "")
-        if not auth_header.startswith("Bearer "):
-            raise HTTPException(status_code=401, detail="Invalid authorization format")
-        
-        token = auth_header.split(" ")[1]
-        expected_token = "0dUHi4QroC1GfgnbibLbqowUnv2YFWIe"  # Should match frontend
-        
-        if token != expected_token:
-            raise HTTPException(status_code=401, detail="Invalid API key")
-        
-        return {"user": "powerschool_user"}
-        
-    except Exception as e:
-        logger.error(f"Authentication error: {e}")
-        raise HTTPException(status_code=401, detail="Authentication failed")
+# Using standard authentication from simple_auth_clean
 
 @router.get("/schools")
-async def get_powerschool_schools(current_user: dict = Depends(get_current_user)):
+async def get_powerschool_schools(current_user: dict = Depends(simple_auth_check)):
     """Get list of available PowerSchool schools"""
     try:
         schools = powerschool_data_generator.get_schools_summary()
@@ -64,7 +47,7 @@ async def get_powerschool_schools(current_user: dict = Depends(get_current_user)
 @router.post("/test-connection")
 async def test_powerschool_connection(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Test PowerSchool SIS connection with provided credentials"""
     try:
@@ -101,7 +84,7 @@ async def test_powerschool_connection(
 @router.post("/import-schools")
 async def import_powerschool_schools(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Import student data from selected PowerSchool schools"""
     try:
@@ -246,7 +229,7 @@ async def import_powerschool_schools(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/import-status")
-async def get_powerschool_import_status(current_user: dict = Depends(get_current_user)):
+async def get_powerschool_import_status(current_user: dict = Depends(simple_auth_check)):
     """Get current PowerSchool import status and statistics"""
     try:
         with get_db_session() as db:

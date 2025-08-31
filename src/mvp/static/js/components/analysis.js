@@ -468,7 +468,7 @@ class Analysis extends Component {
       const response = await fetch('/api/mvp/gpt-insights/check', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+          'Authorization': 'Bearer ${sessionStorage.getItem('auth_token') || ''}',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -903,7 +903,7 @@ class Analysis extends Component {
     //   const dbResponse = await fetch('/api/mvp/gpt-insights/check', {
     //     method: 'POST',
     //     headers: {
-    //       'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+    //       'Authorization': 'Bearer ${sessionStorage.getItem('auth_token') || ''}',
     //       'Content-Type': 'application/json'
     //     },
     //     body: JSON.stringify({
@@ -945,7 +945,7 @@ class Analysis extends Component {
       const response = await fetch('/api/gpt/quick-insight', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+          'Authorization': 'Bearer ${sessionStorage.getItem('auth_token') || ''}',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -1002,7 +1002,7 @@ class Analysis extends Component {
           const saveResponse = await fetch('/api/mvp/gpt-insights/save', {
             method: 'POST',
             headers: {
-              'Authorization': 'Bearer 0dUHi4QroC1GfgnbibLbqowUnv2YFWIe',
+              'Authorization': 'Bearer ${sessionStorage.getItem('auth_token') || ''}',
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({

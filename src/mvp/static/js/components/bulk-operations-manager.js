@@ -93,7 +93,7 @@ class BulkOperationsManager {
         try {
             this.showNotification('Deleting interventions...', 'info');
 
-            const token = localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe';
+            const token = sessionStorage.getItem('auth_token') || '';
             const response = await fetch('/api/interventions/bulk/delete', {
                 method: 'DELETE',
                 headers: {

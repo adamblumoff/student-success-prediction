@@ -52,7 +52,7 @@ function initializeDeleteAllStudents() {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('api_key') || '0dUHi4QroC1GfgnbibLbqowUnv2YFWIe'}`
+            'Authorization': `Bearer ${sessionStorage.getItem('auth_token') || ''}`
           }
         });
         
