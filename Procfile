@@ -1,1 +1,1 @@
-web: python run_mvp.py
+web: python scripts/railway_setup.py && python run_mvp.py

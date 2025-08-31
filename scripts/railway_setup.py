@@ -16,6 +16,11 @@ def run_migrations():
     """Run Alembic migrations"""
     print("🔧 Running database migrations...")
     try:
+        # Wait for database to be ready
+        import time
+        print("⏳ Waiting for database connection...")
+        time.sleep(5)
+        
         # Run alembic upgrade head
         result = subprocess.run([
             sys.executable, "-m", "alembic", "upgrade", "head"
@@ -23,7 +28,8 @@ def run_migrations():
         
         if result.returncode == 0:
             print("✅ Database migrations completed successfully")
-            print(result.stdout)
+            if result.stdout:
+                print(result.stdout)
         else:
             print("❌ Migration failed:")
             print(result.stderr)

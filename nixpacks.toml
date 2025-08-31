@@ -7,5 +7,8 @@ nixPkgs = ["python311", "gcc"]
 [phases.install]  
 cmds = ["pip install -r requirements.txt"]
 
+[phases.build]
+cmds = ["echo 'Build phase complete - database setup will run at startup'"]
+
 [start]
-cmd = "python run_mvp.py"
+cmd = "python scripts/railway_setup.py && python run_mvp.py"
