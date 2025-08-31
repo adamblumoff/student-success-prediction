@@ -34,12 +34,31 @@ Set these in Railway's dashboard (railway.app → your project → Variables):
 
 **Required Variables:**
 ```
+# Authentication & Security (REQUIRED in production)
 MVP_API_KEY=replace-with-secure-32-char-api-key
+SESSION_SECRET=replace-with-secure-64-char-secret-key
+
+# Environment Settings (REQUIRED)
 ENVIRONMENT=production
 DEVELOPMENT_MODE=false
+
+# Logging & Debug
 SQL_DEBUG=false
 LOG_LEVEL=INFO
-RATE_LIMIT_PER_MINUTE=60
+
+# Rate Limiting (Optional - has defaults)
+API_RATE_LIMIT=30
+UPLOAD_RATE_LIMIT=10
+AUTH_RATE_LIMIT=5
+```
+
+**Generate Secure Keys:**
+```bash
+# Generate API Key (32+ characters)
+openssl rand -hex 32
+
+# Generate Session Secret (64+ characters)
+openssl rand -hex 64
 ```
 
 **Optional GPT Integration:**
