@@ -1,1 +1,1 @@
-web: python3 run_mvp.py
+web: python run_mvp.py
