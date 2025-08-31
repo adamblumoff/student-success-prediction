@@ -1,22 +1,11 @@
-# Nixpacks configuration for Railway deployment
-# Forces Python environment instead of Node.js
+[providers]
+python = "3.11"
 
 [phases.setup]
-# Install Python 3.11 and required system packages
-nixPkgs = ["python311", "gcc", "postgresql", "pkg-config"]
+nixPkgs = ["python311", "gcc"]
 
-[phases.install]
-# Install Python dependencies from requirements.txt
-cmds = [
-    "python -m venv /opt/venv",
-    ". /opt/venv/bin/activate && pip install --upgrade pip",
-    ". /opt/venv/bin/activate && pip install -r requirements.txt"
-]
-
-[phases.build]
-# No build step needed for Python app
-cmds = []
+[phases.install]  
+cmds = ["pip install -r requirements.txt"]
 
 [start]
-# Activate virtual environment and run the application
-cmd = ". /opt/venv/bin/activate && python run_mvp.py"
+cmd = "python run_mvp.py"
