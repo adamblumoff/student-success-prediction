@@ -18,16 +18,65 @@ class SelectionManager {
         this.createFloatingToolbar();
         this.bindEvents();
         this.setupMutationObserver();
+        this.setupTabWatcher(); // Watch for tab changes
         
-        // Since selection mode defaults to enabled, enter selection mode immediately
-        if (this.selectionMode) {
+        // Only enter selection mode if on analysis tab
+        if (this.selectionMode && this.isAnalysisTabActive()) {
             this.enterSelectionMode();
+        }
+    }
+
+    // ========== TAB DETECTION ==========
+    
+    isAnalysisTabActive() {
+        const activeTab = document.querySelector('.tab-button.active[data-tab="analyze"]');
+        return activeTab !== null;
+    }
+    
+    setupTabWatcher() {
+        // Watch for tab changes to show/hide bulk actions
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.tab-button[data-tab]') || e.target.closest('.tab-button[data-tab]')) {
+                // Small delay to let tab switching complete
+                setTimeout(() => {
+                    this.updateBulkActionsVisibility();
+                }, 100);
+            }
+        });
+        
+        // Initial visibility check
+        this.updateBulkActionsVisibility();
+    }
+    
+    updateBulkActionsVisibility() {
+        const isAnalysisActive = this.isAnalysisTabActive();
+        const bulkModeSection = document.querySelector('.bulk-mode-section');
+        const bulkToggle = document.getElementById('bulk-mode-toggle');
+        
+        if (isAnalysisActive) {
+            // Show bulk actions on analysis tab
+            if (bulkModeSection) bulkModeSection.style.display = 'flex';
+            if (this.selectionMode) {
+                this.enterSelectionMode();
+            }
+            this.showFloatingToolbar();
+        } else {
+            // Hide bulk actions on other tabs
+            if (bulkModeSection) bulkModeSection.style.display = 'none';
+            this.exitSelectionMode();
+            this.hideFloatingToolbar();
         }
     }
 
     // ========== SELECTION STATE MANAGEMENT ==========
 
     toggleSelectionMode() {
+        // Only allow toggling on analysis tab
+        if (!this.isAnalysisTabActive()) {
+            console.log('Bulk actions are only available on the AI Analysis tab');
+            return;
+        }
+        
         this.selectionMode = !this.selectionMode;
         
         if (this.selectionMode) {
