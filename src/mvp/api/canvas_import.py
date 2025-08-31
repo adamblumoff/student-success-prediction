@@ -15,7 +15,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from mvp.simple_auth import simple_auth
+from src.mvp.simple_auth_clean import simple_auth_check
 from mvp.database import get_db_session
 from mvp.models import Student, Institution, Prediction
 from mvp.services.canvas_mock_data import CanvasMockDataGenerator
@@ -25,13 +25,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canvas-import", tags=["Canvas Import"])
 
 def get_current_user(request: Request):
-    """Simple authentication dependency"""
+    """Simple authentication dependency - use updated simple_auth_check"""
     auth_header = request.headers.get('authorization')
     if auth_header and auth_header.startswith('Bearer '):
         token = auth_header.split(' ')[1]
         from fastapi.security import HTTPAuthorizationCredentials
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        return simple_auth(credentials)
+        return simple_auth_check(request, credentials)
     
     raise HTTPException(status_code=401, detail="Authentication required")
 

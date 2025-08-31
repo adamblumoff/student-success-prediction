@@ -47,12 +47,45 @@ def simple_auth_check(
             headers={"WWW-Authenticate": "Bearer"}
         )
     
-    # Validate API key
+    # Validate API key OR session token
+    token = credentials.credentials
+    
+    # Check if it's a session token (format: authenticated_USERNAME_TIMESTAMP)
+    if token.startswith('authenticated_') and token.count('_') >= 2:
+        # Session-based authentication
+        try:
+            parts = token.split('_')
+            if len(parts) >= 3:
+                username = parts[1]
+                timestamp = int(parts[2])
+                current_time = int(time.time())
+                
+                # Check if token is not too old (24 hour expiry)
+                if current_time - timestamp > 86400:  # 24 hours
+                    raise HTTPException(
+                        status_code=401, 
+                        detail="Session expired - please login again",
+                        headers={"WWW-Authenticate": "Bearer"}
+                    )
+                
+                # Valid session token - return user context with username
+                return {
+                    "user": username,
+                    "mode": "session",
+                    "permissions": ["read", "write"],
+                    "institution_id": 1,
+                    "authenticated": True
+                }
+        except (ValueError, IndexError):
+            # Invalid session token format, fall through to API key check
+            pass
+    
+    # Traditional API key authentication
     expected_key = os.getenv("MVP_API_KEY", "dev-key-change-me")
-    if credentials.credentials != expected_key:
+    if token != expected_key:
         raise HTTPException(
             status_code=401, 
-            detail="Authentication required - invalid API key",
+            detail="Authentication failed",
             headers={"WWW-Authenticate": "Bearer"}
         )
     
