@@ -12,8 +12,8 @@
 # Visit https://railway.app and create account
 # Go to Account Settings → Tokens → Create token
 
-# Set your token
-export RAILWAY_TOKEN=your_token_here
+# Set your token (replace with your actual token)
+export RAILWAY_TOKEN=replace-with-your-actual-token
 
 # Or authenticate interactively (if possible)
 railway login
@@ -34,7 +34,7 @@ Set these in Railway's dashboard (railway.app → your project → Variables):
 
 **Required Variables:**
 ```
-MVP_API_KEY=your-secure-32-char-api-key
+MVP_API_KEY=replace-with-secure-32-char-api-key
 ENVIRONMENT=production
 DEVELOPMENT_MODE=false
 SQL_DEBUG=false
@@ -44,7 +44,7 @@ RATE_LIMIT_PER_MINUTE=60
 
 **Optional GPT Integration:**
 ```
-OPENAI_API_KEY=your-openai-key
+OPENAI_API_KEY=replace-with-openai-api-key
 GPT_MODEL=gpt-4o-mini
 GPT_TIMEOUT=30
 GPT_CACHE_ENABLED=true
