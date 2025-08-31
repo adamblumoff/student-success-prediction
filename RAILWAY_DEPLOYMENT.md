@@ -37,6 +37,7 @@ Set these in Railway's dashboard (railway.app → your project → Variables):
 # Authentication & Security (REQUIRED in production)
 MVP_API_KEY=replace-with-secure-32-char-api-key
 SESSION_SECRET=replace-with-secure-64-char-secret-key
+DATABASE_ENCRYPTION_KEY=replace-with-secure-32-char-encryption-key
 
 # Environment Settings (REQUIRED)
 ENVIRONMENT=production
@@ -59,6 +60,9 @@ openssl rand -hex 32
 
 # Generate Session Secret (64+ characters)
 openssl rand -hex 64
+
+# Generate Database Encryption Key (32+ characters) - CRITICAL for FERPA compliance
+openssl rand -hex 32
 ```
 
 **Optional GPT Integration:**
