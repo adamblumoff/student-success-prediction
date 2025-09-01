@@ -39,6 +39,9 @@ jobs:
         echo "Testing Security Manager Integration..."
         python3 -c "
         import os
+        import sys
+        sys.path.insert(0, os.getcwd())
+        
         os.environ['ENVIRONMENT'] = 'development'
         os.environ['DEVELOPMENT_MODE'] = 'true'
         os.environ['DATABASE_ENCRYPTION_KEY'] = 'test-key-32-characters-minimum'
@@ -55,6 +58,9 @@ jobs:
         echo "Testing Database Encryption Configuration..."
         python3 -c "
         import os
+        import sys
+        sys.path.insert(0, os.getcwd())
+        
         os.environ['ENVIRONMENT'] = 'development'
         os.environ['DEVELOPMENT_MODE'] = 'true'
         os.environ['DISABLE_ENCRYPTION'] = 'true'
@@ -129,8 +135,10 @@ jobs:
     - name: 🧪 Security Test Suite
       run: |
         echo "Running comprehensive security test suite..."
+        export PYTHONPATH="${PYTHONPATH}:$(pwd)"
         python3 -m pytest tests/api/test_security.py -v --tb=short --junitxml=security-test-results.xml
       env:
+        PYTHONPATH: .
         ENVIRONMENT: testing
         DEVELOPMENT_MODE: true
         DATABASE_ENCRYPTION_KEY: test-key-32-characters-minimum
@@ -170,8 +178,10 @@ jobs:
     - name: 📊 Database Operations & Constraints Tests
       run: |
         echo "Running database integrity tests..."
+        export PYTHONPATH="${PYTHONPATH}:$(pwd)"
         python3 -m pytest tests/api/test_database_operations.py tests/api/test_database_constraints.py -v --tb=short --junitxml=database-test-results.xml
       env:
+        PYTHONPATH: .
         ENVIRONMENT: testing
         DEVELOPMENT_MODE: true
         DATABASE_ENCRYPTION_KEY: test-key-32-characters-minimum
@@ -226,6 +236,9 @@ jobs:
         echo "Validating production security policies..."
         python3 -c "
         import os
+        import sys
+        sys.path.insert(0, os.getcwd())
+        
         os.environ['ENVIRONMENT'] = 'production'
         os.environ['RAILWAY_ENVIRONMENT_NAME'] = 'production'
         os.environ['DATABASE_URL'] = 'postgresql://user:pass@prod-host/database'
@@ -267,6 +280,9 @@ jobs:
         echo "Validating FERPA compliance requirements..."
         python3 -c "
         import os
+        import sys
+        sys.path.insert(0, os.getcwd())
+        
         os.environ['ENVIRONMENT'] = 'production'
         os.environ['DATABASE_ENCRYPTION_KEY'] = 'production-encryption-key-32-characters-minimum'
         
@@ -341,6 +357,10 @@ jobs:
       run: |
         echo "Validating all Python imports..."
         python3 -c "
+        import sys
+        import os
+        sys.path.insert(0, os.getcwd())
+        
         try:
             from src.mvp.mvp_api import app
             from src.mvp.security_manager import get_security_manager
@@ -356,7 +376,10 @@ jobs:
         echo "Testing application startup..."
         timeout 10s python3 -c "
         import os
+        import sys
         import asyncio
+        sys.path.insert(0, os.getcwd())
+        
         os.environ['ENVIRONMENT'] = 'testing'
         os.environ['DEVELOPMENT_MODE'] = 'true'
         os.environ['DATABASE_ENCRYPTION_KEY'] = 'test-key-32-characters-minimum'
