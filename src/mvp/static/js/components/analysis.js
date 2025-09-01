@@ -268,19 +268,22 @@ class Analysis extends Component {
             <div class="gpt-insights-content">
               <div class="loading-placeholder">
                 <button class="btn btn-primary btn-small generate-insights-btn" onclick="window.analysisComponent?.loadQuickInsights('${studentId}', '${riskLevel}')" 
-                        style="background: linear-gradient(135deg, #87ceeb 0%, #4fc3f7 100%); 
-                               border: 1px solid #4fc3f7; 
+                        style="background: linear-gradient(135deg, #87ceeb 0%, #4fc3f7 100%) !important; 
+                               border: 1px solid #4fc3f7 !important; 
                                color: white !important; 
-                               padding: 10px 16px;
-                               border-radius: 6px;
-                               font-size: 13px;
-                               font-weight: 500;
-                               cursor: pointer;
-                               display: inline-flex;
-                               align-items: center;
-                               gap: 6px;
-                               transition: all 0.2s ease;
-                               box-shadow: 0 2px 4px rgba(79, 195, 247, 0.3);"
+                               padding: 10px 16px !important;
+                               border-radius: 6px !important;
+                               font-size: 13px !important;
+                               font-weight: 500 !important;
+                               cursor: pointer !important;
+                               display: inline-flex !important;
+                               align-items: center !important;
+                               gap: 6px !important;
+                               transition: all 0.2s ease !important;
+                               box-shadow: 0 2px 4px rgba(79, 195, 247, 0.3) !important;
+                               text-decoration: none !important;
+                               outline: none !important;
+                               margin: 0 !important;"
                         onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(79, 195, 247, 0.4)'"
                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(79, 195, 247, 0.3)'"
                   <i class="fas fa-brain"></i>
