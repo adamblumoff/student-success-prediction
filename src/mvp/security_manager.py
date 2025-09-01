@@ -158,8 +158,16 @@ class SecurityManager:
         if self.policy.require_https:
             enable_https = os.getenv('ENABLE_HTTPS', 'false').lower() == 'true'
             railway_url = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+            railway_service_url = os.getenv('RAILWAY_SERVICE_STUDENT_SUCCESS_PREDICTION_URL', '')
             
-            if not enable_https and not railway_url.startswith('https://'):
+            # Railway automatically provides HTTPS for all deployments
+            is_railway_deployment = bool(os.getenv('RAILWAY_ENVIRONMENT'))
+            https_available = (enable_https or 
+                             railway_url.startswith('https://') or
+                             railway_service_url.endswith('.railway.app') or
+                             is_railway_deployment)
+            
+            if not https_available:
                 if self.environment == EnvironmentType.PRODUCTION:
                     violations.append("HTTPS is required in production environment")
                 else:
