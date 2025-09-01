@@ -24,6 +24,30 @@ class Analysis extends Component {
     this.appState.subscribe('students', this.updateStudentList.bind(this));
     this.appState.subscribe('selectedStudent', this.updateStudentDetail.bind(this));
     this.appState.subscribe('currentTab', this.handleTabChange.bind(this));
+    
+    // Load existing students immediately on component initialization
+    // This ensures content is available even before switching tabs
+    this.initializeStudentData();
+  }
+
+  async initializeStudentData() {
+    // Check if we're authenticated and load existing students immediately
+    try {
+      const token = sessionStorage.getItem('auth_token');
+      if (token) {
+        console.log('📊 Analysis component initializing - checking for existing students...');
+        await this.loadExistingStudents();
+        
+        // If students were loaded, switch to analyze tab to show them
+        const currentState = this.appState.getState();
+        if (currentState.students && currentState.students.length > 0 && currentState.currentTab === 'upload') {
+          console.log('📊 Students found on init, switching to analyze tab');
+          this.appState.setState({ currentTab: 'analyze' });
+        }
+      }
+    } catch (error) {
+      console.log('📊 No existing students found or auth not ready yet:', error.message);
+    }
   }
 
   handleSearch(e) {
