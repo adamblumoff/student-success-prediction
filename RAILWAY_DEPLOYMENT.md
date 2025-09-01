@@ -66,13 +66,18 @@ openssl rand -hex 64
 openssl rand -hex 32
 ```
 
-**Optional GPT Integration:**
+**GPT AI Insights (REQUIRED for full functionality):**
 ```
-OPENAI_API_KEY=replace-with-openai-api-key
+# REQUIRED: OpenAI API key for GPT insights generation and database persistence
+OPENAI_API_KEY=replace-with-your-openai-api-key
+
+# Optional GPT configuration (has sensible defaults)
 GPT_MODEL=gpt-4o-mini
 GPT_TIMEOUT=30
 GPT_CACHE_ENABLED=true
 ```
+
+⚠️ **Important**: Without `OPENAI_API_KEY`, GPT insights will not generate or persist to the database.
 
 ### 4. Database Setup (Choose One)
 

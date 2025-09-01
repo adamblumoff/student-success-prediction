@@ -1877,12 +1877,11 @@ async def auth_status(current_user: dict = Depends(simple_auth_check)):
 # GPT Insights Database Endpoints
 @router.post("/gpt-insights/check")
 async def check_gpt_insights(
-    request: Request
+    request: Request,
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Check if GPT insights exist in database for given student and data hash."""
     try:
-        # Manual authentication check
-        current_user = simple_auth_check(request, None)
         
         body = await request.json()
         student_id = body.get('student_id')
@@ -1913,12 +1912,11 @@ async def check_gpt_insights(
 
 @router.post("/gpt-insights/save")
 async def save_gpt_insights(
-    request: Request
+    request: Request,
+    current_user: dict = Depends(simple_auth_check)
 ):
     """Save GPT insights to database after fresh generation."""
     try:
-        # Manual authentication check
-        current_user = simple_auth_check(request, None)
         
         body = await request.json()
         
