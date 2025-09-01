@@ -604,8 +604,7 @@ class IntegrationManager {
                                 <label for="powerschool-username">Username</label>
                                 <input type="text" 
                                        id="powerschool-username" 
-                                       placeholder="admin_username"
-                                       value="demo_admin">
+                                       placeholder="Enter username">
                                 <small>PowerSchool administrator username</small>
                             </div>
                             
@@ -613,8 +612,7 @@ class IntegrationManager {
                                 <label for="powerschool-password">Password</label>
                                 <input type="password" 
                                        id="powerschool-password" 
-                                       placeholder="••••••••"
-                                       value="demo_password">
+                                       placeholder="••••••••">
                                 <small>PowerSchool administrator password</small>
                             </div>
 
@@ -1167,8 +1165,7 @@ class IntegrationManager {
                                 <label for="google-admin-email">Admin Email</label>
                                 <input type="email" 
                                        id="google-admin-email" 
-                                       placeholder="admin@yourschool.edu"
-                                       value="admin@demo-school.edu">
+                                       placeholder="admin@yourschool.edu">
                                 <small>Google Workspace admin email for delegation</small>
                             </div>
 

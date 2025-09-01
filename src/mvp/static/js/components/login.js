@@ -33,13 +33,6 @@ class LoginComponent extends Component {
                     </button>
                     <div id="error-message" class="error-message" style="display: none;"></div>
                 </form>
-                
-                <div class="demo-credentials">
-                    <h4>Demo Credentials</h4>
-                    <p><strong>Username:</strong> teacher</p>
-                    <p><strong>Password:</strong> demo123</p>
-                    <p><em>Or use: admin / admin123</em></p>
-                </div>
             </div>
         `;
         

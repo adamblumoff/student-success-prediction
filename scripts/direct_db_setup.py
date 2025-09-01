@@ -17,21 +17,25 @@ def setup_database():
     print("=" * 50)
     
     try:
-        from src.mvp.database import engine, Base
+        from src.mvp.database import get_engine, Base
         from src.mvp.models import (
             Institution, Student, User, Prediction, 
             Intervention, GPTInsight, AuditLog, UserSession
         )
+        from sqlalchemy import text
         import time
         
         # Wait for database
         print("⏳ Waiting for database connection...")
         time.sleep(3)
         
+        # Get engine
+        engine = get_engine()
+        
         # Test connection
         print("🔍 Testing database connection...")
         with engine.connect() as conn:
-            result = conn.execute("SELECT 1")
+            result = conn.execute(text("SELECT 1"))
             print("✅ Database connection successful!")
         
         # Drop and recreate all tables (clean slate)
