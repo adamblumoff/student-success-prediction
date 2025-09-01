@@ -42,6 +42,7 @@ DATABASE_ENCRYPTION_KEY=replace-with-secure-32-char-encryption-key
 # Environment Settings (REQUIRED)
 ENVIRONMENT=production
 DEVELOPMENT_MODE=false
+DEMO_LOGIN_ENABLED=true
 
 # Logging & Debug
 SQL_DEBUG=false
