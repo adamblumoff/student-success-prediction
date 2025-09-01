@@ -378,7 +378,8 @@ class CanvasLMSIntegration:
             # Default to middle school if no pattern found
             return 7
             
-        except:
+        except (requests.RequestException, KeyError, AttributeError) as e:
+            logger.warning(f"Failed to estimate grade level for course {course_id}: {e}")
             return 7  # Default fallback
     
     def sync_course_data(self, course_id: str) -> Dict[str, Any]:

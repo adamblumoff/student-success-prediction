@@ -144,10 +144,20 @@ app = FastAPI(
 
 # Initialize container on startup
 from .container import initialize_container
+from .security_manager import enforce_production_security, get_security_manager
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on app startup."""
+    # Enforce security policies before anything else
+    try:
+        enforce_production_security()
+        security_status = get_security_manager().get_security_status()
+        logger.info(f"🔐 Security Manager initialized for {security_status['environment']} environment")
+    except Exception as e:
+        logger.critical(f"❌ Security policy enforcement failed: {e}")
+        raise
+    
     initialize_container()
 
 # Add middleware in correct order (last added = first executed)

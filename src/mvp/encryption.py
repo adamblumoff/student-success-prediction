@@ -41,11 +41,19 @@ class EncryptionManager:
     
     def _is_encryption_enabled(self) -> bool:
         """Check if encryption should be enabled based on environment"""
-        # Enable encryption in production or when explicitly enabled
-        environment = os.getenv('ENVIRONMENT', '').lower()
-        explicit_enable = os.getenv('ENABLE_DATABASE_ENCRYPTION', 'false').lower() == 'true'
+        # Security-first approach: Enable encryption by default
+        # Only disable if explicitly disabled AND in development mode
+        environment = os.getenv('ENVIRONMENT', 'development').lower()
+        development_mode = os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true'
+        explicit_disable = os.getenv('DISABLE_ENCRYPTION', 'false').lower() == 'true'
         
-        return environment in ['production', 'prod'] or explicit_enable
+        # Allow disabling only in development mode
+        if explicit_disable and development_mode and environment != 'production':
+            logger.warning("⚠️ Database encryption explicitly disabled in development mode")
+            return False
+        
+        # Enable encryption by default for FERPA compliance
+        return True
     
     def _initialize_encryption(self):
         """Initialize encryption system with secure key management"""

@@ -200,7 +200,8 @@ class SystemMetrics:
                     'packets_sent': network.packets_sent,
                     'packets_recv': network.packets_recv
                 }
-            except:
+            except (OSError, AttributeError, ImportError) as e:
+                logger.debug(f"Network metrics unavailable: {e}")
                 network_metrics = {}
             
             return {

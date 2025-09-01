@@ -120,7 +120,8 @@ class GPTCacheService:
                 # Sort lists for consistent ordering
                 try:
                     normalized[key] = sorted([str(v) for v in value])
-                except:
+                except (TypeError, AttributeError) as e:
+                    logger.debug(f"Cannot sort list for key {key}: {e}")
                     normalized[key] = [str(v) for v in value]
             elif isinstance(value, dict):
                 normalized[key] = self._normalize_cache_data(value)
