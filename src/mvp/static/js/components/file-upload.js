@@ -9,8 +9,7 @@ class FileUpload extends Component {
     this.uploadZone = document.getElementById('upload-zone');
     this.sampleButton = document.getElementById('load-sample');
     
-    // Initialize exactly like the working version
-    this.initializeAuthentication();
+    // Authentication is handled by the main login component, not here
     
     if (this.fileInput) {
       this.bindEvent(this.fileInput, 'change', this.handleFileSelect);
@@ -26,35 +25,7 @@ class FileUpload extends Component {
     
   }
 
-  // EXACT REPLICA of working authentication
-  async initializeAuthentication() {
-    try {
-      // Check if already authenticated
-      const statusResponse = await fetch('/api/mvp/auth/status');
-      if (statusResponse.ok) {
-        console.log('✅ Already authenticated');
-        return;
-      }
-    } catch (error) {
-      // Not authenticated, proceed with login
-    }
-
-    try {
-      // Perform web login to get session cookie
-      const loginResponse = await fetch('/api/mvp/auth/web-login', {
-        method: 'POST',
-        credentials: 'include' // Important: include cookies
-      });
-      
-      if (loginResponse.ok) {
-        console.log('✅ Web authentication successful');
-      } else {
-        console.error('❌ Authentication failed');
-      }
-    } catch (error) {
-      console.error('❌ Authentication error:', error);
-    }
-  }
+  // Authentication is handled by the main login component
 
   setupDragAndDrop() {
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {

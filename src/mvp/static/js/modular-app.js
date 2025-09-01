@@ -59,6 +59,9 @@ class StudentSuccessApp {
     if (document.querySelector('#loading-overlay')) {
       this.components.set('loading', new LoadingOverlay('#loading-overlay', this.appState));
     }
+
+    // Initialize selection manager for bulk actions (always initialize)
+    this.components.set('selectionManager', new SelectionManager(this.appState));
     
     this.setupGlobalEvents();
   }
