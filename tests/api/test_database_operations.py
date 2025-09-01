@@ -117,10 +117,9 @@ class TestDatabaseOperations:
         return self.TestingSessionLocal()
     
     def test_unique_constraints_students(self):
-        """Test student creation behavior (no unique constraint currently defined)"""
+        """Test that unique constraint prevents duplicate students within same institution"""
         with self.get_session() as session:
-            # Current model allows duplicate student_id within same institution
-            # This test verifies the current behavior
+            # Unique constraint should prevent duplicate (institution_id, student_id)
             duplicate_student = Student(
                 institution_id=self.institution_id,
                 student_id="DB_TEST_001",  # Same as existing student
@@ -129,14 +128,36 @@ class TestDatabaseOperations:
             )
             
             session.add(duplicate_student)
-            session.commit()  # Should succeed - no unique constraint defined
             
-            # Verify the duplicate was created
+            # Should raise IntegrityError due to unique constraint
+            with pytest.raises(IntegrityError):
+                session.commit()
+            
+            # Rollback the failed transaction
+            session.rollback()
+            
+            # Verify only one student exists with this ID
             students_with_same_id = session.query(Student).filter(
                 Student.institution_id == self.institution_id,
                 Student.student_id == "DB_TEST_001"
             ).count()
-            assert students_with_same_id >= 2  # Original + duplicate
+            assert students_with_same_id == 1  # Only the original student
+            
+            # Verify that students with different IDs can still be created
+            different_id_student = Student(
+                institution_id=self.institution_id,
+                student_id="DB_TEST_003",  # Different student ID (not in setup)
+                grade_level="11",
+                enrollment_status="active"
+            )
+            session.add(different_id_student)
+            session.commit()  # Should succeed - different student_id
+            
+            # Verify all students exist (2 from setup + 1 new)
+            total_students = session.query(Student).filter(
+                Student.institution_id == self.institution_id
+            ).count()
+            assert total_students == 3  # Two from setup + new different ID student
     
     def test_unique_constraints_users(self):
         """Test unique constraints prevent duplicate user emails"""
