@@ -224,7 +224,8 @@ class AsyncMLLoader:
         try:
             import sys
             return sys.getsizeof(model_instance)
-        except:
+        except (ImportError, AttributeError, TypeError) as e:
+            logger.debug(f"Cannot estimate model memory usage: {e}")
             # Fallback estimate
             return 100 * 1024 * 1024  # 100MB
     

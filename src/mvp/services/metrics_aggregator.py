@@ -113,8 +113,9 @@ class MetricsAggregator:
                 import json
                 try:
                     features = json.loads(latest_prediction.features_used)
-                except:
-                    pass
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(f"Failed to parse features JSON: {e}")
+                    features = {}
             
             return {
                 "current_risk_score": latest_prediction.risk_score,
@@ -163,15 +164,17 @@ class MetricsAggregator:
                 try:
                     import json
                     risk_factors = json.loads(latest_prediction.risk_factors)
-                except:
-                    pass
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(f"Failed to parse risk_factors JSON: {e}")
+                    risk_factors = []
             
             if latest_prediction.protective_factors:
                 try:
                     import json
                     protective_factors = json.loads(latest_prediction.protective_factors)
-                except:
-                    pass
+                except (json.JSONDecodeError, TypeError) as e:
+                    logger.warning(f"Failed to parse protective_factors JSON: {e}")
+                    protective_factors = []
             
             return {
                 "risk_score": latest_prediction.risk_score,

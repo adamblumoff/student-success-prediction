@@ -46,35 +46,57 @@ def create_demo_institution(db):
 
 def create_demo_users():
     """Create demo users"""
+    # Security check: Prevent demo user creation in production
+    environment = os.getenv('ENVIRONMENT', 'unknown').lower()
+    development_mode = os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true'
+    
+    if environment == 'production' and not development_mode:
+        print("❌ Demo user creation is disabled in production environment")
+        print("   This is a security measure to prevent weak credentials in production")
+        return
+    
+    # Get demo users from environment variable (format: username:password,username:password)
+    demo_users_env = os.getenv('DEMO_USERS', '')
+    if not demo_users_env:
+        print("❌ DEMO_USERS environment variable not set")
+        print("   Please set DEMO_USERS in format: admin:SecurePassword123!,demo:AnotherSecurePassword!")
+        return
+    
     with get_db_session() as db:
         institution_id = create_demo_institution(db)
         
-        demo_users = [
-            {
-                "username": "teacher",
-                "email": "teacher@demo.com",
-                "password": "demo123",
-                "first_name": "Demo",
-                "last_name": "Teacher",
-                "role": "teacher"
-            },
-            {
-                "username": "admin",
-                "email": "admin@demo.com", 
-                "password": "admin123",
-                "first_name": "Demo",
-                "last_name": "Administrator",
-                "role": "admin"
-            },
-            {
-                "username": "principal",
-                "email": "principal@demo.com",
-                "password": "principal123", 
-                "first_name": "Demo",
-                "last_name": "Principal",
-                "role": "principal"
-            }
-        ]
+        # Parse demo users from environment variable
+        demo_users = []
+        try:
+            user_pairs = demo_users_env.split(',')
+            for pair in user_pairs:
+                if ':' not in pair:
+                    continue
+                username, password = pair.strip().split(':', 1)
+                
+                # Map usernames to roles and details
+                role_mapping = {
+                    'admin': {'role': 'admin', 'first_name': 'Demo', 'last_name': 'Administrator'},
+                    'teacher': {'role': 'teacher', 'first_name': 'Demo', 'last_name': 'Teacher'}, 
+                    'educator': {'role': 'teacher', 'first_name': 'Demo', 'last_name': 'Educator'},
+                    'principal': {'role': 'principal', 'first_name': 'Demo', 'last_name': 'Principal'},
+                    'demo': {'role': 'teacher', 'first_name': 'Demo', 'last_name': 'User'}
+                }
+                
+                user_info = role_mapping.get(username.lower(), {'role': 'teacher', 'first_name': 'Demo', 'last_name': 'User'})
+                
+                demo_users.append({
+                    "username": username,
+                    "email": f"{username}@demo.com",
+                    "password": password,
+                    "first_name": user_info['first_name'],
+                    "last_name": user_info['last_name'],
+                    "role": user_info['role']
+                })
+        except Exception as e:
+            print(f"❌ Error parsing DEMO_USERS environment variable: {e}")
+            print("   Format should be: admin:SecurePassword123!,demo:AnotherSecurePassword!")
+            return
         
         created_count = 0
         
@@ -124,8 +146,14 @@ if __name__ == "__main__":
         create_demo_users()
         print("\n✅ Demo user creation complete!")
         
+    except (OSError, IOError) as e:
+        print(f"❌ Database connection error: {e}")
+        sys.exit(1)
+    except ValueError as e:
+        print(f"❌ Configuration error: {e}")
+        sys.exit(1)
     except Exception as e:
-        print(f"❌ Error creating demo users: {e}")
+        print(f"❌ Unexpected error creating demo users: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

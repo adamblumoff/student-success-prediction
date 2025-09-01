@@ -827,9 +827,9 @@ Focus on actionable insights for K-12 educators and administrators."""
                     'operation_failed': True
                 }
             )
-        except:
+        except (ImportError, AttributeError, OSError) as audit_error:
             # Don't fail on audit logging errors
-            pass
+            logger.warning(f"Audit logging failed: {audit_error}")
             
         logger.error(f"Unexpected error in K-12 analysis: {e}")
         raise HTTPException(status_code=500, detail="Internal server error during K-12 analysis")

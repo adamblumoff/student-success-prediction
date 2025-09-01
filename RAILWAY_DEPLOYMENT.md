@@ -32,26 +32,21 @@ railway up
 ### 3. Configure Environment Variables
 Set these in Railway's dashboard (railway.app → your project → Variables):
 
-**Required Variables:**
+**🔐 CRITICAL SECURITY VARIABLES (Required for production):**
 ```
-# Authentication & Security (REQUIRED in production)
-MVP_API_KEY=replace-with-secure-32-char-api-key
-SESSION_SECRET=replace-with-secure-64-char-secret-key
-DATABASE_ENCRYPTION_KEY=replace-with-secure-32-char-encryption-key
-
-# Environment Settings (REQUIRED)
+MVP_API_KEY=your-secure-api-key-32-characters-minimum-length-required
+SESSION_SECRET=your-session-secret-64-characters-minimum-length-required-for-security-compliance
+DATABASE_ENCRYPTION_KEY=your-encryption-key-32-characters-minimum-for-ferpa-compliance
 ENVIRONMENT=production
-DEVELOPMENT_MODE=false
-DEMO_LOGIN_ENABLED=true
+```
 
-# Logging & Debug
+**📊 APPLICATION CONFIGURATION:**
+```
+DEVELOPMENT_MODE=false
 SQL_DEBUG=false
 LOG_LEVEL=INFO
-
-# Rate Limiting (Optional - has defaults)
-API_RATE_LIMIT=30
-UPLOAD_RATE_LIMIT=10
-AUTH_RATE_LIMIT=5
+RATE_LIMIT_PER_MINUTE=60
+ENABLE_HTTPS=true
 ```
 
 **Generate Secure Keys:**
@@ -159,13 +154,47 @@ railway status
 - **Pro Plan**: $20/month (unlimited hours)
 - PostgreSQL: Free tier available with Railway
 
+## 🚀 Deployment Readiness Checklist
+
+**Before deploying, ensure you have:**
+
+### ✅ Security Requirements (CRITICAL)
+- [ ] Generated secure `MVP_API_KEY` (32+ characters)
+- [ ] Generated secure `SESSION_SECRET` (64+ characters)
+- [ ] Generated secure `DATABASE_ENCRYPTION_KEY` (32+ characters)
+- [ ] Set `ENVIRONMENT=production` in Railway dashboard
+- [ ] Set `ENABLE_HTTPS=true` in Railway dashboard
+- [ ] Verified no demo users will be created (`DEVELOPMENT_MODE=false`)
+
+### ✅ Database Configuration
+- [ ] Railway PostgreSQL service added, OR
+- [ ] External database URL configured and tested
+- [ ] Database connection string includes SSL (`?sslmode=require`)
+
+### ✅ Application Configuration  
+- [ ] All environment variables set in Railway dashboard
+- [ ] `LOG_LEVEL=INFO` or `ERROR` for production
+- [ ] Rate limiting configured appropriately
+- [ ] File upload limits appropriate for your use case
+
+### ✅ Dependencies & Build
+- [ ] `requirements.txt` includes all dependencies (cryptography, bcrypt, etc.)
+- [ ] ML models present in `results/models/` directory  
+- [ ] No local development files in deployment
+
+### ✅ Testing & Validation
+- [ ] Local tests pass: `python3 -m pytest tests/api/test_security.py`
+- [ ] CI pipeline passes on GitHub Actions
+- [ ] Security manager validates correctly in production mode
+
 ## Next Steps After Deployment
-1. Test file upload with sample CSV
-2. Verify ML predictions work
-3. Test GPT insights (if enabled)
-4. Set up custom domain (optional)
-5. Monitor application logs
-6. Configure alerts for errors
+1. **Security Validation**: Verify HTTPS is enforced
+2. **API Testing**: Test endpoints with production API key
+3. **Database Encryption**: Confirm data is encrypted at rest
+4. **File Upload**: Test with sample CSV data
+5. **ML Predictions**: Verify model predictions work correctly
+6. **GPT Insights**: Test AI analysis features (if enabled)
+7. **Monitoring**: Set up error alerts and log monitoring
 
 ## Support
 - Railway Docs: https://docs.railway.com
