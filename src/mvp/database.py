@@ -28,8 +28,8 @@ class DatabaseConfig:
     """Database configuration management with environment-based settings and security."""
     
     def __init__(self):
-        self.database_url = self._get_database_url()
         self.is_production = os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']
+        self.database_url = self._get_database_url()
         self.engine: Optional[Engine] = None
         self.session_factory: Optional[sessionmaker] = None
         self._validate_security_config()
