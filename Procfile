@@ -1,1 +1,1 @@
-web: python scripts/railway_setup.py && python run_mvp.py
+web: python scripts/direct_db_setup.py || true && python run_mvp.py

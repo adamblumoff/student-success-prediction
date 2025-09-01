@@ -11,4 +11,4 @@ cmds = ["pip install -r requirements.txt"]
 cmds = ["echo 'Build phase complete - database setup will run at startup'"]
 
 [start]
-cmd = "python scripts/railway_setup.py && python run_mvp.py"
+cmd = "python scripts/direct_db_setup.py || true && python run_mvp.py"
