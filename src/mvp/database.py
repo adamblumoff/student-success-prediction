@@ -38,7 +38,14 @@ class DatabaseConfig:
         """Get database URL from environment variables with fallback to SQLite."""
         # Production PostgreSQL configuration
         if os.getenv('DATABASE_URL'):
-            return os.getenv('DATABASE_URL')
+            database_url = os.getenv('DATABASE_URL')
+            # Ensure SSL is enabled for PostgreSQL in production
+            if database_url.startswith('postgresql') and self.is_production:
+                if 'sslmode=' not in database_url:
+                    # Add SSL mode to the connection string
+                    separator = '&' if '?' in database_url else '?'
+                    database_url += f'{separator}sslmode=require'
+            return database_url
         
         # Component-based PostgreSQL configuration
         db_host = os.getenv('DB_HOST', 'localhost')
@@ -93,7 +100,8 @@ class DatabaseConfig:
                 connect_args={
                     'connect_timeout': 10,  # Connection timeout
                     'application_name': 'student_success_predictor',
-                    'options': '-c statement_timeout=30000'  # 30 second query timeout
+                    'options': '-c statement_timeout=30000',  # 30 second query timeout
+                    'sslmode': 'require' if self.is_production else 'prefer'  # Force SSL in production
                 },
                 echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true',
                 isolation_level='READ_COMMITTED',  # Secure isolation level
