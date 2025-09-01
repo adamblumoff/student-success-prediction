@@ -869,50 +869,10 @@ async def load_sample_data(
         # Ensure sample students exist in database
         from src.mvp.models import Student, Institution
         
-        # Clean up any existing duplicate sample students before proceeding
-        logger.info("Cleaning up duplicate sample students...")
-        sample_student_ids = ['1001', '1002', '1003', '1004', '1005']
-        
-        # Find all existing demo institutions
-        demo_institutions = db.query(Institution).filter(
+        # Get or create demo institution using simple approach
+        demo_institution = db.query(Institution).filter(
             Institution.name == "Demo Educational District"
-        ).all()
-        
-        if len(demo_institutions) > 1:
-            # Merge multiple demo institutions into one
-            primary_institution = demo_institutions[0]
-            for duplicate_institution in demo_institutions[1:]:
-                # Move all students to primary institution
-                db.query(Student).filter(
-                    Student.institution_id == duplicate_institution.id
-                ).update({Student.institution_id: primary_institution.id})
-                
-                # Move all predictions to primary institution
-                db.query(Prediction).filter(
-                    Prediction.institution_id == duplicate_institution.id
-                ).update({Prediction.institution_id: primary_institution.id})
-                
-                # Move all interventions to primary institution
-                db.query(Intervention).filter(
-                    Intervention.institution_id == duplicate_institution.id
-                ).update({Intervention.institution_id: primary_institution.id})
-                
-                # Delete duplicate institution
-                db.delete(duplicate_institution)
-                logger.info(f"Merged duplicate institution {duplicate_institution.id} into {primary_institution.id}")
-            
-            db.commit()
-            demo_institution = primary_institution
-        elif demo_institutions:
-            demo_institution = demo_institutions[0]
-        else:
-            demo_institution = None
-        
-        # Get or create demo institution (reuse the one we found/cleaned up)
-        if not demo_institution:
-            demo_institution = db.query(Institution).filter(
-                Institution.name == "Demo Educational District"
-            ).first()
+        ).first()
         
         if not demo_institution:
             demo_institution = Institution(
@@ -925,36 +885,8 @@ async def load_sample_data(
             db.commit()
             db.refresh(demo_institution)
         
-        # Clean up duplicate students within the demo institution
-        for student_id in sample_student_ids:
-            duplicate_students = db.query(Student).filter(
-                and_(
-                    Student.institution_id == demo_institution.id,
-                    Student.student_id == student_id
-                )
-            ).all()
-            
-            if len(duplicate_students) > 1:
-                # Keep the first one, delete the rest
-                primary_student = duplicate_students[0]
-                for duplicate_student in duplicate_students[1:]:
-                    # Move predictions to primary student
-                    db.query(Prediction).filter(
-                        Prediction.student_id == duplicate_student.id
-                    ).update({Prediction.student_id: primary_student.id})
-                    
-                    # Move interventions to primary student
-                    db.query(Intervention).filter(
-                        Intervention.student_id == duplicate_student.id
-                    ).update({Intervention.student_id: primary_student.id})
-                    
-                    # Delete duplicate student
-                    db.delete(duplicate_student)
-                    logger.info(f"Removed duplicate sample student {student_id} (id: {duplicate_student.id})")
-        
-        db.commit()
-        
-        # Create sample students if they don't exist (READ-ONLY approach)
+        # Create or update sample students using upsert approach
+        sample_student_ids = ['1001', '1002', '1003', '1004', '1005']
         sample_student_data = [
             {'student_id': '1001', 'name': 'Alice Johnson'},
             {'student_id': '1002', 'name': 'Bob Smith'},

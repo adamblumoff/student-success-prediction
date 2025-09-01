@@ -8,7 +8,7 @@ for production PostgreSQL deployment.
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index, JSON
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -94,8 +94,9 @@ class Student(Base):
     predictions = relationship("Prediction", back_populates="student")
     interventions = relationship("Intervention", back_populates="student")
     
-    # Composite indexes for performance
+    # Composite indexes and constraints for performance and data integrity
     __table_args__ = (
+        UniqueConstraint('institution_id', 'student_id', name='uq_students_institution_student_id'),
         Index('ix_students_institution_student_id', 'institution_id', 'student_id'),
         Index('ix_students_institution_grade', 'institution_id', 'grade_level'),
         Index('ix_students_institution_status', 'institution_id', 'enrollment_status'),
