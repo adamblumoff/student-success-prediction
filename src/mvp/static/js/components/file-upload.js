@@ -112,10 +112,14 @@ class FileUpload extends Component {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use the WORKING endpoint from original
+      // Use the WORKING endpoint from original with proper authentication
+      const token = sessionStorage.getItem('auth_token');
       const response = await fetch('/api/mvp/analyze', {
         method: 'POST',
         credentials: 'include', // Include session cookies
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
 
@@ -260,8 +264,12 @@ class FileUpload extends Component {
     this.showLoading(true);
 
     try {
+      const token = sessionStorage.getItem('auth_token');
       const response = await fetch('/api/mvp/sample', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (!response.ok) {
         const errorData = await response.text();
