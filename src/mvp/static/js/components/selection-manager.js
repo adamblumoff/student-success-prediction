@@ -4,7 +4,8 @@
  */
 
 class SelectionManager {
-    constructor() {
+    constructor(appState = null) {
+        this.appState = appState;
         this.selectedStudents = new Set();
         this.selectedInterventions = new Set();
         this.selectionMode = true; // Default to enabled (bulk mode on by default)
@@ -20,6 +21,11 @@ class SelectionManager {
         this.setupMutationObserver();
         this.setupTabWatcher(); // Watch for tab changes
         
+        // Subscribe to app state changes if available
+        if (this.appState) {
+            this.appState.subscribe('currentTab', this.handleTabChange.bind(this));
+        }
+        
         // Only enter selection mode if on analysis tab
         if (this.selectionMode && this.isAnalysisTabActive()) {
             this.enterSelectionMode();
@@ -27,6 +33,14 @@ class SelectionManager {
     }
 
     // ========== TAB DETECTION ==========
+    
+    handleTabChange(currentTab) {
+        console.log('🎯 SelectionManager: Tab changed to', currentTab);
+        // Small delay to let DOM updates complete
+        setTimeout(() => {
+            this.updateBulkActionsVisibility();
+        }, 50);
+    }
     
     isAnalysisTabActive() {
         const activeTab = document.querySelector('.tab-button.active[data-tab="analyze"]');
