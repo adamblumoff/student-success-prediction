@@ -2,17 +2,36 @@
 
 An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes. Features **GPT-enhanced AI insights** with database persistence and intelligent caching for personalized student recommendations.
 
+## 🏆 Production Status
+
+- **✅ Production Ready**: Deployed on Railway with PostgreSQL
+- **✅ FERPA Compliant**: Full encryption and audit logging
+- **✅ Security Hardened**: Comprehensive security policies enforced
+- **✅ CI/CD Pipeline**: GitHub Actions with automated testing
+- **✅ Demo Ready**: Reliable sample data loading for presentations
+
 ## 🚀 Quick Start
 
+### Development
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the application
+# Start the application (auto-detects SQLite for development)
 python3 run_mvp.py
 
 # Open browser to http://localhost:8001
 # Default API key: dev-key-change-me
+```
+
+### Production (Railway)
+```bash
+# Deploys automatically on push to master branch
+# Configure environment variables in Railway dashboard:
+MVP_API_KEY=<32+ character secure key>
+SESSION_SECRET=<64+ character secure key>
+DATABASE_ENCRYPTION_KEY=<32+ character key>
+ENVIRONMENT=production
 ```
 
 ## ✨ What It Does

@@ -1,5 +1,12 @@
 # Railway Deployment Guide
 
+## 🚀 Current Deployment Status
+- **Auto-Deploy**: Configured to deploy automatically on push to master branch
+- **Platform**: Railway with PostgreSQL database
+- **Security**: FERPA-compliant with full encryption and audit logging
+- **HTTPS**: Automatically provided by Railway (detected by SecurityManager)
+- **Last Updated**: September 2025
+
 ## Prerequisites
 - Railway account (free at https://railway.app)
 - Railway CLI installed and authenticated
@@ -114,6 +121,27 @@ Your app is configured to:
 - ✅ Handle file uploads up to 10MB
 - ✅ Support both SQLite fallback and PostgreSQL
 
+## Recent Fixes & Improvements (September 2025)
+
+### ✅ Security Manager HTTPS Detection
+- **Fixed**: SecurityManager now properly detects Railway's automatic HTTPS
+- **Solution**: Checks for `RAILWAY_ENVIRONMENT` variable and `.railway.app` domains
+- **Result**: No more "HTTPS required" errors in production
+
+### ✅ Missing Dependencies
+- **Fixed**: Added `werkzeug>=2.3.0` for password hashing
+- **Updated**: `cryptography>=41.0.0` and `bcrypt>=4.0.0` for security
+
+### ✅ Duplicate Student Prevention
+- **Fixed**: Database `UniqueConstraint` on `(institution_id, student_id)`
+- **Solution**: PostgreSQL `ON CONFLICT DO NOTHING` for safe upserts
+- **Result**: CSV files can be re-uploaded without creating duplicates
+
+### ✅ CI/CD Pipeline
+- **Enhanced**: GPT AI and integration tests run on all branches
+- **Fixed**: Upgraded GitHub Actions from v3 to v4
+- **Result**: Comprehensive testing on every deployment
+
 ## Troubleshooting
 
 ### Build Issues
@@ -129,6 +157,7 @@ railway up --detach
 - Verify all required environment variables are set
 - Check that `MVP_API_KEY` is at least 32 characters
 - Ensure `DEVELOPMENT_MODE=false` in production
+- Railway automatically provides HTTPS (no need to configure)
 
 ### Database Issues
 - Railway PostgreSQL: Connection string is auto-generated

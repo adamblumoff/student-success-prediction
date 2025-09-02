@@ -2,6 +2,50 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚀 Current Project Status (September 2025)
+
+### Production Deployment
+- **Platform**: Railway (auto-deploys on push to master)
+- **Database**: PostgreSQL with full production schema
+- **Security**: FERPA-compliant with comprehensive security hardening
+- **CI/CD**: GitHub Actions pipeline with security validation
+- **URL**: Configured via Railway dashboard
+
+### Recent Major Updates (September 2025)
+
+#### 1. **Duplicate Student Handling Fixed** ✅
+- Added database-level `UniqueConstraint` on `(institution_id, student_id)`
+- Simplified sample data loading - removed 75+ lines of complex cleanup logic
+- CSV re-uploads now properly use PostgreSQL `ON CONFLICT DO NOTHING`
+- Demo presentations are now 100% reliable with consistent data
+
+#### 2. **Security Hardening Complete** ✅
+- Implemented `SecurityManager` class for environment-specific policies
+- Railway HTTPS detection fixed for production deployments
+- GitHub Actions CI pipeline replaces bypassable pre-push hooks
+- All security tests passing with FERPA compliance
+
+#### 3. **CI/CD Pipeline Enhanced** ✅
+- GPT AI and integration tests now run on all branches (not just dev/PR)
+- Fixed deprecated GitHub Actions (upgraded to v4)
+- Added missing dependencies (cryptography, bcrypt, werkzeug)
+- Comprehensive test coverage across security, database, and API
+
+### Critical Environment Variables (Railway)
+```bash
+# Required for production
+MVP_API_KEY=<32+ character secure key>
+SESSION_SECRET=<64+ character secure key>
+DATABASE_ENCRYPTION_KEY=<32+ character key for FERPA compliance>
+ENVIRONMENT=production
+DEVELOPMENT_MODE=false
+ENABLE_HTTPS=true
+
+# Optional (for GPT features)
+OPENAI_API_KEY=<your OpenAI API key>
+GPT_MODEL=gpt-4o-mini
+```
+
 ## Development Commands
 
 ### Quick Start
@@ -513,9 +557,22 @@ docker compose -f docker-compose.prod.yml down
 - Automatic format detection for Canvas and generic CSV
 
 ### Authentication
-- Default API key: `dev-key-change-me`
-- Set custom key via `MVP_API_KEY` environment variable
-- All endpoints require authentication
+- Default API key: `dev-key-change-me` (development only)
+- Production requires secure 32+ character key via `MVP_API_KEY`
+- All endpoints require authentication except `/health`
+
+### Duplicate Student Issues (FIXED)
+**Previous Issue**: Sample data and CSV uploads created duplicate students
+**Solution Implemented**: 
+- Database `UniqueConstraint` on `(institution_id, student_id)`
+- PostgreSQL `ON CONFLICT DO NOTHING` for upserts
+- Simplified sample data loading logic
+**Result**: CSV files can be re-uploaded safely without creating duplicates
+
+### Railway Deployment
+**HTTPS Detection**: Security manager automatically detects Railway environment
+**Environment Variables**: Must be set in Railway dashboard, not in code
+**Auto-Deploy**: Pushes to master branch automatically trigger deployment
 
 ### Explainable AI "Explain Prediction" Button Issues
 **Problem**: 500 errors when clicking "Explain AI Prediction" buttons
