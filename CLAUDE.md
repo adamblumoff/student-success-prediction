@@ -133,26 +133,6 @@ CREATE TABLE gpt_insights (
 - **Frontend**: `src/mvp/static/js/components/analysis.js` - Real-time GPT insight loading
 - **Database**: SQLite (development) / PostgreSQL (production) with full schema support
 
-## Codebase Cleanup (Completed 2024-12)
-
-### 🗑️ Technical Debt Elimination
-The codebase underwent aggressive cleanup removing 745+ lines of bloat:
-
-**Phase 1 Removals:**
-- ❌ Duplicate entry points (`app.py`, `start_local.py`)
-- ❌ One-time database fix script (`fix_student_ids.py`)
-- ❌ 6 unused JavaScript integration files
-- ❌ Manual backup HTML template
-- ❌ All Python cache files
-
-**Phase 2 Removals:**
-- ❌ Legacy CSS file (`style.css` - 84KB)
-- ❌ Unreferenced test CSV files
-- ❌ Obsolete OULAD download script
-- ❌ Empty directories (`logs/`, `repo/`)
-- 📁 OULAD raw data archived to `data/archive/`
-
-**Impact:** 20-25% codebase reduction, improved maintainability, zero functional impact
 
 ## Production Readiness Assessment (Updated 2024-12)
 
@@ -230,14 +210,6 @@ The application has undergone comprehensive analysis by specialized agents cover
 2. **Database Layer** - Add connection monitoring, circuit breakers, batch optimization
 3. **Security Hardening** - Implement distributed rate limiting, token rotation
 
-#### Code Bloat Elimination (15-20% Reduction)
-**Safe to Remove Immediately:**
-- `app.py` (102 lines) - Duplicate application entry point
-- `start_local.py` (65 lines) - Redundant local launcher
-- `fix_student_ids.py` (178 lines) - One-time database fix script
-- `src/mvp/templates/index_backup.html` - Manual backup file
-
-**Estimated Impact:** 345+ lines of redundant code elimination
 
 ### 🏗️ Architecture Assessment
 
@@ -487,45 +459,34 @@ except Exception as e:
 5. **Check insights** in the Model Insights panel
 6. **Test notifications** via browser console: `notificationSystem.testAlert()`
 
-### Production Deployment
-1. **Validate deployment readiness**: `python3 scripts/validate_deployment.py`
-2. **Configure environment**: Copy `.env.production` to `.env` and update values
-3. **Deploy with Docker**: `./deploy.sh --environment production`
-4. **Verify deployment**: `curl http://localhost:8001/health`
-5. **Monitor system**: Check logs with `docker compose -f docker-compose.prod.yml logs -f`
+### Production Deployment (Railway)
+1. **Push to master branch**: Railway auto-deploys on push
+2. **Configure environment**: Set variables in Railway dashboard
+3. **Verify deployment**: Check Railway logs and application URL
+4. **Monitor system**: Use Railway dashboard for logs and metrics
 
 ### Docker Deployment Options
 
-**Quick Development Setup**:
+**Development with Docker**:
 ```bash
-# Copy environment file
-cp .env.development .env
-
-# Deploy development environment
-./deploy.sh --environment development
+# Build and run with docker-compose
+docker compose up --build
 
 # Access application
 open http://localhost:8001
 ```
 
-**Production Deployment**:
+**Production Docker Build**:
 ```bash
-# Validate deployment readiness
-python3 scripts/validate_deployment.py
+# Build production image
+docker build --target production -t student-success-prediction:latest .
 
-# Configure production environment
-cp .env.production .env
-nano .env  # Update DATABASE_URL, MVP_API_KEY, etc.
-
-# Deploy with full testing
-./deploy.sh --environment production
-
-# Or skip tests for faster deployment
-./deploy.sh --environment production --skip-tests
-
-# Verify deployment
-curl http://localhost:8001/health
-curl http://localhost:8001/docs
+# Run with environment variables
+docker run -p 8001:8001 \
+  -e MVP_API_KEY="your-secure-key" \
+  -e DATABASE_URL="postgresql://..." \
+  -e ENVIRONMENT="production" \
+  student-success-prediction:latest
 ```
 
 **Manual Docker Commands**:
@@ -588,7 +549,6 @@ docker compose -f docker-compose.prod.yml down
 # Early Assessment Performance (11): early_assessments_count, early_avg_score, early_score_std, etc.
 ```
 
-**Debugging Command**: `python3 test_endpoints.py` to verify explainable AI functionality
 
 **Current Implementation**: The system now uses actual database student records for GPT analysis. When students are uploaded via CSV, they're stored in the `students` table with full K-12 demographic data, and GPT analyses reference this real data rather than sample features.
 
@@ -684,154 +644,8 @@ family_comm = intervention_system.generate_family_communication(intervention_pla
 
 The system is designed for educational demonstration with explainable AI features, now supporting both development simplicity and production scalability with specialized K-12 capabilities.
 
-## Repository Cleanup Guidelines
-
-### Regular Cleanup Process
-**When to perform cleanup**: After completing major features or integrations
-
-**Cleanup checklist**:
-1. **Remove old model files**: Keep only the latest/best performing models in `results/models/`
-2. **Delete backup files**: Remove any `*.bak`, `*_old*`, `*~`, `.DS_Store` files
-3. **Consolidate documentation**: Remove duplicate documentation files
-4. **Organize test files**: Ensure all tests are in the `tests/` directory
-5. **Clean empty directories**: Remove empty directories in `results/figures/` etc.
-6. **Update structure docs**: Update `DIRECTORY_STRUCTURE.md` to reflect new integrations
-7. **Commit and push**: Always commit cleanup changes with descriptive messages
-
-**Cleanup command pattern**:
-```bash
-# Remove old model versions (keep latest/best performing)
-rm -f results/models/k12/k12_*_old_date_*.pkl
-
-# Update documentation to reflect current structure
-# Update CLAUDE.md with new features/patterns
-
-# Commit the cleanup
-git add -A
-git commit -m "Clean up repository structure and remove outdated files
-
-- Remove outdated model files (keep ultra-advanced 81.5% AUC model)
-- Consolidate duplicate documentation
-- Update directory structure to reflect Google Classroom integration
-- Organize repository for better navigation
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
-git push origin dev
-```
-
-**Files to always keep**:
-- Latest K-12 ultra-advanced model (`k12_ultra_advanced_*.pkl`)
-- Production-ready trained models
-- Current integration code
-- Active documentation and guides
-
-**Files safe to remove**:
-- Older model versions with lower performance
-- Duplicate structure documentation
-- Empty result directories
-- Backup/temporary files
 
 
-## System Maintenance and Reliability
-
-### Automated Testing and Health Monitoring
-
-The system includes comprehensive testing and monitoring infrastructure to ensure reliability:
-
-**Health Monitoring:**
-```bash
-# Run system health check
-python3 scripts/system_health_monitor.py
-
-# Continuous monitoring (every 15 minutes)
-python3 scripts/system_health_monitor.py --continuous 15
-
-# Email alerts on issues
-python3 scripts/system_health_monitor.py --email
-```
-
-**Automated Testing:**
-```bash
-# Run full test suite
-python3 scripts/run_automated_tests.py
-
-# Run specific test categories
-python3 scripts/run_automated_tests.py --suites unit_tests api_tests notification_tests
-
-# Performance benchmarking
-python3 scripts/run_automated_tests.py --performance-only
-```
-
-**Maintenance Scripts:**
-```bash
-# Daily maintenance
-./scripts/daily_maintenance.sh
-
-# Weekly maintenance
-./scripts/weekly_maintenance.sh
-
-# Emergency restart
-./scripts/emergency_restart.sh
-
-# System status check
-./scripts/system_status.sh
-```
-
-### Test Coverage
-
-The system includes comprehensive tests:
-- **Unit Tests**: Individual component testing
-- **API Tests**: All endpoint testing with authentication
-- **Notification Tests**: Real-time notification system testing
-- **Integration Tests**: LMS/SIS integration testing
-- **Performance Tests**: Response time and throughput testing
-
-### Monitoring and Alerting
-
-**Health Checks Monitor:**
-- API endpoint responsiveness
-- Database connectivity
-- Model loading and performance
-- Notification system functionality
-- Integration system health
-- File system and resource usage
-
-**Alerting Thresholds:**
-- Response time > 5 seconds (warning)
-- Disk usage > 85% (warning)
-- Memory usage > 80% (warning)
-- API errors > 50% (critical)
-- Database connection failures (critical)
-
-### Maintenance Schedule
-
-**Daily (Automated):**
-- Health monitoring every 15 minutes
-- Error log analysis
-- Basic connectivity checks
-
-**Weekly (Automated):**
-- Full test suite execution
-- Database maintenance and optimization
-- Log rotation and cleanup
-- Dependency updates
-
-**Monthly (Manual Review):**
-- Model performance evaluation
-- Security audit
-- Full system backup
-- Documentation updates
-
-### Configuration Files
-
-**Health Monitor**: `config/health_monitor.json`
-**Test Runner**: `config/test_runner.json`
-**Cron Jobs**: `config/cron_examples.txt`
-**Systemd Service**: `config/student-success.service`
-
-See `docs/SYSTEM_MAINTENANCE.md` for comprehensive maintenance procedures.
 
 ## Development Guidelines for Claude Code
 
@@ -844,10 +658,17 @@ See `docs/SYSTEM_MAINTENANCE.md` for comprehensive maintenance procedures.
 src/mvp/mvp_api.py          # Main entry point - imports all routers
 src/mvp/api/
 ├── core.py                 # Core MVP endpoints (/api/mvp/*)
-├── canvas_endpoints.py     # Canvas LMS endpoints (/api/lms/*)
-├── powerschool_endpoints.py # PowerSchool SIS endpoints (/api/sis/*)
-├── google_classroom_endpoints.py # Google Classroom endpoints (/api/google/*)
-└── combined_endpoints.py   # Combined integration endpoints (/api/integration/*)
+├── gpt_enhanced_endpoints.py # GPT AI insights endpoints
+├── interventions.py        # Intervention management endpoints
+├── notifications_endpoints.py # Real-time notifications
+├── health.py               # Health check endpoints
+├── canvas_endpoints.py     # Canvas LMS endpoints
+├── canvas_import.py        # Canvas import functionality  
+├── powerschool_endpoints.py # PowerSchool SIS endpoints
+├── powerschool_import.py   # PowerSchool import functionality
+├── google_classroom_v2.py  # Google Classroom endpoints v2
+├── google_classroom_import.py # Google Classroom import
+└── combined_endpoints.py   # Combined integration endpoints
 ```
 
 **Benefits Achieved**:
@@ -991,54 +812,6 @@ git status  # Check for untracked files that should be ignored
 # - Update README.md if major changes made
 ```
 
-### Repository Organization Principles
-
-**Directory Structure Goals**:
-- **Logical Grouping**: Related functionality in same directories
-- **Modular Design**: Each module can be developed/tested independently  
-- **Clear Navigation**: Developers can quickly find what they need
-- **Scalability**: Structure supports growth without reorganization
-
-**Current Organization**:
-```
-📁 Core Application (src/mvp/) - Web app and API
-📁 ML Models (src/models/) - All machine learning components
-📁 Integrations (src/integrations/) - External system connections
-📁 Testing (tests/) - Comprehensive test suite
-📁 Documentation (docs/ + *.md) - All project documentation
-📁 Data & Results (data/, results/) - Datasets and model outputs
-📁 Deployment (deployment/, alembic/) - Infrastructure and migrations
-```
-
-**Navigation Helper**: Use `DIRECTORY_STRUCTURE.md` for quick reference to file locations and purposes.
-
-### Automated Cleanup Integration
-
-**Repository Cleanup Commands** (Available in scripts/cleanup.sh):
-```bash
-# Quick cleanup (run before commits)
-./scripts/cleanup.sh
-
-# Manual cleanup steps:
-find . -name "*.pyc" -delete && find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-find . -name "*.tmp" -delete && find . -name "*~" -delete 2>/dev/null || true
-rm -f *_old.py *_backup.py *.bak 2>/dev/null || true
-
-# Clean old logs and reports
-find logs/ -name "*.log" -mtime +30 -delete 2>/dev/null || true  
-find test_reports/ -name "*" -mtime +7 -delete 2>/dev/null || true
-
-# Validate repository structure
-python3 scripts/validate_deployment.py
-```
-
-**Integration with Development Workflow**:
-1. **Before Major Commits**: Run cleanup to ensure repository is organized
-2. **After Refactoring**: Remove old files and update structure documentation
-3. **Weekly Maintenance**: Quick cleanup check during development
-4. **Before Deployment**: Ensure no development artifacts in production code
-
-This systematic approach maintains a clean, navigable repository that scales with the project's growth.
 - this product is made for teachers/adminstrators for k-12 schools and making their workflow easier
 - always have the server running in the background so that i can test it
 - need to make sure features work before committing

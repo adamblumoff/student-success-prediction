@@ -26,6 +26,7 @@ python3 run_mvp.py
 
 ### Production (Railway)
 ```bash
+# Live Application: https://student-success-prediction-production.up.railway.app/
 # Deploys automatically on push to master branch
 # Configure environment variables in Railway dashboard:
 MVP_API_KEY=<32+ character secure key>
