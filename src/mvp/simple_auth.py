@@ -6,6 +6,7 @@ Replaces complex security layer with basic API key check
 
 import os
 import time
+import logging
 from fastapi import HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Dict, Any
@@ -13,6 +14,9 @@ from collections import defaultdict, deque
 from fastapi import Depends
 from sqlalchemy.orm import Session
 import time
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Rate limiting with time-based sliding windows
 _rate_limit_storage = defaultdict(lambda: deque())
@@ -30,11 +34,11 @@ def validate_security_configuration_on_startup() -> Dict[str, str]:
     # Validate development mode setting
     dev_mode = os.getenv('DEVELOPMENT_MODE', 'false').lower()
     if dev_mode == 'true':
-        print("⚠️  WARNING: Development mode is ENABLED - authentication bypass allowed for localhost")
+        logger.warning("⚠️  WARNING: Development mode is ENABLED - authentication bypass allowed for localhost")
         if os.getenv('ENVIRONMENT', '').lower() in ['production', 'prod']:
             raise ValueError("❌ SECURITY ERROR: DEVELOPMENT_MODE cannot be 'true' in production environment")
     else:
-        print("✅ Development mode is DISABLED - full authentication required")
+        logger.info("✅ Development mode is DISABLED - full authentication required")
     
     result['development_mode'] = dev_mode
     
@@ -53,7 +57,7 @@ def validate_api_key() -> str:
     # Check for missing API key
     if not api_key:
         if os.getenv('DEVELOPMENT_MODE', 'false').lower() == 'true':
-            print("⚠️  WARNING: No API key set, using development default")
+            logger.warning("⚠️  WARNING: No API key set, using development default")
             return "dev-key-change-me"
         else:
             raise ValueError("❌ SECURITY ERROR: MVP_API_KEY environment variable must be set in production")
@@ -63,16 +67,16 @@ def validate_api_key() -> str:
         if os.getenv('DEVELOPMENT_MODE', 'false').lower() != 'true':
             raise ValueError("❌ SECURITY ERROR: Cannot use default API key 'dev-key-change-me' in production")
         else:
-            print("⚠️  WARNING: Using development API key")
+            logger.warning("⚠️  WARNING: Using development API key")
     
     # Check key strength (minimum requirements)
     if len(api_key) < 16:
         raise ValueError("❌ SECURITY ERROR: API key must be at least 16 characters long")
     
     if api_key.isalnum() and len(set(api_key)) < 8:
-        print(f"⚠️  WARNING: API key may be weak (low entropy)")
+        logger.warning(f"⚠️  WARNING: API key may be weak (low entropy)")
     
-    print(f"✅ API key validated: {api_key[:8]}***")
+    logger.info(f"✅ API key validated: {api_key[:8]}***")
     return api_key
 
 def simple_auth(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
@@ -148,7 +152,7 @@ def get_current_user_secure(
             pass
         except Exception as e:
             # Log error but don't fail authentication in MVP mode
-            print(f"⚠️  Warning: Database security context setup failed: {e}")
+            logger.warning(f"⚠️  Warning: Database security context setup failed: {e}")
     
     return user_info
 
