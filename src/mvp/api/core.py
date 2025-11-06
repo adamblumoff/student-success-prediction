@@ -31,9 +31,7 @@ if str(Path(__file__).parent.parent.parent) not in sys.path:
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
-from src.mvp.simple_auth_clean import simple_auth_check, apply_rate_limit
-from src.mvp.simple_auth import simple_file_validation  # Keep file validation
-from src.mvp.security import InputSanitizer
+from src.mvp.security import InputSanitizer, auth_dependency, enforce_rate_limit, get_current_user_secure
 from mvp.database import get_db_session, get_session_factory, save_predictions_batch, save_gpt_insight, get_gpt_insight, get_all_gpt_insights_for_session
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -152,13 +150,13 @@ def convert_student_id_to_int(student_id):
 async def analyze_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor)
 ):
     """Analyze uploaded CSV file and return risk predictions using K-12 model"""
     try:
         # Production-ready rate limiting
-        apply_rate_limit(request)
+        enforce_rate_limit(request)
         
         # Secure file validation and processing
         contents = await file.read()
@@ -416,12 +414,12 @@ async def analyze_student_data(
 async def analyze_detailed_student_data(
     request: Request,
     file: UploadFile = File(...),
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     intervention_system = Depends(get_intervention_system)
 ):
     """Detailed analysis with explainable AI predictions"""
     try:
-        apply_rate_limit(request)
+        enforce_rate_limit(request)
         
         contents = await file.read()
         filename = InputSanitizer.sanitize_filename(file.filename)
@@ -477,7 +475,7 @@ async def analyze_detailed_student_data(
 async def get_audit_summary(
     request: Request,
     days: int = 30,
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     db: Session = Depends(get_db)
 ):
     """Get comprehensive audit summary for compliance reporting"""
@@ -521,7 +519,7 @@ async def get_audit_events(
     limit: int = 100,
     offset: int = 0,
     action_filter: str = None,
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     db: Session = Depends(get_db)
 ):
     """Get detailed audit events for compliance review"""
@@ -598,7 +596,7 @@ async def analyze_k12_gradebook(
     file: UploadFile = File(...),
     include_gpt_analysis: bool = Query(False, description="Include GPT-OSS enhanced natural language analysis"),
     gpt_analysis_depth: str = Query("basic", description="GPT analysis depth: basic, detailed, comprehensive"),
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor),
     db: Session = Depends(get_db)
 ):
@@ -614,7 +612,7 @@ async def analyze_k12_gradebook(
     operation_start = time.time()
     
     try:
-        apply_rate_limit(request)
+        enforce_rate_limit(request)
         
         # Log file upload start
         request_context = {
@@ -837,7 +835,7 @@ Focus on actionable insights for K-12 educators and administrators."""
 @router.get("/sample")
 async def load_sample_data(
     request: Request,
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     k12_ultra_predictor = Depends(get_k12_ultra_predictor),
     db: Session = Depends(get_db)
 ):
@@ -1147,7 +1145,7 @@ async def load_sample_data(
         })
 
 @router.get("/stats")
-async def get_simple_stats(current_user: dict = Depends(simple_auth_check)):
+async def get_simple_stats(current_user: dict = Depends(auth_dependency)):
     """Get simple analytics and system stats"""
     try:
         # Get database session
@@ -1326,7 +1324,7 @@ def generate_useful_explanation(student, prediction, risk_score, risk_category):
 
 @router.get("/check-existing-students")
 async def check_existing_students(
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     db: Session = Depends(get_db)
 ):
     """Check if user has existing students in database for smart landing page routing"""
@@ -1369,7 +1367,7 @@ async def check_existing_students(
 
 @router.get("/load-existing-students")
 async def load_existing_students(
-    current_user: dict = Depends(simple_auth_check),
+    current_user: dict = Depends(auth_dependency),
     db: Session = Depends(get_db)
 ):
     """Load existing students with their latest predictions for analyze tab display"""
@@ -1481,7 +1479,7 @@ async def load_existing_students(
         })
 
 @router.get("/success-stories")
-async def get_success_stories(current_user: dict = Depends(simple_auth_check)):
+async def get_success_stories(current_user: dict = Depends(auth_dependency)):
     """Get success stories and case studies"""
     try:
         # Sample success stories for demonstration
@@ -1539,7 +1537,7 @@ async def get_success_stories(current_user: dict = Depends(simple_auth_check)):
         raise HTTPException(status_code=500, detail=f"Error retrieving success stories: {str(e)}")
 
 @router.get("/insights")
-async def get_insights(current_user: dict = Depends(simple_auth_check)):
+async def get_insights(current_user: dict = Depends(auth_dependency)):
     """Get global model insights and analytics"""
     try:
         # Sample insights for model transparency and educator understanding
@@ -1599,7 +1597,7 @@ async def get_insights(current_user: dict = Depends(simple_auth_check)):
 
 # Demo endpoints
 @router.get("/demo/stats")
-async def demo_stats(current_user: dict = Depends(simple_auth_check)):
+async def demo_stats(current_user: dict = Depends(auth_dependency)):
     """Get demo statistics for presentations"""
     try:
         return JSONResponse({
@@ -1640,7 +1638,7 @@ async def demo_stats(current_user: dict = Depends(simple_auth_check)):
         raise HTTPException(status_code=500, detail=f"Error retrieving demo stats: {str(e)}")
 
 @router.get("/demo/simulate-new-student")
-async def simulate_new_student(current_user: dict = Depends(simple_auth_check)):
+async def simulate_new_student(current_user: dict = Depends(auth_dependency)):
     """Simulate a new student for demo purposes"""
     try:
         # Generate a random demo student
@@ -1691,7 +1689,7 @@ async def simulate_new_student(current_user: dict = Depends(simple_auth_check)):
         raise HTTPException(status_code=500, detail=f"Error simulating student: {str(e)}")
 
 @router.get("/demo/success-stories")
-async def demo_success_stories(current_user: dict = Depends(simple_auth_check)):
+async def demo_success_stories(current_user: dict = Depends(auth_dependency)):
     """Get success stories for demo presentations"""
     return await get_success_stories(current_user)
 
@@ -1715,7 +1713,7 @@ async def web_login(request: Request):
     """
     try:
         # Rate limit authentication attempts
-        apply_rate_limit(request)
+        enforce_rate_limit(request)
         
         # Environment gating to prevent demo login in production
         env = os.getenv('ENVIRONMENT', 'development').lower()
@@ -1798,7 +1796,7 @@ async def web_login(request: Request):
         raise HTTPException(status_code=500, detail="Authentication failed")
 
 @router.get("/auth/status")
-async def auth_status(current_user: dict = Depends(simple_auth_check)):
+async def auth_status(current_user: dict = Depends(auth_dependency)):
     """Check current authentication status"""
     return JSONResponse({
         'authenticated': True,
@@ -1810,7 +1808,7 @@ async def auth_status(current_user: dict = Depends(simple_auth_check)):
 @router.post("/gpt-insights/check")
 async def check_gpt_insights(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Check if GPT insights exist in database for given student and data hash."""
     try:
@@ -1845,7 +1843,7 @@ async def check_gpt_insights(
 @router.post("/gpt-insights/save")
 async def save_gpt_insights(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Save GPT insights to database after fresh generation."""
     try:
@@ -1892,7 +1890,7 @@ async def get_session_gpt_insights(
     """Retrieve all GPT insights for a session (for restoring on login/refresh)."""
     try:
         # Manual authentication check
-        current_user = simple_auth_check(request, None)
+        current_user = get_current_user_secure(request)
         
         insights = get_all_gpt_insights_for_session(session_id, institution_id=1)
         
@@ -1911,7 +1909,7 @@ async def delete_all_students(request: Request):
     """Delete all students from the database - use with caution!"""
     try:
         # Manual authentication check
-        current_user = simple_auth_check(request, None)
+        current_user = get_current_user_secure(request)
         
         # Import database modules
         from mvp.database import get_db_session

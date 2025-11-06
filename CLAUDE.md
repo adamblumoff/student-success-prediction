@@ -328,14 +328,15 @@ risk_results = intervention_system.assess_student_risk(student_df)
 
 ### Security Framework
 
-**Simplified Authentication** (`src/mvp/simple_auth.py`):
-- **API Key**: Single development key for MVP use
-- **Rate Limiting**: Simple in-memory rate limiting
-- **File Validation**: Basic CSV validation with size limits
+**Security Module** (`src/mvp/security.py`):
+- **API Key Enforcement**: Validates strength + presence across environments
+- **Rate Limiting**: Advanced in-memory throttling for API, uploads, auth attempts
+- **Session Support**: Optional session tokens for web flows
+- **File Validation**: Hardened CSV validation via `InputSanitizer`
 
 **Security Configuration**:
-- Development: Uses default API key `dev-key-change-me`
-- Environment variable: `MVP_API_KEY` for custom key
+- Development: Generate your own `MVP_API_KEY`/`SESSION_SECRET`
+- Production: Keys required at startup; validation blocks weak values
 
 ### API Structure
 
@@ -392,13 +393,14 @@ df = universal_gradebook_converter(df)
 
 ## Key Development Patterns
 
-### Simple Authentication
+### Security Dependency
 ```python
-# Simple API key check
-def simple_auth(credentials):
-    if credentials.credentials != os.getenv("MVP_API_KEY", "dev-key-change-me"):
-        raise HTTPException(401, "Invalid API key")
-    return {"user": "mvp_user"}
+from fastapi import Depends
+from src.mvp.security import auth_dependency
+
+@router.get("/secure-endpoint")
+async def secure_endpoint(current_user: dict = Depends(auth_dependency)):
+    return {"user": current_user["user"], "permissions": current_user["permissions"]}
 ```
 
 ### Explainable AI Integration
@@ -426,7 +428,7 @@ except Exception as e:
 ### Core Application Files
 - `run_mvp.py` - Main application launcher
 - `src/mvp/mvp_api.py` - MVP API implementation
-- `src/mvp/simple_auth.py` - Simplified security layer
+- `src/mvp/security.py` - Centralized authentication, rate limiting, validation
 - `src/models/intervention_system.py` - ML system with explainable AI
 - `src/models/explainable_ai.py` - Explainable AI module
 

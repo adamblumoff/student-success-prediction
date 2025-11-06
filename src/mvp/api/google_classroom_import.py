@@ -12,7 +12,7 @@ import os
 from datetime import datetime
 
 # Import authentication  
-from src.mvp.simple_auth_clean import simple_auth_check
+from src.mvp.security import auth_dependency
 
 # Import mock data generator
 from src.mvp.services.google_classroom_mock_data import google_classroom_data_generator
@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/api/google-classroom-import", tags=["Google Classroom"])
 
-# Using standard authentication from simple_auth_clean
+# Using standard authentication from security module
 
 @router.get("/classrooms")
-async def get_google_classrooms(current_user: dict = Depends(simple_auth_check)):
+async def get_google_classrooms(current_user: dict = Depends(auth_dependency)):
     """Get list of available Google Classrooms"""
     try:
         classrooms = google_classroom_data_generator.get_classrooms_summary()
@@ -48,7 +48,7 @@ async def get_google_classrooms(current_user: dict = Depends(simple_auth_check))
 @router.post("/test-connection")
 async def test_google_classroom_connection(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Test Google Classroom connection with provided credentials"""
     try:
@@ -86,7 +86,7 @@ async def test_google_classroom_connection(
 @router.post("/import-classrooms")
 async def import_google_classrooms(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Import student data from selected Google Classrooms"""
     try:
@@ -225,7 +225,7 @@ async def import_google_classrooms(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/import-status")
-async def get_google_classroom_import_status(current_user: dict = Depends(simple_auth_check)):
+async def get_google_classroom_import_status(current_user: dict = Depends(auth_dependency)):
     """Get current Google Classroom import status and statistics"""
     try:
         with get_db_session() as db:

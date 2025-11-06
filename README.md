@@ -22,12 +22,13 @@ export DB_USER=postgres
 export DB_PASSWORD=postgres
 export DB_HOST=localhost
 export DB_NAME=student_success
+export MVP_API_KEY=$(openssl rand -hex 24)   # Any secure value ≥16 chars works locally
+export SESSION_SECRET=$(openssl rand -hex 32)
 
 # Start the application (PostgreSQL required)
 python3 run_mvp.py
 
 # Open browser to http://localhost:8001
-# Default API key: dev-key-change-me
 ```
 
 ### Production (Railway)

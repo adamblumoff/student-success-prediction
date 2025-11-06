@@ -82,10 +82,10 @@ def validate_dependencies():
 def validate_security():
     """Validate security configuration"""
     try:
-        from mvp.simple_auth import validate_security_configuration_on_startup
-        security_config = validate_security_configuration_on_startup()
-        print("🔒 Security configuration validated successfully")
-        return security_config
+        from mvp.security import verify_security_startup
+        summary = verify_security_startup()
+        print(f"🔒 Security configuration validated (env={summary['environment']})")
+        return summary
     except ValueError as e:
         print(f"\n❌ Security validation failed: {e}")
         print("\n💡 Fix by setting environment variables:")

@@ -15,7 +15,7 @@ from datetime import datetime
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.mvp.simple_auth_clean import simple_auth_check
+from src.mvp.security import auth_dependency
 from mvp.database import get_db_session
 from mvp.models import Student, Institution, Prediction
 from mvp.services.canvas_mock_data import CanvasMockDataGenerator
@@ -24,21 +24,10 @@ from models.intervention_system import InterventionRecommendationSystem
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canvas-import", tags=["Canvas Import"])
 
-def get_current_user(request: Request):
-    """Simple authentication dependency - use updated simple_auth_check"""
-    auth_header = request.headers.get('authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        token = auth_header.split(' ')[1]
-        from fastapi.security import HTTPAuthorizationCredentials
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        return simple_auth_check(request, credentials)
-    
-    raise HTTPException(status_code=401, detail="Authentication required")
-
 @router.post("/import-courses")
 async def import_canvas_courses(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Import selected Canvas courses as mock student data"""
     
@@ -200,7 +189,7 @@ async def import_canvas_courses(
 
 @router.get("/import-status")
 async def get_import_status(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Get status of Canvas imports"""
     
@@ -263,7 +252,7 @@ async def get_import_status(
 
 @router.delete("/clear-canvas-data")
 async def clear_canvas_data(
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Clear all Canvas imported data"""
     

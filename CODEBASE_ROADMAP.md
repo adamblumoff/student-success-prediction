@@ -349,9 +349,9 @@ curl -X POST "http://localhost:8001/api/mvp/analyze" \
 ```
 src/mvp/
 ├── security_manager.py     # Environment-specific security policies
+├── security.py             # API key + session security + rate limiting
 ├── encryption.py           # FERPA-compliant data encryption
-├── audit_logger.py         # Comprehensive audit logging
-└── simple_auth.py          # API key authentication
+└── audit_logger.py         # Comprehensive audit logging
 ```
 
 #### Key Security Features

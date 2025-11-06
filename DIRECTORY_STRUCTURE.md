@@ -20,7 +20,7 @@ src/
 │   │   └── combined_endpoints.py   # Multi-platform integration (/api/integration/*)
 │   ├── database.py         # PostgreSQL database layer
 │   ├── models.py           # SQLAlchemy ORM models (6 production tables)
-│   ├── simple_auth.py      # API key authentication system
+│   ├── security.py         # API key + session security layer
 │   ├── static/             # Modern Web Assets
 │   │   ├── css/            
 │   │   │   ├── style.css   # Main application styles

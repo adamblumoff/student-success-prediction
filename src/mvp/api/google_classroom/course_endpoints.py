@@ -14,7 +14,7 @@ import asyncio
 from datetime import datetime
 
 from ..shared.google_deps import get_google_classroom_integration, get_current_user
-from mvp.simple_auth import simple_rate_limit
+from src.mvp.security import enforce_rate_limit
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ async def get_courses(
 ):
     """Get list of Google Classroom courses"""
     try:
-        simple_rate_limit(request, 30)
+        enforce_rate_limit(request)
         google_classroom = get_google_classroom_integration()
         
         if hasattr(google_classroom, 'is_authenticated') and not google_classroom.is_authenticated():

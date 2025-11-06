@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 
 # Import authentication  
-from src.mvp.simple_auth_clean import simple_auth_check
+from src.mvp.security import auth_dependency
 
 # Import mock data generator
 from src.mvp.services.powerschool_mock_data import powerschool_data_generator
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter(prefix="/api/powerschool-import", tags=["PowerSchool SIS"])
 
-# Using standard authentication from simple_auth_clean
+# Using standard authentication from security module
 
 @router.get("/schools")
-async def get_powerschool_schools(current_user: dict = Depends(simple_auth_check)):
+async def get_powerschool_schools(current_user: dict = Depends(auth_dependency)):
     """Get list of available PowerSchool schools"""
     try:
         schools = powerschool_data_generator.get_schools_summary()
@@ -47,7 +47,7 @@ async def get_powerschool_schools(current_user: dict = Depends(simple_auth_check
 @router.post("/test-connection")
 async def test_powerschool_connection(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Test PowerSchool SIS connection with provided credentials"""
     try:
@@ -84,7 +84,7 @@ async def test_powerschool_connection(
 @router.post("/import-schools")
 async def import_powerschool_schools(
     request: Request,
-    current_user: dict = Depends(simple_auth_check)
+    current_user: dict = Depends(auth_dependency)
 ):
     """Import student data from selected PowerSchool schools"""
     try:
@@ -229,7 +229,7 @@ async def import_powerschool_schools(
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/import-status")
-async def get_powerschool_import_status(current_user: dict = Depends(simple_auth_check)):
+async def get_powerschool_import_status(current_user: dict = Depends(auth_dependency)):
     """Get current PowerSchool import status and statistics"""
     try:
         with get_db_session() as db:

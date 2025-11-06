@@ -24,7 +24,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from mvp.notifications import notification_system, AlertLevel, AlertType, StudentAlert, NotificationRule
-from mvp.simple_auth import simple_auth
+from src.mvp.security import auth_dependency
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,17 +32,6 @@ logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter()
-
-def get_current_user(request: Request):
-    """Simple authentication dependency"""
-    auth_header = request.headers.get('authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        token = auth_header.split(' ')[1]
-        from fastapi.security import HTTPAuthorizationCredentials
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        return simple_auth(credentials)
-    
-    raise HTTPException(status_code=401, detail="Authentication required")
 
 # Request/Response Models
 class StudentRiskUpdate(BaseModel):
@@ -145,7 +134,7 @@ async def websocket_notifications(websocket: WebSocket):
 async def monitor_student_risk(
     risk_update: StudentRiskUpdate,
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Monitor student risk and trigger alerts if thresholds are exceeded
@@ -191,7 +180,7 @@ async def get_alerts(
     request: Request,
     student_id: Optional[str] = None,
     active_only: bool = True,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Get student alerts, optionally filtered by student ID
@@ -242,7 +231,7 @@ async def acknowledge_alert(
     alert_id: str,
     acknowledgment: AlertAcknowledgment,
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Acknowledge a student alert
@@ -274,7 +263,7 @@ async def resolve_alert(
     alert_id: str,
     resolution: AlertResolution,
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Resolve a student alert
@@ -307,7 +296,7 @@ async def resolve_alert(
 @router.get("/notifications/stats")
 async def get_notification_stats(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Get notification system statistics
@@ -334,7 +323,7 @@ async def get_notification_stats(
 @router.get("/notifications/rules")
 async def get_notification_rules(
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Get configured notification rules
@@ -368,7 +357,7 @@ async def get_notification_rules(
 async def create_notification_rule(
     rule_data: NotificationRuleCreate,
     request: Request,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(auth_dependency)
 ):
     """
     Create a new notification rule

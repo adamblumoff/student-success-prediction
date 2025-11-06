@@ -10,8 +10,8 @@ import secrets
 import hashlib
 import hmac
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Request
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi import HTTPException, Request, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from typing import Dict, Any, Optional
 from collections import defaultdict, deque
 import logging
@@ -481,6 +481,33 @@ class InputSanitizer:
 session_manager = SecureSessionManager()
 rate_limiter = AdvancedRateLimiter()
 input_sanitizer = InputSanitizer()
+bearer_scheme = HTTPBearer(auto_error=False)
+
+def enforce_rate_limit(request: Request, operation: str = 'api_request') -> None:
+    """Public helper to enforce rate limits for specific operations."""
+    rate_limiter.check_rate_limit(request, operation)
+
+def enforce_upload_rate_limit(request: Request) -> None:
+    """Convenience wrapper for file upload throttling."""
+    enforce_rate_limit(request, 'file_upload')
+
+def auth_dependency(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+) -> Dict[str, Any]:
+    """FastAPI dependency that authenticates the current request."""
+    enforce_rate_limit(request, 'api_request')
+    return get_current_user_secure(request, credentials)
+
+def verify_security_startup() -> Dict[str, Any]:
+    """Summarize security posture; raises if configuration invalid."""
+    summary = {
+        "environment": security_config.environment,
+        "development_mode": security_config.development_mode,
+        "api_key_length": len(security_config.api_key or "")
+    }
+    logger.info(f"Security startup verification: {summary}")
+    return summary
 
 # Authentication Functions
 def secure_auth(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
