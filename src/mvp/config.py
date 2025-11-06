@@ -126,6 +126,7 @@ class DatabaseConfig:
     pool_size: int = 10
     max_overflow: int = 20
     pool_recycle: int = 3600
+    pool_timeout: int = 30
     pool_pre_ping: bool = True
     echo_queries: bool = False
     
@@ -156,6 +157,9 @@ class DatabaseConfig:
         
         if self.pool_recycle <= 0:
             raise ValueError("Pool recycle time must be positive")
+        
+        if self.pool_timeout <= 0 or self.pool_timeout > 300:
+            raise ValueError("Pool timeout must be between 1 and 300 seconds")
     
     @property
     def is_postgresql(self) -> bool:
@@ -261,7 +265,7 @@ class ConfigurationLoader:
             security = ConfigurationLoader._load_security_config(environment)
             
             # Load database configuration
-            database = ConfigurationLoader._load_database_config()
+            database = ConfigurationLoader._load_database_config(environment)
             
             # Load ML configuration
             ml = ConfigurationLoader._load_ml_config()
@@ -287,14 +291,18 @@ class ConfigurationLoader:
             
             # Log configuration summary
             logger = logging.getLogger(__name__)
-            logger.info(f"Configuration loaded successfully for {environment.value} environment")
-            logger.info(f"Database: {database.url.split('@')[-1] if '@' in database.url else 'SQLite'}")
+            logger.info(f"✅ Configuration loaded successfully for {environment.value} environment")
+            if database.url.startswith('sqlite'):
+                logger.info("Database: SQLite (testing mode only)")
+            else:
+                logger.info(f"Database: PostgreSQL -> {database.url.split('@')[-1]}")
             logger.info(f"Security: API key configured, development_mode={security.development_mode}")
             
             return config
             
         except Exception as e:
-            raise RuntimeError(f"Failed to load application configuration: {e}")
+            logging.getLogger(__name__).error(f"Failed to load application configuration: {e}")
+            raise
     
     @staticmethod
     def _load_security_config(environment: Environment) -> SecurityConfig:
@@ -328,48 +336,83 @@ class ConfigurationLoader:
         )
     
     @staticmethod
-    def _load_database_config() -> DatabaseConfig:
+    def _load_database_config(environment: Environment) -> DatabaseConfig:
         """Load database configuration with intelligent defaults."""
-        # Primary database URL
+        testing_flag = os.getenv('TESTING', 'false').lower() == 'true'
         database_url = os.getenv('DATABASE_URL')
         
-        # Component-based fallback (no hardcoded credentials)
-        if not database_url:
-            db_host = os.getenv('DB_HOST')
-            db_port = os.getenv('DB_PORT', '5432')
-            db_name = os.getenv('DB_NAME', 'student_success')
-            db_user = os.getenv('DB_USER')
-            db_password = os.getenv('DB_PASSWORD')
-            
-            # Check if we have complete PostgreSQL configuration
-            if db_host and db_user and db_password:
-                # Only create PostgreSQL URL if all credentials are explicitly provided
-                database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-                logging.info("Using PostgreSQL database from environment variables")
-            else:
-                # SQLite fallback for development only
-                missing_vars = []
-                if not db_host:
-                    missing_vars.append('DB_HOST')
-                if not db_user:
-                    missing_vars.append('DB_USER')
-                if not db_password:
-                    missing_vars.append('DB_PASSWORD')
-                
-                if os.getenv('ENVIRONMENT') == 'production':
-                    raise ValueError(f"❌ SECURITY ERROR: Production requires PostgreSQL credentials. Missing: {', '.join(missing_vars)}")
-                
-                database_url = "sqlite:///./mvp_data.db"
-                logging.warning(f"PostgreSQL credentials missing ({', '.join(missing_vars)}), falling back to SQLite for development")
+        if database_url:
+            database_url = ConfigurationLoader._validate_database_url(
+                database_url,
+                environment,
+                testing_flag
+            )
+        else:
+            database_url = ConfigurationLoader._build_postgres_url_from_components(environment)
         
         return DatabaseConfig(
             url=database_url,
             pool_size=int(os.getenv('DB_POOL_SIZE', '10')),
             max_overflow=int(os.getenv('DB_MAX_OVERFLOW', '20')),
             pool_recycle=int(os.getenv('DB_POOL_RECYCLE', '3600')),
+            pool_timeout=int(os.getenv('DB_POOL_TIMEOUT', '30')),
             pool_pre_ping=os.getenv('DB_POOL_PRE_PING', 'true').lower() == 'true',
             echo_queries=os.getenv('SQL_DEBUG', 'false').lower() == 'true'
         )
+    
+    @staticmethod
+    def _build_postgres_url_from_components(environment: Environment) -> str:
+        """Construct PostgreSQL URL from component environment variables."""
+        db_host = os.getenv('DB_HOST', '').strip() or 'localhost'
+        db_port = os.getenv('DB_PORT', '5432')
+        db_name = os.getenv('DB_NAME', 'student_success')
+        db_user = os.getenv('DB_USER')
+        db_password = os.getenv('DB_PASSWORD')
+        
+        missing_vars = []
+        if not db_user:
+            missing_vars.append('DB_USER')
+        if not db_password:
+            missing_vars.append('DB_PASSWORD')
+        
+        if missing_vars:
+            raise ValueError(
+                "Missing PostgreSQL environment variables: " + ", ".join(missing_vars)
+            )
+        
+        url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        logging.info(f"Using PostgreSQL database via components ({db_host}:{db_port}/{db_name})")
+        return ConfigurationLoader._apply_postgres_defaults(url, environment)
+    
+    @staticmethod
+    def _validate_database_url(database_url: str, environment: Environment, testing_flag: bool) -> str:
+        """Validate and normalize database URLs from DATABASE_URL."""
+        normalized_url = database_url.strip()
+        
+        if normalized_url.startswith('sqlite'):
+            if environment == Environment.PRODUCTION:
+                raise ValueError("Production must use PostgreSQL; SQLite databases are not allowed")
+            if not testing_flag and environment != Environment.TESTING:
+                raise ValueError("SQLite databases are only permitted during automated tests")
+            logging.info("Using SQLite database for testing")
+            return normalized_url
+        
+        if not normalized_url.startswith(('postgresql://', 'postgres://')):
+            raise ValueError("Database URL must use the PostgreSQL protocol (postgresql://)")
+        
+        return ConfigurationLoader._apply_postgres_defaults(normalized_url, environment)
+    
+    @staticmethod
+    def _apply_postgres_defaults(database_url: str, environment: Environment) -> str:
+        """Normalize PostgreSQL URLs and enforce production requirements."""
+        normalized = database_url.replace('postgres://', 'postgresql://', 1) if database_url.startswith('postgres://') else database_url
+        
+        if environment == Environment.PRODUCTION and normalized.startswith('postgresql') and 'sslmode=' not in normalized:
+            separator = '&' if '?' in normalized else '?'
+            normalized = f"{normalized}{separator}sslmode=require"
+            logging.info("Enforcing sslmode=require for production database connection")
+        
+        return normalized
     
     @staticmethod
     def _load_ml_config() -> MLConfig:

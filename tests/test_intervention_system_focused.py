@@ -72,14 +72,14 @@ def test_database_config_validation():
     try:
         # Test development configuration
         os.environ['ENVIRONMENT'] = 'development'
-        config = DatabaseConfig()
+        config = DatabaseConfig(force_reload=True)
         assert not config.is_production
         
         # Test that production config exists (would fail with SQLite)
         os.environ['ENVIRONMENT'] = 'production'
         
         try:
-            config = DatabaseConfig()
+            config = DatabaseConfig(force_reload=True)
             # If we get here, we're using PostgreSQL
             assert config.is_production
         except ValueError as e:

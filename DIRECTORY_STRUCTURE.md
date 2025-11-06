@@ -18,7 +18,7 @@ src/
 │   │   ├── powerschool_endpoints.py # PowerSchool SIS integration (/api/sis/*)
 │   │   ├── google_classroom_v2.py  # Google Classroom integration (/api/google/*)
 │   │   └── combined_endpoints.py   # Multi-platform integration (/api/integration/*)
-│   ├── database.py         # Hybrid PostgreSQL/SQLite database layer
+│   ├── database.py         # PostgreSQL database layer
 │   ├── models.py           # SQLAlchemy ORM models (6 production tables)
 │   ├── simple_auth.py      # API key authentication system
 │   ├── static/             # Modern Web Assets
@@ -200,7 +200,7 @@ python3 scripts/validate_deployment.py   # Production readiness check
 
 **🏗️ Core Architecture:**
 - **API Routers**: `src/mvp/api/` (6 specialized modules)
-- **Database Layer**: `src/mvp/database.py` (PostgreSQL/SQLite hybrid)
+- **Database Layer**: `src/mvp/database.py` (PostgreSQL-only)
 - **ORM Models**: `src/mvp/models.py` (6 production tables)
 - **Web Interface**: `src/mvp/templates/index.html` (comprehensive UI)
 

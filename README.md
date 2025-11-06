@@ -17,7 +17,13 @@ An AI-powered platform that helps K-12 educators identify at-risk students early
 # Install dependencies
 pip install -r requirements.txt
 
-# Start the application (auto-detects SQLite for development)
+# Configure PostgreSQL (or supply DATABASE_URL)
+export DB_USER=postgres
+export DB_PASSWORD=postgres
+export DB_HOST=localhost
+export DB_NAME=student_success
+
+# Start the application (PostgreSQL required)
 python3 run_mvp.py
 
 # Open browser to http://localhost:8001
@@ -77,12 +83,12 @@ ENVIRONMENT=production
 ### Integration Support
 - **Canvas LMS**: Direct gradebook import with auto-format detection
 - **Generic CSV**: Any CSV format with student IDs and grades
-- **PostgreSQL/SQLite**: Hybrid database support for development and production
+- **PostgreSQL-Only**: Single database backend across environments
 
 ## 🛠️ Technical Stack
 
 - **Backend**: Python/FastAPI with modular API architecture (6 specialized routers)
-- **Database**: PostgreSQL (production) with SQLite fallback (development)
+- **Database**: PostgreSQL across environments with SSL enforcement in production
 - **Frontend**: Modern JavaScript with 11+ modular components and real-time updates
 - **ML**: K-12 specialized neural network (81.5% AUC) with explainable AI
 - **GPT Integration**: OpenAI API with database persistence and intelligent caching

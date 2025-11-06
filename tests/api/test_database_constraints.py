@@ -424,7 +424,7 @@ class TestDatabaseConstraints:
             os.environ['DATABASE_URL'] = 'sqlite:///test.db'
             
             with pytest.raises(ValueError, match="Production must use PostgreSQL"):
-                DatabaseConfig()
+                DatabaseConfig(force_reload=True)
                 
         finally:
             # Restore environment

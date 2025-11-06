@@ -119,7 +119,7 @@ Your app is configured to:
 - ✅ Serve web interface at root URL
 - ✅ Provide API at `/api/` endpoints
 - ✅ Handle file uploads up to 10MB
-- ✅ Support both SQLite fallback and PostgreSQL
+- ✅ Use PostgreSQL-only storage (no SQLite fallback)
 
 ## Recent Fixes & Improvements (September 2025)
 

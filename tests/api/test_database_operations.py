@@ -426,7 +426,7 @@ class TestDatabaseOperations:
         try:
             # Test development configuration
             os.environ['ENVIRONMENT'] = 'development'
-            config = DatabaseConfig()
+            config = DatabaseConfig(force_reload=True)
             assert not config.is_production
             
             # Test production configuration
@@ -434,7 +434,7 @@ class TestDatabaseOperations:
             
             # Should validate security requirements
             with pytest.raises(ValueError, match="Production must use PostgreSQL"):
-                config = DatabaseConfig()
+                config = DatabaseConfig(force_reload=True)
         
         finally:
             os.environ['ENVIRONMENT'] = original_env
