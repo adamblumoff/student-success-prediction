@@ -246,7 +246,7 @@ if __name__ == "__main__":
 
 # Expose DI-backed services at module level for test monkeypatch compatibility
 try:
-    from src.mvp.services import get_intervention_system, get_k12_ultra_predictor
+    from src.mvp.container import get_intervention_system, get_k12_ultra_predictor
     intervention_system = get_intervention_system()
     k12_ultra_predictor = get_k12_ultra_predictor()
 except Exception:

@@ -348,7 +348,7 @@ async def database_health_check():
 async def ml_models_health_check():
     """Check ML models availability."""
     try:
-        from .services import get_intervention_system, get_k12_ultra_predictor
+        from .container import get_intervention_system, get_k12_ultra_predictor
         
         # Check if models can be loaded
         intervention_system = get_intervention_system()

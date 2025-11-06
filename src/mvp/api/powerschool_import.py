@@ -14,7 +14,7 @@ from datetime import datetime
 from src.mvp.security import auth_dependency
 
 # Import mock data generator
-from src.mvp.services.powerschool_mock_data import powerschool_data_generator
+from examples.mock_data.powerschool_mock_data import powerschool_data_generator
 
 # Import database functionality
 from src.mvp.database import get_db_session

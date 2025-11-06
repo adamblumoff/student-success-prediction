@@ -19,13 +19,14 @@ import os
 from typing import List, Dict, Any
 import io
 import time
-import importlib.util
 from datetime import datetime
+from src.mvp.container import (
+    get_intervention_system as di_get_intervention_system,
+    get_k12_ultra_predictor as di_get_k12_ultra_predictor,
+    get_gpt_service as di_get_gpt_service
+)
 
 # Import models using consistent approach (consolidated path management)
-import sys
-from pathlib import Path
-# Single consolidated path addition
 if str(Path(__file__).parent.parent.parent) not in sys.path:
     sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -60,73 +61,36 @@ _demo_cache = {
     'sample_data': None
 }
 
-# Import dependency injection services 
-# Temporary: Import only the working services to get server running
-try:
-    # Import from services.py file (not the services/ directory)
-    import sys
-    from pathlib import Path
-    services_file_path = Path(__file__).parent.parent / 'services.py'
-    spec = importlib.util.spec_from_file_location("mvp_services", services_file_path)
-    mvp_services = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mvp_services)
-    get_intervention_system = mvp_services.get_intervention_system
-    get_k12_ultra_predictor = mvp_services.get_k12_ultra_predictor
-    
-    # Create a working demo GPT service for proof-of-concept
-    class DemoGPTService:
-        def generate_analysis(self, prompt, analysis_type="student_analysis", max_tokens=1024, bypass_cache=False):
-            return {
-                "success": True,
-                "analysis": f"✅ GPT-OSS Integration Working! Analysis type: {analysis_type}. Student shows patterns that suggest focused intervention in academic support and engagement strategies. Recommend individualized tutoring and regular check-ins.",
-                "metadata": {
-                    "model": "demo-gpt-service",
-                    "analysis_type": analysis_type,
-                    "timestamp": "2025-08-26T13:38:00Z",
-                    "tokens_generated": 25,
-                    "device": "demo"
-                }
-            }
-        
-        def predict_from_gradebook(self, gradebook_df, include_gpt_analysis=True, analysis_depth="basic"):
-            # Mock prediction results with GPT insights
-            results = []
-            for index, row in gradebook_df.iterrows():
-                student_id = str(row.get('Student ID', row.get('Student_ID', index)))
-                
-                # Mock ML prediction
-                ml_result = {
-                    "student_id": student_id,
-                    "risk_score": 0.65,
-                    "risk_category": "Medium Risk",
-                    "success_probability": 0.35,
-                    "needs_intervention": True
-                }
-                
-                # Add GPT analysis if requested
-                if include_gpt_analysis:
-                    gpt_analysis = self.generate_analysis(
-                        f"Analyze student {student_id} with gradebook data", 
-                        analysis_type="student_analysis"
-                    )
-                    ml_result["gpt_insights"] = gpt_analysis
-                
-                results.append(ml_result)
-            
-            return results
-    
-    def get_gpt_oss_service():
-        return DemoGPTService()
-        
-except ImportError:
-    # Fallback if imports fail - create stub functions
-    def get_intervention_system():
-        return None
-    
-    def get_k12_ultra_predictor():
-        return None
-        
-    def get_gpt_oss_service():
+def get_intervention_system():
+    """Dependency wrapper around the DI container."""
+    try:
+        system = di_get_intervention_system()
+        if system is None:
+            raise RuntimeError("Intervention system unavailable")
+        return system
+    except Exception as exc:
+        logger.error(f"❌ Intervention system unavailable: {exc}")
+        raise RuntimeError("Intervention system unavailable") from exc
+
+
+def get_k12_ultra_predictor():
+    """Dependency wrapper for the K12 predictor."""
+    try:
+        predictor = di_get_k12_ultra_predictor()
+        if predictor is None:
+            raise RuntimeError("K12 predictor unavailable")
+        return predictor
+    except Exception as exc:
+        logger.error(f"❌ K12 predictor unavailable: {exc}")
+        raise RuntimeError("K12 predictor unavailable") from exc
+
+
+def get_gpt_oss_service():
+    """Resolve GPT service; returns None when not configured."""
+    try:
+        return di_get_gpt_service()
+    except Exception as exc:
+        logger.warning(f"⚠️ GPT service unavailable: {exc}")
         return None
 
 def convert_student_id_to_int(student_id):

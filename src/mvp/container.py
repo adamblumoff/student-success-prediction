@@ -8,7 +8,7 @@ testability, maintainability, and production deployment flexibility.
 
 import os
 import logging
-from typing import Dict, Any, Optional, Callable, TypeVar, Type
+from typing import Dict, Any, Optional, Callable, TypeVar, Type, List
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from pathlib import Path
@@ -17,6 +17,10 @@ import threading
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
+# Core model classes referenced throughout the container
+from src.models.intervention_system import InterventionRecommendationSystem
+from src.models.k12_ultra_predictor import K12UltraPredictor
 
 class ServiceLifetime:
     """Service lifetime management patterns."""
@@ -136,6 +140,13 @@ class ServiceContainer:
 
 # Global container instance
 _container = ServiceContainer()
+_services_configured = False
+
+def _ensure_services_configured():
+    """Ensure container registrations have been performed."""
+    global _services_configured
+    if not _services_configured:
+        configure_production_services()
 
 def get_container() -> ServiceContainer:
     """Get the global service container."""
@@ -144,6 +155,9 @@ def get_container() -> ServiceContainer:
 # Service registration for production
 def configure_production_services():
     """Configure all production services in the container."""
+    global _services_configured
+    if _services_configured:
+        return
     
     # Database services
     from .database import DatabaseConfig
@@ -153,7 +167,6 @@ def configure_production_services():
     def ml_model_factory(container):
         """Factory for ML models with fallback handling."""
         try:
-            from src.models.intervention_system import InterventionRecommendationSystem
             models_dir = Path(os.getenv('MODELS_DIR', 'results/models'))
             return InterventionRecommendationSystem(models_dir=models_dir)
         except Exception as e:
@@ -163,18 +176,35 @@ def configure_production_services():
     def k12_model_factory(container):
         """Factory for K-12 models with fallback handling."""
         try:
-            from src.models.k12_ultra_predictor import K12UltraPredictor
             return K12UltraPredictor()
         except Exception as e:
             logger.warning(f"Failed to load K12UltraPredictor: {e}")
             return None
     
     # Register ML services
-    from src.models.intervention_system import InterventionRecommendationSystem
-    from src.models.k12_ultra_predictor import K12UltraPredictor
     
     _container.register_singleton(InterventionRecommendationSystem, factory=ml_model_factory)
     _container.register_singleton(K12UltraPredictor, factory=k12_model_factory)
+    
+    # GPT and context services
+    from src.mvp.services.gpt_oss_service import GPTOSSService
+    from src.mvp.services.gpt_enhanced_predictor import GPTEnhancedPredictor
+    from src.mvp.services.context_builder import ContextBuilder
+    from src.mvp.services.metrics_aggregator import MetricsAggregator
+
+    def gpt_service_factory(container):
+        """Factory for GPT service with fallback demo implementation."""
+        try:
+            service = GPTOSSService()
+            return service
+        except Exception as exc:
+            logger.warning(f"GPT service unavailable, using demo service: {exc}")
+            return DemoGPTService()
+
+    _container.register_singleton(GPTOSSService, factory=gpt_service_factory)
+    _container.register_singleton(GPTEnhancedPredictor, factory=lambda c: GPTEnhancedPredictor())
+    _container.register_singleton(ContextBuilder, factory=lambda c: ContextBuilder())
+    _container.register_singleton(MetricsAggregator, factory=lambda c: MetricsAggregator())
     
     # Cache services
     _container.register_singleton(
@@ -188,6 +218,7 @@ def configure_production_services():
         factory=lambda c: MetricsCollector()
     )
     
+    _services_configured = True
     logger.info("Production services configured successfully")
 
 # Cache service for production
@@ -242,6 +273,71 @@ class ProductionCacheService:
             self._cache.clear()
             self._ttl.clear()
 
+class DemoGPTService:
+    """Fallback GPT service that returns deterministic demo responses."""
+    
+    def __init__(self):
+        self.is_initialized = True
+        self.model_name = "demo-gpt-service"
+    
+    def initialize_model(self) -> bool:
+        """Interface compatibility with GPTOSSService."""
+        self.is_initialized = True
+        return True
+    
+    def generate_analysis(self, prompt: str, analysis_type: str = "student_analysis", 
+                          max_tokens: int = 1024, bypass_cache: bool = False) -> Dict[str, Any]:
+        """Return a deterministic analysis payload."""
+        return {
+            "success": True,
+            "analysis": (
+                "⚠️ Demo GPT service active. Provide targeted academic support, "
+                "increase engagement touchpoints, and schedule a family check‑in."
+            ),
+            "analysis_type": analysis_type,
+            "metadata": {
+                "model": self.model_name,
+                "analysis_type": analysis_type,
+                "timestamp": "demo",
+                "tokens_generated": 0,
+                "cache_hit": False
+            }
+        }
+    
+    def predict_from_gradebook(self, gradebook_df, include_gpt_analysis: bool = True,
+                               analysis_depth: str = "basic") -> List[Dict[str, Any]]:
+        """Return mock prediction results for gradebook uploads."""
+        results = []
+        iterator = []
+        if hasattr(gradebook_df, "iterrows"):
+            iterator = gradebook_df.iterrows()
+        elif isinstance(gradebook_df, list):
+            iterator = enumerate(gradebook_df)
+        
+        for _, row in iterator:
+            student_id = str(getattr(row, "get", lambda k, d=None: row[k])("student_id", "demo_student"))
+            result = {
+                "student_id": student_id,
+                "risk_score": 0.65,
+                "risk_category": "Medium Risk",
+                "success_probability": 0.35,
+                "needs_intervention": True
+            }
+            if include_gpt_analysis:
+                result["gpt_insights"] = self.generate_analysis(
+                    f"Analyze student {student_id}", analysis_type=analysis_depth
+                )
+            results.append(result)
+        if not results:
+            results.append({
+                "student_id": "demo_student",
+                "risk_score": 0.6,
+                "risk_category": "Medium Risk",
+                "success_probability": 0.4,
+                "needs_intervention": True
+            })
+        return results
+
 # Metrics collection for monitoring
 class MetricsCollector:
     """Production metrics collection service."""
@@ -290,19 +386,47 @@ class MetricsCollector:
 # FastAPI dependency functions
 def get_intervention_system():
     """FastAPI dependency to get intervention system."""
+    _ensure_services_configured()
     return _container.get(InterventionRecommendationSystem)
 
 def get_k12_ultra_predictor():
     """FastAPI dependency to get K-12 predictor."""
+    _ensure_services_configured()
     return _container.get(K12UltraPredictor)
 
 def get_cache_service():
     """FastAPI dependency to get cache service."""
+    _ensure_services_configured()
     return _container.get(ProductionCacheService)
 
 def get_metrics_service():
     """FastAPI dependency to get metrics service."""
+    _ensure_services_configured()
     return _container.get(MetricsCollector)
+
+def get_gpt_service():
+    """FastAPI dependency to get GPT service."""
+    from src.mvp.services.gpt_oss_service import GPTOSSService  # local import for typing
+    _ensure_services_configured()
+    return _container.get(GPTOSSService)
+
+def get_gpt_enhanced_predictor():
+    """FastAPI dependency to get GPT-enhanced predictor."""
+    from src.mvp.services.gpt_enhanced_predictor import GPTEnhancedPredictor
+    _ensure_services_configured()
+    return _container.get(GPTEnhancedPredictor)
+
+def get_context_builder():
+    """FastAPI dependency to get context builder."""
+    from src.mvp.services.context_builder import ContextBuilder
+    _ensure_services_configured()
+    return _container.get(ContextBuilder)
+
+def get_metrics_aggregator():
+    """FastAPI dependency to get metrics aggregator."""
+    from src.mvp.services.metrics_aggregator import MetricsAggregator
+    _ensure_services_configured()
+    return _container.get(MetricsAggregator)
 
 # Startup function
 def initialize_container():

@@ -18,8 +18,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.mvp.security import auth_dependency
 from mvp.database import get_db_session
 from mvp.models import Student, Institution, Prediction
-from mvp.services.canvas_mock_data import CanvasMockDataGenerator
-from models.intervention_system import InterventionRecommendationSystem
+from examples.mock_data.canvas_mock_data import CanvasMockDataGenerator
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canvas-import", tags=["Canvas Import"])

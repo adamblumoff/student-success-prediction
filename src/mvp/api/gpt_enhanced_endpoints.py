@@ -23,6 +23,12 @@ from src.mvp.services.gpt_enhanced_predictor import GPTEnhancedPredictor
 from src.mvp.services.gpt_oss_service import GPTOSSService
 from src.mvp.services.metrics_aggregator import MetricsAggregator
 from src.mvp.services.context_builder import ContextBuilder
+from src.mvp.container import (
+    get_gpt_enhanced_predictor as di_get_gpt_enhanced_predictor,
+    get_gpt_service as di_get_gpt_service,
+    get_context_builder as di_get_context_builder,
+    get_metrics_aggregator as di_get_metrics_aggregator
+)
 from src.mvp.database import get_db_session
 from src.mvp.models import Student, Prediction, Intervention, Institution
 from sqlalchemy.orm import Session
@@ -64,25 +70,32 @@ class QuickInsightRequest(BaseModel):
 # Service dependencies
 def get_gpt_enhanced_predictor():
     """Dependency to get GPT-enhanced predictor."""
-    predictor = GPTEnhancedPredictor()
-    if not predictor.is_initialized:
+    predictor = di_get_gpt_enhanced_predictor()
+    if predictor and not getattr(predictor, "is_initialized", False):
         predictor.initialize_components()
     return predictor
 
 def get_gpt_service():
     """Dependency to get GPT service."""
-    service = GPTOSSService()
-    if not service.is_initialized:
-        service.initialize_model()
+    service = di_get_gpt_service()
+    if service and hasattr(service, "is_initialized") and not service.is_initialized:
+        try:
+            service.initialize_model()
+        except Exception as exc:
+            logger.warning(f"⚠️ GPT service initialization failed: {exc}")
     return service
+
+def get_gpt_oss_service():
+    """Alias retained for backwards-compatible patching in tests."""
+    return get_gpt_service()
 
 def get_context_builder():
     """Dependency to get context builder."""
-    return ContextBuilder()
+    return di_get_context_builder()
 
 def get_metrics_aggregator():
     """Dependency to get metrics aggregator.""" 
-    return MetricsAggregator()
+    return di_get_metrics_aggregator()
 
 # Database dependency
 def get_db():
@@ -122,7 +135,7 @@ async def analyze_student_comprehensive(
             raise HTTPException(status_code=404, detail=f"Student {student_id} not found")
         
         # Get comprehensive student data
-        metrics_aggregator = MetricsAggregator()
+        metrics_aggregator = get_metrics_aggregator()
         comprehensive_data = metrics_aggregator.get_comprehensive_student_data(student_id)
         
         if comprehensive_data.get("error"):
@@ -277,7 +290,7 @@ async def generate_intervention_plan(
             })
         
         # Get comprehensive student data
-        metrics_aggregator = MetricsAggregator()
+        metrics_aggregator = get_metrics_aggregator()
         comprehensive_data = metrics_aggregator.get_comprehensive_student_data(request_data.student_id)
         
         # Build student data for intervention planning
@@ -445,7 +458,7 @@ async def generate_narrative_report(
             raise HTTPException(status_code=404, detail=f"Student {student_id} not found")
         
         # Get comprehensive analysis first
-        metrics_aggregator = MetricsAggregator()
+        metrics_aggregator = get_metrics_aggregator()
         comprehensive_data = metrics_aggregator.get_comprehensive_student_data(student_id)
         
         # Generate enhanced prediction for the report
@@ -586,7 +599,7 @@ async def health_check_gpt_services():
         
         # Check Metrics Aggregator
         try:
-            metrics_aggregator = MetricsAggregator()
+            metrics_aggregator = get_metrics_aggregator()
             health_status["components"]["metrics_aggregator"] = {
                 "status": "operational"
             }

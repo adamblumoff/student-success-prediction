@@ -15,7 +15,7 @@ from datetime import datetime
 from src.mvp.security import auth_dependency
 
 # Import mock data generator
-from src.mvp.services.google_classroom_mock_data import google_classroom_data_generator
+from examples.mock_data.google_classroom_mock_data import google_classroom_data_generator
 
 # Import database functionality
 from src.mvp.database import get_db_session
