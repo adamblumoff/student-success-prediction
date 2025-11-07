@@ -199,7 +199,7 @@ npm install  # 15 development packages for testing
 - **API Layer**: FastAPI with 6 specialized router modules
 - **Business Logic**: Service-oriented architecture with dependency injection
 - **ML Pipeline**: Neural Network with feature engineering and explainable AI
-- **Database**: PostgreSQL production with SQLite development fallback
+- **Database**: PostgreSQL everywhere (SQLite only for automated tests)
 - **Security**: Multi-layer authentication, encryption, audit logging
 
 ### Detailed Project Structure
@@ -223,7 +223,7 @@ npm install  # 15 development packages for testing
 │   │   │   ├── selection-manager.js          # Mixed selection
 │   │   │   └── analysis.js, dashboard.js... # Core UI
 │   │   ├── models.py            # SQLAlchemy ORM (6 tables)
-│   │   └── database.py          # Hybrid PostgreSQL/SQLite
+│   │   └── database.py          # PostgreSQL configuration & access layer
 │   └── run_mvp.py              # Application entry point
 ├── 🤖 Machine Learning Pipeline  
 │   ├── src/models/              # ML models and training

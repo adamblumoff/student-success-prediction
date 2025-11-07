@@ -38,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database state remains clean and consistent
 - Demo presentations are 100% reliable
 
+## [Unreleased]
+
+### Changed
+- Removed the legacy SQLite fallback; PostgreSQL is now required in all environments (pytest still spins up temporary SQLite files for fast unit tests).
+
 ## [Development] - 2025-08-31
 
 ### ✨ Features

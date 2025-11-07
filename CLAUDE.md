@@ -50,14 +50,15 @@ GPT_MODEL=gpt-4o-mini
 
 ### Quick Start
 ```bash
-# MVP (Simple educator interface) - Auto-detects PostgreSQL or falls back to SQLite
-python3 run_mvp.py                    # Port 8001, PostgreSQL/SQLite, web UI
+# PostgreSQL is required in all environments (set DATABASE_URL or components)
+export DB_USER=postgres
+export DB_PASSWORD=postgres
+export DB_HOST=localhost
+export DB_NAME=student_success
 
-# With PostgreSQL (Neon.tech)
-export DATABASE_URL="postgresql://user:pass@host/database"
-python3 run_mvp.py                    # Uses PostgreSQL with full production schema
+# Launch the educator interface on port 8001
+python3 run_mvp.py
 ```
-
 ### Model Operations
 ```bash
 # Train original models (OULAD dataset)
@@ -131,7 +132,7 @@ CREATE TABLE gpt_insights (
 - **Service Layer**: `src/mvp/services/gpt_oss_service.py` - OpenAI API integration with fallback handling
 - **Caching**: `src/mvp/services/gpt_cache_service.py` - Database-backed caching system
 - **Frontend**: `src/mvp/static/js/components/analysis.js` - Real-time GPT insight loading
-- **Database**: SQLite (development) / PostgreSQL (production) with full schema support
+- **Database**: PostgreSQL only (pytest uses ephemeral SQLite files for isolation)
 
 
 ## Production Readiness Assessment (Updated 2024-12)
@@ -254,11 +255,11 @@ The application has undergone comprehensive analysis by specialized agents cover
 ## Architecture Overview
 
 ### Production-Ready MVP Architecture
-The system implements a **hybrid architecture** supporting both development and production deployments:
+The stack now assumes PostgreSQL everywhere. Automated tests may spin up temporary SQLite files, but the running application always targets PostgreSQL:
 
 **MVP Architecture** (`src/mvp/`):
 - **Purpose**: Full-featured educator interface with explainable AI
-- **Database**: PostgreSQL (production) with SQLite fallback (development)
+- **Database**: PostgreSQL (required in dev + production)
 - **Security**: API key authentication with rate limiting and audit logging
 - **Deployment**: Single Python process with auto-scaling database support
 - **Gradebook Support**: Canvas LMS and generic CSV formats
@@ -282,11 +283,10 @@ user_sessions     -- Session management
 alembic_version   -- Database migration tracking
 ```
 
-**Development SQLite (Current Default)**:
-- Automatic fallback when PostgreSQL unavailable (DATABASE_URL not set)
-- Full schema compatibility with all 10 production tables
-- Zero-configuration setup for quick demos
-- File: `mvp_data.db` in project root
+**Test SQLite Fixtures**:
+- Used only inside `pytest` to create disposable DB files
+- Mirrors the PostgreSQL schema for constraint coverage
+- Never used by `run_mvp.py` or production services
 
 ### Machine Learning Pipeline
 
@@ -580,12 +580,15 @@ alembic upgrade head
 python3 run_mvp.py
 ```
 
-**Option 3: Development with Auto-Fallback**
+**Option 3: Local PostgreSQL (Docker)**
 ```bash
-# No DATABASE_URL set - automatically uses SQLite
-python3 run_mvp.py  # Uses mvp_data.db
-```
+# Spin up postgres locally (example using Docker)
+docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=student_success postgres:15
 
+# Point the app to the container and launch
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/student_success"
+python3 run_mvp.py
+```
 ### Migration System
 
 **Alembic Configuration**:

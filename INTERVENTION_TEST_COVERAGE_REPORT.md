@@ -30,7 +30,7 @@ Comprehensive test coverage has been implemented for the **Intervention System**
 
 ### **3. Database Constraints Tests** (`tests/api/test_database_constraints.py`)
 - **PostgreSQL Upserts**: ON CONFLICT DO UPDATE and DO NOTHING testing
-- **SQLite Compatibility**: Fallback behavior for development
+- **SQLite Fixture Coverage**: Pytest-only SQLite DBs mirror production schema
 - **Constraint Validation**: Proper error messages for violations
 - **Multi-Institution Support**: Same student_id across different institutions
 - **Cascade Behavior**: Proper cleanup when deleting related records
@@ -152,7 +152,7 @@ Comprehensive test coverage has been implemented for the **Intervention System**
 ## 🚦 Continuous Integration Ready
 
 The test suite is designed to run in CI/CD environments with:
-- ✅ **Isolated test databases** (SQLite for speed, PostgreSQL for production)
+- ✅ **Isolated test databases** (SQLite for pytest speed; app uses PostgreSQL)
 - ✅ **Environment variable configuration**
 - ✅ **Parallel test execution support**
 - ✅ **Comprehensive reporting**

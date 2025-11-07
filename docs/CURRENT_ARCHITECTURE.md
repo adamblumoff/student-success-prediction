@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Student Success Prediction System is a modern, modular K-12 educational AI platform built with Python/FastAPI backend, JavaScript frontend, and hybrid PostgreSQL/SQLite database architecture. The system features GPT-enhanced AI insights, real-time intervention management, and comprehensive integration capabilities.
+The Student Success Prediction System is a modern, modular K-12 educational AI platform built with Python/FastAPI backend, JavaScript frontend, and a PostgreSQL-only database architecture (SQLite is used only inside automated tests). The system features GPT-enhanced AI insights, real-time intervention management, and comprehensive integration capabilities.
 
 **Last Updated**: August 2025
 **Production Readiness**: 80% for single district, 40% for multi-district
@@ -54,9 +54,9 @@ The Student Success Prediction System is a modern, modular K-12 educational AI p
 └─────────────────────────────────────────────────────────────────────┘
                                     ↕
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    Database Layer (Hybrid)                         │
+│               Database Layer (PostgreSQL Primary)                  │
 ├─────────────────────────────────────────────────────────────────────┤
-│  PostgreSQL (Production) / SQLite (Development)                    │
+│  PostgreSQL (development + production)                            │
 │  ├─ 10 Tables: students, predictions, interventions, etc.         │
 │  ├─ GPT Insights Table (Caching & Metadata)                       │
 │  ├─ Alembic Migrations (6 Migration Scripts)                      │
@@ -165,9 +165,9 @@ Grade-Specific (8)       # Elementary reading, HS graduation tracking
 
 ### 5. Database Architecture
 
-**Hybrid PostgreSQL/SQLite Design**
-- **Production**: PostgreSQL with full ACID compliance
-- **Development**: SQLite fallback for zero-config setup
+**PostgreSQL-First Design**
+- **Production/Development**: PostgreSQL with full ACID compliance
+- **Testing**: SQLite fixtures used only inside automated tests
 - **Migration**: Alembic for schema versioning
 - **Security**: Row-level security and encryption support
 
@@ -278,16 +278,21 @@ CREATE TABLE gpt_insights (
 
 ### 1. Development Deployment
 
-**Zero-Configuration Setup**
+**Local PostgreSQL Setup**
 ```bash
-python3 run_mvp.py  # Automatically uses SQLite, starts on :8001
+# Launch PostgreSQL locally (example using Docker)
+docker run --rm -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=student_success postgres:15
+
+# Point the app to the database and start FastAPI
+export DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/student_success\"
+python3 run_mvp.py  # Starts on :8001
 ```
 
 **Features**:
-- SQLite fallback database (`mvp_data.db`)
-- Development API key
-- Hot reloading for development
-- Debug logging enabled
+- PostgreSQL parity with production
+- Development API key / DEBUG logging
+- Hot reloading for rapid iteration
+- Pytest can spin up temporary SQLite files for isolated tests
 
 ### 2. Production Deployment
 
@@ -437,7 +442,7 @@ alembic downgrade base    # Reset database
 
 The current architecture represents a mature, production-ready system with:
 
-- **Modern Stack**: FastAPI + JavaScript + PostgreSQL/SQLite
+- **Modern Stack**: FastAPI + JavaScript + PostgreSQL (SQLite only in pytest fixtures)
 - **AI Integration**: 81.5% AUC ML model + GPT-enhanced insights
 - **Modular Design**: 6 specialized API routers, 11 frontend components
 - **Database Innovation**: GPT caching with intelligent invalidation

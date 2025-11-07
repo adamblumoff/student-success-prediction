@@ -42,6 +42,11 @@ DATABASE_ENCRYPTION_KEY=<32+ character key>
 ENVIRONMENT=production
 ```
 
+## 🔧 Dependency Management
+
+- **JavaScript**: use `npm install` (or `npm ci` in CI) to install dependencies pinned via `package-lock.json`.
+- **Python**: use `pip install -r requirements.txt` to sync backend libraries. The `PYTHONPATH=. pytest …` commands assume this virtual environment.
+- **Lockfiles**: commit `package-lock.json` and `requirements.txt` together when dependencies change so CI mirrors local development.
 ## ✨ What It Does
 
 - **🤖 AI Risk Prediction**: Identifies students at risk using 81.5% AUC K-12 specialized neural network
