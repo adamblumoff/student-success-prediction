@@ -7,30 +7,20 @@ This project implements a comprehensive, evolutionary testing infrastructure des
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install JavaScript dependencies
 npm install
 
-# Run all tests
+# Run the current Jest suite (components, basic smoke tests)
 npm test
 
-# Run specific test categories
-npm run test:unit          # Unit tests only
-npm run test:integration   # Integration tests only
-npm run test:component     # Component tests only
+# Run the curated working set used during daily development
+npm run test:working
 
-# Watch mode for development
-npm run test:watch         # Watch all tests
-npm run test:watch:unit    # Watch unit tests only
-
-# Generate coverage report
-npm run test:coverage
-
-# Run CI pipeline
-npm run test:ci
-
-# Validate test structure
-npm run test:validate
+# Run backend (pytest) checks — update the target paths as needed
+PYTHONPATH=. pytest tests/api tests/config -q
 ```
+
+> NOTE: legacy scripts such as `test:unit`, `test:ci`, and `test:validate` referenced older utilities (`tests/utils/test-runner.js`) that no longer exist. Use the commands above or run `npx jest <pattern>` directly for ad‑hoc suites (e.g., `npx jest tests/components --runInBand`).
 
 ## Architecture
 
@@ -38,47 +28,16 @@ npm run test:validate
 
 Our testing framework organizes tests into six evolutionary categories:
 
-1. **Unit Tests** (`tests/unit/`): Individual component and function testing
-2. **Integration Tests** (`tests/integration/`): Component interaction testing
-3. **Component Tests** (`tests/component/`): Full component with DOM interaction
-4. **API Tests** (`tests/api/`): Backend endpoint testing
-5. **E2E Tests** (`tests/e2e/`): End-to-end user workflows
-6. **Performance Tests** (`tests/performance/`): Load and performance testing
+1. **Component/UI Tests** (`tests/components/`): DOM + jsdom interaction tests (run via `jest tests/components --runInBand`)
+2. **Smoke Tests** (`tests/simple.test.js`, `tests/app-functionality.test.js`): High-signal UI sanity suite invoked by `npm run test:working`
+3. **Integration Tests** (`tests/integration/`): Cross-component behaviour; invoke with `npx jest tests/integration`
+4. **API Tests** (`tests/api/`): Backend pytest suite (`PYTHONPATH=. pytest tests/api -q`)
+5. **E2E/Performance** (`tests/e2e/`, `tests/performance/`): Placeholder directories; populate before wiring into CI
 
 ### Core Utilities
 
-#### Component Test Factory (`tests/utils/component-test-utils.js`)
-```javascript
-import { componentTestFactory } from '@test-utils/component-test-utils.js';
-
-// Create component test context
-const testContext = await componentTestFactory.createComponentTest(ComponentClass, {
-  selector: '#component-container',
-  initialState: { currentTab: 'upload' }
-});
-
-// Use in tests
-const { component, appState, user } = testContext;
-```
-
-#### Test Helpers (`tests/utils/test-helpers.js`)
-```javascript
-import { 
-  waitForAsyncOperations,
-  createMockFile,
-  fireEvent,
-  expectAsyncError 
-} from '@test-utils/test-helpers.js';
-
-// Wait for async operations
-await waitForAsyncOperations();
-
-// Create mock files for upload testing
-const csvFile = createMockFile('id,name\n1,Test', 'test.csv');
-
-// Fire DOM events
-fireEvent(element, 'click');
-```
+#### Component Test Utilities
+Legacy references to `tests/utils/component-test-utils.js` and other factory helpers have been removed. Tests now use plain `@testing-library` utilities defined in `tests/utils/test-setup.js`. When creating a new component suite, import directly from `@testing-library/react`/`@testing-library/user-event` and configure any shared helpers alongside the spec.
 
 #### Test Fixtures (`tests/fixtures/student-data.js`)
 ```javascript
