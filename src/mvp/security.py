@@ -522,6 +522,27 @@ def secure_auth(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
     
     return {"user": "api_user", "permissions": ["read", "write"], "auth_method": "api_key"}
 
+def authenticate_bearer_token(token: Optional[str]) -> Dict[str, Any]:
+    """Authenticate a bearer token as either a session or API key."""
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    session_data = session_manager.validate_session(token)
+    if session_data:
+        return {
+            "user": session_data['user_id'],
+            "permissions": ["read", "write"],
+            "auth_method": "session"
+        }
+    
+    # Not a session token; treat as API key
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    return secure_auth(creds)
+
 def validate_session(request: Request) -> Optional[Dict[str, Any]]:
     """Validate session token from cookie"""
     session_token = request.cookies.get('session_token')
@@ -544,16 +565,14 @@ def get_current_user_secure(request: Request, credentials: HTTPAuthorizationCred
         return session_user
     
     # Try API key authentication
-    if credentials:
-        return secure_auth(credentials)
+    if credentials and credentials.credentials:
+        return authenticate_bearer_token(credentials.credentials)
     
     # Check Authorization header manually
     auth_header = request.headers.get('authorization')
     if auth_header and auth_header.startswith('Bearer '):
         token = auth_header.split(' ', 1)[1]
-        from fastapi.security import HTTPAuthorizationCredentials
-        creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        return secure_auth(creds)
+        return authenticate_bearer_token(token)
     
     # Development mode localhost bypass (only if explicitly enabled)
     if security_config.development_mode and not security_config.is_production:

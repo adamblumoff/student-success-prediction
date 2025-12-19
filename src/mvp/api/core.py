@@ -32,7 +32,13 @@ if str(Path(__file__).parent.parent.parent) not in sys.path:
 
 from src.models.intervention_system import InterventionRecommendationSystem
 from src.models.k12_ultra_predictor import K12UltraPredictor
-from src.mvp.security import InputSanitizer, auth_dependency, enforce_rate_limit, get_current_user_secure
+from src.mvp.security import (
+    InputSanitizer,
+    auth_dependency,
+    enforce_rate_limit,
+    get_current_user_secure,
+    create_web_session,
+)
 from mvp.database import get_db_session, get_session_factory, save_predictions_batch, save_gpt_insight, get_gpt_insight, get_all_gpt_insights_for_session
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -1724,8 +1730,8 @@ async def web_login(request: Request):
             logger.warning(f"Invalid login attempt for user '{username}' from {request.client.host}")
             raise HTTPException(status_code=401, detail="Invalid username or password")
         
-        # Successful authentication
-        session_token = f"authenticated_{username}_{int(time.time())}"
+        # Successful authentication - mint secure session
+        session_token = create_web_session(user_id=username)
         response = JSONResponse({
             "success": True,
             "authenticated": True,
@@ -1735,6 +1741,7 @@ async def web_login(request: Request):
                 "role": "educator"
             },
             "token": session_token,
+            "session_token": session_token,
             "message": "Login successful",
             "redirect": "/"  # Tell frontend to redirect to main app
         })
@@ -1743,9 +1750,9 @@ async def web_login(request: Request):
         is_https = request.url.scheme == "https" or env in ['production', 'prod']
         response.set_cookie(
             key="session_token",
-            value=f"authenticated_{username}",
+            value=session_token,
             max_age=86400,  # 24 hours
-            httponly=False,  # Allow JS access for redirect (demo only)
+            httponly=True,  # Prevent JS access; frontend uses bearer token from response payload
             secure=is_https,   # Enforce secure cookies in production
             samesite="lax"
         )

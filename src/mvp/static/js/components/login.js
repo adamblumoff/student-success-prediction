@@ -92,7 +92,12 @@ class LoginComponent extends Component {
 
     onLoginSuccess(result) {
         // Store auth info
-        sessionStorage.setItem('auth_token', result.token);
+        const sessionToken = result.session_token || result.token || '';
+        if (sessionToken) {
+            sessionStorage.setItem('auth_token', sessionToken);
+        } else {
+            sessionStorage.removeItem('auth_token');
+        }
         sessionStorage.setItem('user_info', JSON.stringify(result.user));
         
         // Update app state
