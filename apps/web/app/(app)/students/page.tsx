@@ -16,8 +16,14 @@ export default async function StudentsPage() {
       <StudentRoster
         students={students.map((student) => ({
           ...student,
-          lastActivity: student.lastActivity ? student.lastActivity.toISOString() : null,
-          predictionDate: student.predictionDate ? student.predictionDate.toISOString() : null
+          lastActivity:
+            student.lastActivity instanceof Date
+              ? student.lastActivity.toISOString()
+              : student.lastActivity,
+          predictionDate:
+            student.predictionDate instanceof Date
+              ? student.predictionDate.toISOString()
+              : student.predictionDate
         }))}
       />
       {students.length === 0 && (
