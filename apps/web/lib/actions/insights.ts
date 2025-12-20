@@ -3,6 +3,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { eq, desc, and } from 'drizzle-orm';
+import { emitRealtimeEvent } from '@/lib/realtime';
+import { revalidatePath } from 'next/cache';
 import { sha256 } from '@/lib/hash';
 import { generateInsight } from '@/lib/gpt';
 import { getInstitutionId } from '@/lib/auth';
@@ -31,16 +33,41 @@ export async function getQuickInsight(studentDbId: number) {
     .limit(1);
 
   const interventions = await db
-    .select({ title: tables.interventions.title, status: tables.interventions.status })
+    .select({ id: tables.interventions.id, status: tables.interventions.status })
     .from(tables.interventions)
     .where(eq(tables.interventions.studentId, studentDbId))
-    .limit(10);
+    .orderBy(desc(tables.interventions.createdAt))
+    .limit(25);
+
+  const normalizedInterventions = interventions
+    .map((intervention) => ({
+      id: intervention.id,
+      status: intervention.status ?? 'planned'
+    }))
+    .sort((a, b) => a.id - b.id);
+
+  const normalizedStudent = {
+    id: student.id,
+    studentId: student.studentId,
+    gradeLevel: student.gradeLevel,
+    currentGpa: student.currentGpa,
+    attendanceRate: student.attendanceRate,
+    enrollmentStatus: student.enrollmentStatus
+  };
+
+  const normalizedPrediction = prediction
+    ? {
+        id: prediction.id,
+        riskCategory: prediction.riskCategory,
+        riskScore: prediction.riskScore
+      }
+    : null;
 
   const dataHash = sha256(
     JSON.stringify({
-      student,
-      prediction,
-      interventions
+      student: normalizedStudent,
+      prediction: normalizedPrediction,
+      interventions: normalizedInterventions
     })
   );
 
@@ -50,7 +77,7 @@ export async function getQuickInsight(studentDbId: number) {
     .where(
       and(
         eq(tables.gptInsights.institutionId, institutionId),
-        eq(tables.gptInsights.studentId, student.studentId),
+        eq(tables.gptInsights.studentDatabaseId, student.id),
         eq(tables.gptInsights.dataHash, dataHash)
       )
     )
@@ -107,6 +134,9 @@ export async function getQuickInsight(studentDbId: number) {
       cacheHits: 0
     })
     .returning();
+
+  revalidatePath('/insights');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/insights'] });
 
   return {
     cached: false,
