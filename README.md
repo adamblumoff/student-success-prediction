@@ -1,34 +1,43 @@
-# Student Success Platform (Next.js)
+# Student Success Platform (Monorepo)
 
-A full-stack Next.js application for early warning analytics, intervention planning, and GPT-powered insights for K-12 student success. The UI and backend are rebuilt on Next.js Server Actions with Clerk auth and Drizzle, while the ML model remains a dedicated Python service.
+A monorepo that hosts a full-stack Next.js application for early warning analytics, intervention planning, and GPT-powered insights, plus a dedicated Python ML service for the K-12 model.
 
-## What changed
-- Frontend + backend now live in a single Next.js app (App Router + Server Actions).
-- Authentication is fully managed by Clerk.
-- Database access is via Drizzle to the production PostgreSQL instance.
-- Python is only used for the ML model service.
-- Legacy FastAPI app, templates, and tests have been removed.
+## Repository layout
+
+```
+apps/
+  web/           # Next.js app (App Router + Server Actions)
+services/
+  ml/            # Python ML service (FastAPI + K12 model)
+```
+
+## Core stack
+- Next.js App Router + Server Actions
+- Clerk auth
+- Drizzle ORM (Postgres only)
+- Tailwind CSS
+- Python ML service (K12 Ultra Predictor)
 
 ---
 
 ## Architecture
 
 ```
-Next.js (App Router)
+Next.js app (apps/web)
   - Server Actions + Route Handlers
   - Clerk Auth
   - Drizzle ORM
   - UI (Tailwind)
 
-Python ML Service
-  - K12 Ultra Predictor (loaded from results/models)
+Python ML Service (services/ml)
+  - K12 Ultra Predictor (loaded from services/ml/results/models)
 ```
 
 ---
 
 ## Required Environment Variables
 
-Create a `.env` file in the repo root:
+Create a `.env` file in `apps/web/` (see `apps/web/.env.example`):
 
 ```
 DATABASE_URL=postgresql://...
@@ -43,7 +52,7 @@ OPENAI_MODEL=gpt-4o-mini
 ML_SERVICE_URL=https://your-ml-service
 ```
 
-Important: This app expects the production Postgres instance as the single source of truth.
+Important: The app expects the production Postgres instance as the single source of truth.
 
 ---
 
@@ -62,10 +71,11 @@ This starts the Next.js dev server.
 The ML service is separate and should be deployed on Railway as its own service.
 
 ```
+cd services/ml
 python -m venv .venv
 source .venv/bin/activate
-pip install -r services/ml/requirements.txt
-uvicorn services.ml.app:app --host 0.0.0.0 --port 9000
+pip install -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 9000
 ```
 
 Set `ML_SERVICE_URL` to the deployed ML service endpoint.
@@ -74,8 +84,8 @@ Set `ML_SERVICE_URL` to the deployed ML service endpoint.
 
 ## Deployment (Railway)
 
-- Next.js app: deploy with Railpack and `Procfile`
-- ML service: deploy a second Railway service with root directory `services/ml` and `services/ml/Procfile`
+- Next.js app: repo root using `Procfile` (runs `apps/web`)
+- ML service: root directory `services/ml` using `services/ml/Procfile`
 
 Both services should point to the same production PostgreSQL instance.
 
@@ -95,5 +105,4 @@ Both services should point to the same production PostgreSQL instance.
 
 ## Notes
 - No legacy tests are retained; new test suites will be introduced later.
-- Legacy FastAPI assets have been removed.
 - If you need to re-enable local ML inference, run the ML service locally and point `ML_SERVICE_URL` to it.
