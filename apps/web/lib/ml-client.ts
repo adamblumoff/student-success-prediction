@@ -19,6 +19,16 @@ export type MLResponse = {
 };
 
 export async function runMLPrediction(file: File): Promise<MLResponse> {
+  if (process.env.SKIP_ML === 'true') {
+    return {
+      predictions: [],
+      model_info: {
+        model_version: 'skipped',
+        reason: 'SKIP_ML enabled'
+      }
+    };
+  }
+
   const serviceUrl = process.env.ML_SERVICE_URL;
   if (!serviceUrl) {
     throw new Error('ML_SERVICE_URL is not configured');
