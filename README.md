@@ -75,7 +75,7 @@ Set `ML_SERVICE_URL` to the deployed ML service endpoint.
 ## Deployment (Railway)
 
 - Next.js app: deploy with Railpack and `Procfile`
-- ML service: deploy a second Railway service using `services/ml/Procfile`
+- ML service: deploy a second Railway service with root directory `services/ml` and `services/ml/Procfile`
 
 Both services should point to the same production PostgreSQL instance.
 
