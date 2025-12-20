@@ -4,6 +4,8 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { Fraunces, Sora } from 'next/font/google';
 import Providers from './providers';
 
+export const dynamic = 'force-dynamic';
+
 const sora = Sora({
   subsets: ['latin'],
   variable: '--font-body',
