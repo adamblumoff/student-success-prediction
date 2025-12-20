@@ -1,20 +1,23 @@
 from __future__ import annotations
 
-import sys
+import os
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))
+ROOT = Path(__file__).resolve().parent
+MODELS_DIR = os.getenv("K12_MODELS_DIR")
+if not MODELS_DIR:
+    candidate = ROOT / "results" / "models" / "k12"
+    if candidate.exists():
+        MODELS_DIR = str(candidate)
 
-from src.models.k12_ultra_predictor import K12UltraPredictor  # noqa: E402
+from k12_ultra_predictor import K12UltraPredictor  # noqa: E402
 
 app = FastAPI(title="Student Success ML Service", version="1.0")
 
-predictor = K12UltraPredictor()
+predictor = K12UltraPredictor(models_dir=MODELS_DIR) if MODELS_DIR else K12UltraPredictor()
 
 
 @app.get("/health")
