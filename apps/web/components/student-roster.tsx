@@ -136,6 +136,9 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   };
 
   const selectionCount = selected.size;
+  const canAssignCounselor = selectionCount > 0 && !isAssigning;
+  const canBulkIntervention = selectionCount === 1;
+  const canExportRoster = !(selectionCount === 0 && filtered.length === 0);
   const selectedWithActive = filtered.filter(
     (student) => selected.has(student.id) && (student.activeInterventions ?? 0) > 0
   );
@@ -200,11 +203,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   };
 
   const handleBulkIntervention = () => {
-    if (selectionCount === 0) {
-      router.push('/interventions');
-      return;
-    }
-    if (selectionCount > 1) {
+    if (selectionCount !== 1) {
       setStatusMessage('Select a single student to prefill an intervention.');
       return;
     }
@@ -399,26 +398,40 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           </button>
           <button
             type="button"
-            className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
+            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+              canAssignCounselor
+                ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
+                : 'cursor-not-allowed opacity-60'
+            }`}
             onClick={handleAssignCounselor}
-            disabled={selectionCount === 0 || isAssigning}
-            aria-disabled={selectionCount === 0 || isAssigning}
+            disabled={!canAssignCounselor}
+            aria-disabled={!canAssignCounselor}
           >
             {isAssigning ? 'Assigning...' : 'Assign counselor'}
           </button>
           <button
             type="button"
-            className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
+            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+              canBulkIntervention
+                ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
+                : 'cursor-not-allowed opacity-60'
+            }`}
             onClick={handleBulkIntervention}
+            disabled={!canBulkIntervention}
+            aria-disabled={!canBulkIntervention}
           >
             Add intervention
           </button>
           <button
             type="button"
-            className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
+            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+              canExportRoster
+                ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
+                : 'opacity-60'
+            }`}
             onClick={exportRoster}
-            disabled={selectionCount === 0 && filtered.length === 0}
-            aria-disabled={selectionCount === 0 && filtered.length === 0}
+            disabled={!canExportRoster}
+            aria-disabled={!canExportRoster}
           >
             Export roster
           </button>

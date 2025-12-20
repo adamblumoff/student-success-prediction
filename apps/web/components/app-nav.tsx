@@ -20,8 +20,8 @@ export default function AppNav() {
   return (
     <nav className="flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-ink-700/60 bg-ink-900/80 px-6 py-4 shadow-[0_30px_70px_-50px_rgba(8,10,16,0.9)]">
       <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-slate-950 text-ink-50 font-semibold">
-          SS
+        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-slate-950 text-[0.65rem] font-semibold leading-none text-ink-50">
+          SSP
         </div>
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-ink-400">Studio</p>

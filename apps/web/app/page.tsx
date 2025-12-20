@@ -7,8 +7,8 @@ export default function HomePage() {
       <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <header className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sage-500 text-white font-semibold">
-              SS
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-sage-500 text-[0.65rem] font-semibold leading-none text-white">
+              SSP
             </div>
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-ink-400">Student Success</p>
