@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { createInterventionAction, type InterventionActionState } from '@/lib/actions/interventions';
 
 const initialState: InterventionActionState = { status: 'idle' };
@@ -23,7 +24,7 @@ export default function InterventionForm({
 }: {
   students: Array<{ id: number; name: string | null; studentId: string }>;
 }) {
-  const [state, formAction] = useFormState(createInterventionAction, initialState);
+  const [state, formAction] = useActionState(createInterventionAction, initialState);
 
   return (
     <form action={formAction} className="card space-y-4">
