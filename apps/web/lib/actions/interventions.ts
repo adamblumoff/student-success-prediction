@@ -4,6 +4,8 @@ import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { getInstitutionId } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { emitRealtimeEvent } from '@/lib/realtime';
 
 export async function createIntervention(formData: FormData) {
   const { userId } = await auth();
@@ -33,6 +35,10 @@ export async function createIntervention(formData: FormData) {
     })
     .returning();
 
+  revalidatePath('/interventions');
+  revalidatePath('/dashboard');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+
   return created;
 }
 
@@ -56,6 +62,10 @@ export async function updateInterventionStatus(interventionId: number, status: s
     )
     .returning();
 
+  revalidatePath('/interventions');
+  revalidatePath('/dashboard');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+
   return updated;
 }
 
@@ -73,6 +83,10 @@ export async function deleteIntervention(interventionId: number) {
       )
     )
     .returning();
+
+  revalidatePath('/interventions');
+  revalidatePath('/dashboard');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
 
   return deleted;
 }

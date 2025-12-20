@@ -1,7 +1,8 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Providers({
   children
@@ -20,6 +21,41 @@ export default function Providers({
         }
       })
   );
+  const router = useRouter();
+  const pathname = usePathname();
+  const sourceRef = useRef<EventSource | null>(null);
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    if (sourceRef.current) return;
+    const source = new EventSource('/api/events');
+    sourceRef.current = source;
+
+    source.onmessage = (event) => {
+      if (!event.data) return;
+      try {
+        const payload = JSON.parse(event.data) as { type: string; paths?: string[] };
+        if (!payload.paths || payload.paths.length === 0) {
+          router.refresh();
+          return;
+        }
+        if (payload.paths.includes(pathnameRef.current)) {
+          router.refresh();
+        }
+      } catch {
+        // Ignore malformed events.
+      }
+    };
+
+    return () => {
+      source.close();
+      sourceRef.current = null;
+    };
+  }, [router, pathname]);
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

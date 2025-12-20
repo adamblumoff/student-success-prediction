@@ -4,6 +4,8 @@ import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { getInstitutionId } from '@/lib/auth';
 import { and, eq, inArray } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { emitRealtimeEvent } from '@/lib/realtime';
 
 export async function deleteStudentsAction(studentIds: number[]) {
   const { userId } = await auth();
@@ -53,6 +55,14 @@ export async function deleteStudentsAction(studentIds: number[]) {
     await tx
       .delete(tables.students)
       .where(inArray(tables.students.id, authorizedIds));
+  });
+
+  revalidatePath('/students');
+  revalidatePath('/dashboard');
+  revalidatePath('/insights');
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/students', '/dashboard', '/insights']
   });
 
   return { deletedIds: authorizedIds, deletedCount: authorizedIds.length };

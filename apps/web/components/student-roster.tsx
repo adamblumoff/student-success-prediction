@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { deleteStudentsAction } from '@/lib/actions/students';
 
@@ -50,6 +50,10 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRoster(students);
+  }, [students]);
 
   const grades = useMemo(() => {
     const unique = new Set(

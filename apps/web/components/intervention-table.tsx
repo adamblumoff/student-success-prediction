@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { updateInterventionStatus, deleteIntervention } from '@/lib/actions/interventions';
 
 type Row = {
@@ -28,6 +28,10 @@ const statusTone = (status: string | null) => {
 export default function InterventionTable({ initialRows }: { initialRows: Row[] }) {
   const [rows, setRows] = useState(initialRows);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRows(initialRows);
+  }, [initialRows]);
 
   const handleStatusChange = (id: number, status: string) => {
     startTransition(async () => {

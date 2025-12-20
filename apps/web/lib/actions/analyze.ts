@@ -6,6 +6,8 @@ import { db, tables } from '@/db';
 import { runMLPrediction, type MLPrediction } from '@/lib/ml-client';
 import { getInstitutionId } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { emitRealtimeEvent } from '@/lib/realtime';
 
 function normalizeRiskCategory(input: string | undefined, riskScore: number) {
   if (input) return input;
@@ -106,6 +108,15 @@ export async function analyzeGradebook(formData: FormData) {
         student_db_id: student.id
       });
     }
+  });
+
+  revalidatePath('/dashboard');
+  revalidatePath('/students');
+  revalidatePath('/insights');
+  revalidatePath('/upload');
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/dashboard', '/students', '/insights', '/upload']
   });
 
   return {
