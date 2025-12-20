@@ -51,7 +51,10 @@ export default function StudentInterventionsModal({
     if (!open || !studentId) return;
     setLoading(true);
     setError(null);
-    fetch(`/api/students/${studentId}/interventions`)
+    fetch(`/api/students/${studentId}/interventions`, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    })
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({ error: 'Failed to load' }));
