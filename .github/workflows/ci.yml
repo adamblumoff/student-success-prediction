@@ -13,8 +13,8 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       OPENAI_API_KEY: test-openai-key
       ML_SERVICE_URL: http://localhost:9000
-      CLERK_SECRET_KEY: test-clerk-secret
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: test-clerk-publishable
+      CLERK_SECRET_KEY: sk_test_1234567890
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_1234567890
     steps:
       - name: Checkout
         uses: actions/checkout@v4
