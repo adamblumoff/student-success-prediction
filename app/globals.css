@@ -1,0 +1,63 @@
+@config "../tailwind.config.ts";
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  color: #191816;
+  background-color: #f7f7f2;
+  font-family: var(--font-body);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(124, 144, 129, 0.15), transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(252, 184, 93, 0.18), transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(255, 149, 177, 0.16), transparent 40%);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+}
+
+.bg-panel {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid #e9e7dd;
+  box-shadow: 0 20px 60px -40px rgba(25, 24, 22, 0.5);
+}
+
+.card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e9e7dd;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px -40px rgba(25, 24, 22, 0.5);
+  padding: 1.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.badge-risk-low {
+  background-color: #dce8df;
+  color: #2b4f3c;
+}
+
+.badge-risk-medium {
+  background-color: #ffe7c2;
+  color: #9a4615;
+}
+
+.badge-risk-high {
+  background-color: #ffe0e7;
+  color: #b01644;
+}

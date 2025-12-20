@@ -246,7 +246,6 @@ CREATE TABLE gpt_insights (
 **OAuth 2.0 Flow**
 - **Authentication**: Secure OAuth 2.0 with refresh tokens
 - **Classroom Data**: Assignment grades and class rosters
-- **Real-time Sync**: Webhook-based updates
 
 ## Security Architecture
 

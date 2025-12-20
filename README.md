@@ -1,112 +1,99 @@
-# 🎓 Student Success Prediction System
+# Student Success Platform (Next.js)
 
-An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes. Features **GPT-enhanced AI insights** with database persistence and intelligent caching for personalized student recommendations.
+A full-stack Next.js application for early warning analytics, intervention planning, and GPT-powered insights for K-12 student success. The UI and backend are rebuilt on Next.js Server Actions with Clerk auth and Drizzle, while the ML model remains a dedicated Python service.
 
-## 🏆 Production Status
-
-- **✅ Production Ready**: Deployed on Railway with PostgreSQL
-- **✅ FERPA Compliant**: Full encryption and audit logging
-- **✅ Security Hardened**: Comprehensive security policies enforced
-- **✅ CI/CD Pipeline**: GitHub Actions with automated testing
-- **✅ Demo Ready**: Reliable sample data loading for presentations
-
-## 🚀 Quick Start
-
-### Development
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure PostgreSQL (or supply DATABASE_URL)
-export DB_USER=postgres
-export DB_PASSWORD=postgres
-export DB_HOST=localhost
-export DB_NAME=student_success
-export MVP_API_KEY=$(openssl rand -hex 24)   # Any secure value ≥16 chars works locally
-export SESSION_SECRET=$(openssl rand -hex 32)
-
-# Start the application (PostgreSQL required)
-python3 run_mvp.py
-
-# Open browser to http://localhost:8001
-```
-
-### Production (Railway)
-```bash
-# Live Application: https://student-success-prediction-production.up.railway.app/
-# Deploys automatically on push to master branch
-# Configure environment variables in Railway dashboard:
-MVP_API_KEY=<32+ character secure key>
-SESSION_SECRET=<64+ character secure key>
-DATABASE_ENCRYPTION_KEY=<32+ character key>
-ENVIRONMENT=production
-```
-
-## 🔧 Dependency Management
-
-- **JavaScript**: use `npm install` (or `npm ci` in CI) to install dependencies pinned via `package-lock.json`.
-- **Python**: use `pip install -r requirements.txt` to sync backend libraries. The `PYTHONPATH=. pytest …` commands assume this virtual environment.
-- **Lockfiles**: commit `package-lock.json` and `requirements.txt` together when dependencies change so CI mirrors local development.
-## ✨ What It Does
-
-- **🤖 AI Risk Prediction**: Identifies students at risk using 81.5% AUC K-12 specialized neural network
-- **🧠 GPT AI Insights**: Database-backed personalized recommendations with intelligent caching
-- **📊 Explainable AI**: Shows why students are at risk with detailed, actionable explanations
-- **🎯 Intervention Management**: Create and track interventions with real-time status updates
-- **📈 Live Dashboard**: Real-time analytics and progress monitoring without page refreshes
-- **📚 Multi-Platform**: Canvas LMS, PowerSchool SIS, Google Classroom, and generic CSV support
-
-## 📊 How It Works
-
-1. **Upload**: Canvas LMS gradebook, PowerSchool export, or CSV file
-2. **Analyze**: K-12 specialized AI processes student data and predicts risk levels  
-3. **Generate AI Insights**: GPT analyzes actual student data for personalized recommendations
-4. **Explain**: View detailed risk factors and protective factors with confidence scores
-5. **Intervene**: Create and assign targeted interventions with status tracking
-6. **Monitor**: Track progress with real-time dashboard updates and intervention outcomes
-
-## 🎯 Key Features
-
-### 🧠 GPT-Enhanced AI Insights
-- **Database Integration**: Uses actual student records stored in database, not sample data
-- **Smart Caching**: Database-backed caching with automatic invalidation on data changes
-- **Emma Johnson Format**: Exactly 3 concise, actionable recommendations per student
-- **Intervention-Aware**: Considers existing interventions to build upon current efforts
-- **Performance Tracking**: Cache hits and generation time monitoring for optimization
-
-### Individual & Bulk Operations  
-- Create interventions for single or multiple students
-- Update status, assign staff, track outcomes
-- Mixed selection (students + interventions)
-- Real-time updates without page refresh
-
-### AI Risk Prediction
-- High/Medium/Low risk categories with confidence scoring
-- 81.5% AUC K-12 specialized neural network model
-- Risk and protective factor identification
-- Grade-appropriate explanations (K-5, 6-8, 9-12)
-
-### Integration Support
-- **Canvas LMS**: Direct gradebook import with auto-format detection
-- **Generic CSV**: Any CSV format with student IDs and grades
-- **PostgreSQL-Only**: Single database backend across environments
-
-## 🛠️ Technical Stack
-
-- **Backend**: Python/FastAPI with modular API architecture (6 specialized routers)
-- **Database**: PostgreSQL across environments with SSL enforcement in production
-- **Frontend**: Modern JavaScript with 11+ modular components and real-time updates
-- **ML**: K-12 specialized neural network (81.5% AUC) with explainable AI
-- **GPT Integration**: OpenAI API with database persistence and intelligent caching
-- **Testing**: 125+ comprehensive tests covering components, API, and integration workflows
-
-## 📚 Documentation
-
-- **[CLAUDE.md](CLAUDE.md)**: Comprehensive development guide (2000+ lines)
-- **[DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md)**: Repository navigation and architecture
-- **[docs/](docs/)**: Technical documentation, integration guides, and system analysis
-- **[PRODUCTION_READINESS_ASSESSMENT.md](PRODUCTION_READINESS_ASSESSMENT.md)**: Security and deployment checklist
+## What changed
+- Frontend + backend now live in a single Next.js app (App Router + Server Actions).
+- Authentication is fully managed by Clerk.
+- Database access is via Drizzle to the production PostgreSQL instance.
+- Python is only used for the ML model service.
+- Legacy FastAPI app, templates, and tests have been removed.
 
 ---
 
-**Ready to help students succeed with AI-powered insights!** 🎯
+## Architecture
+
+```
+Next.js (App Router)
+  - Server Actions + Route Handlers
+  - Clerk Auth
+  - Drizzle ORM
+  - UI (Tailwind)
+
+Python ML Service
+  - K12 Ultra Predictor (loaded from results/models)
+```
+
+---
+
+## Required Environment Variables
+
+Create a `.env` file in the repo root:
+
+```
+DATABASE_URL=postgresql://...
+CLERK_SECRET_KEY=...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
+ML_SERVICE_URL=https://your-ml-service
+```
+
+Important: This app expects the production Postgres instance as the single source of truth.
+
+---
+
+## Run the Next.js app
+
+```
+bun install
+bun run dev
+```
+This starts the Next.js dev server.
+
+---
+
+## Run the ML Service (Python)
+
+The ML service is separate and should be deployed on Railway as its own service.
+
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r services/ml/requirements.txt
+uvicorn services.ml.app:app --host 0.0.0.0 --port 9000
+```
+
+Set `ML_SERVICE_URL` to the deployed ML service endpoint.
+
+---
+
+## Deployment (Railway)
+
+- Next.js app: deploy with Railpack and `Procfile`
+- ML service: deploy a second Railway service using `services/ml/Procfile`
+
+Both services should point to the same production PostgreSQL instance.
+
+---
+
+## Routes
+
+- `/` - Landing
+- `/dashboard` - Summary and stats
+- `/upload` - CSV upload and analysis
+- `/students` - Student roster
+- `/interventions` - Plans and status updates
+- `/insights` - GPT insights
+- `/integrations` - Placeholder for LMS/SIS connectors
+
+---
+
+## Notes
+- No legacy tests are retained; new test suites will be introduced later.
+- Legacy FastAPI assets have been removed.
+- If you need to re-enable local ML inference, run the ML service locally and point `ML_SERVICE_URL` to it.

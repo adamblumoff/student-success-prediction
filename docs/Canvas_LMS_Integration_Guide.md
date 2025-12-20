@@ -261,7 +261,6 @@ While Canvas provides gradebook data, consider integrating with Student Informat
 5. **Intervention Tracking** - Follow-up on recommendations
 
 ### API Extensions
-- Webhook support for real-time Canvas updates
 - Bulk export for district reporting
 - Integration with intervention management systems
 - Advanced analytics and trend reporting

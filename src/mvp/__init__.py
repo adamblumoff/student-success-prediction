@@ -1,1 +1,0 @@
-# MVP API package

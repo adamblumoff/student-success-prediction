@@ -1,1 +1,1 @@
-web: python scripts/direct_db_setup.py || true && python run_mvp.py
+web: bun run start

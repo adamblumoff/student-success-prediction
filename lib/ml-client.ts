@@ -1,0 +1,41 @@
+export type MLPrediction = {
+  student_id: string | number;
+  name?: string;
+  grade_level?: number;
+  current_gpa?: number;
+  attendance_rate?: number;
+  risk_probability?: number;
+  risk_category?: string;
+  risk_level?: string;
+  confidence?: number;
+  model_type?: string;
+  recommendations?: string[];
+  [key: string]: unknown;
+};
+
+export type MLResponse = {
+  predictions: MLPrediction[];
+  model_info?: Record<string, unknown>;
+};
+
+export async function runMLPrediction(file: File): Promise<MLResponse> {
+  const serviceUrl = process.env.ML_SERVICE_URL;
+  if (!serviceUrl) {
+    throw new Error('ML_SERVICE_URL is not configured');
+  }
+
+  const form = new FormData();
+  form.append('file', file, file.name || 'gradebook.csv');
+
+  const response = await fetch(`${serviceUrl.replace(/\/$/, '')}/predict`, {
+    method: 'POST',
+    body: form
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`ML service error: ${message}`);
+  }
+
+  return response.json();
+}

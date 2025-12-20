@@ -1,33 +1,42 @@
 {
-  "dependencies": {
-    "@playwright/test": "^1.54.2"
-  },
-  "name": "student-success-prediction",
-  "description": "An AI-powered platform that helps K-12 educators identify at-risk students early and implement targeted interventions to improve student outcomes.",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "student-success-next",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "jest",
-    "test:working": "jest tests/simple.test.js tests/app-functionality.test.js tests/components/tab-navigation-working.test.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/adamblumoff/student-success-prediction.git"
+  "dependencies": {
+    "@clerk/nextjs": "^6.36.5",
+    "@tanstack/react-query": "^5.90.12",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.1",
+    "lucide-react": "^0.562.0",
+    "next": "^16.1.0",
+    "openai": "^6.15.0",
+    "pg": "^8.16.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwind-merge": "^3.4.0",
+    "zod": "^4.2.1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/adamblumoff/student-success-prediction/issues"
-  },
-  "homepage": "https://github.com/adamblumoff/student-success-prediction#readme",
   "devDependencies": {
-    "@anthropic-ai/claude-code": "^1.0.90",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.6.4",
-    "@testing-library/user-event": "^14.6.1",
-    "jest": "^30.1.1",
-    "jest-environment-jsdom": "^30.0.5",
-    "jsdom": "^26.1.0"
+    "@types/node": "^25.0.3",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.23",
+    "@tailwindcss/postcss": "^4.1.18",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.8",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
   }
 }

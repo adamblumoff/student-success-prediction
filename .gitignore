@@ -10,8 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -141,6 +139,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
+bun.lockb
 
 # Browser automation artifacts
 *.png
@@ -153,6 +152,9 @@ puppeteer_browser.js
 Makefile
 docker-compose.yml
 *.deb
+
+# Next.js
+.next/
 
 # Additional cleanup patterns
 *~
