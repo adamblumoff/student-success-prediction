@@ -35,6 +35,7 @@ export async function loadStudentsWithRisk() {
     attendanceRate: number | null;
     enrollmentStatus: string | null;
     lastActivity: Date | null;
+    activeInterventions: number | null;
     riskCategory: string | null;
     riskScore: number | null;
     confidenceScore: number | null;
@@ -49,6 +50,7 @@ export async function loadStudentsWithRisk() {
       s.attendance_rate as "attendanceRate",
       s.enrollment_status as "enrollmentStatus",
       s.last_activity as "lastActivity",
+      coalesce(i.active_count, 0) as "activeInterventions",
       p.risk_category as "riskCategory",
       p.risk_score as "riskScore",
       p.confidence_score as "confidenceScore",
@@ -61,6 +63,13 @@ export async function loadStudentsWithRisk() {
       order by p.prediction_date desc
       limit 1
     ) p on true
+    left join lateral (
+      select count(*)::int as active_count
+      from ${tables.interventions} i
+      where i.student_id = s.id
+        and i.institution_id = ${institutionId}
+        and (i.status is null or i.status != 'completed')
+    ) i on true
     where s.institution_id = ${institutionId}
     limit 500
   `);

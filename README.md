@@ -106,3 +106,4 @@ Both services should point to the same production PostgreSQL instance.
 ## Notes
 - No legacy tests are retained; new test suites will be introduced later.
 - If you need to re-enable local ML inference, run the ML service locally and point `ML_SERVICE_URL` to it.
+- Student deletions are hard deletes today; plan to add soft-delete + restore in a future iteration.

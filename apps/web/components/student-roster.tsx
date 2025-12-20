@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { deleteStudentsAction } from '@/lib/actions/students';
 
 export type StudentWithRisk = {
   id: number;
@@ -12,6 +13,7 @@ export type StudentWithRisk = {
   attendanceRate: number | null;
   enrollmentStatus: string | null;
   lastActivity: string | null;
+  activeInterventions: number | null;
   riskCategory: string | null;
   riskScore: number | null;
   confidenceScore: number | null;
@@ -38,6 +40,7 @@ const getRiskLabel = (riskCategory: string | null) => {
 };
 
 export default function StudentRoster({ students }: { students: StudentWithRisk[] }) {
+  const [roster, setRoster] = useState(students);
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
   const [gradeFilter, setGradeFilter] = useState('all');
@@ -45,22 +48,24 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const [sortMode, setSortMode] = useState<SortMode>('risk-desc');
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const grades = useMemo(() => {
     const unique = new Set(
-      students.map((student) => student.gradeLevel).filter((value): value is string => Boolean(value))
+      roster.map((student) => student.gradeLevel).filter((value): value is string => Boolean(value))
     );
     return Array.from(unique).sort();
-  }, [students]);
+  }, [roster]);
 
   const statuses = useMemo(() => {
     const unique = new Set(
-      students
+      roster
         .map((student) => student.enrollmentStatus)
         .filter((value): value is string => Boolean(value))
     );
     return Array.from(unique).sort();
-  }, [students]);
+  }, [roster]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -75,7 +80,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
       return !normalized;
     };
 
-    const filteredStudents = students.filter((student) => {
+    const filteredStudents = roster.filter((student) => {
       const name = student.name?.toLowerCase() ?? '';
       const id = student.studentId?.toLowerCase() ?? '';
       const matchesQuery =
@@ -100,7 +105,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
     });
 
     return sortedStudents;
-  }, [students, query, riskFilter, gradeFilter, statusFilter, sortMode]);
+  }, [roster, query, riskFilter, gradeFilter, statusFilter, sortMode]);
 
   const toggleSelect = (id: number) => {
     setSelected((prev) => {
@@ -120,6 +125,36 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   };
 
   const selectionCount = selected.size;
+  const selectedWithActive = filtered.filter(
+    (student) => selected.has(student.id) && (student.activeInterventions ?? 0) > 0
+  );
+  const activeInterventionsCount = selectedWithActive.reduce(
+    (total, student) => total + (student.activeInterventions ?? 0),
+    0
+  );
+
+  const handleDelete = async () => {
+    if (selectionCount === 0 || isDeleting) return;
+    const warning =
+      activeInterventionsCount > 0
+        ? `Warning: ${activeInterventionsCount} active intervention(s) are linked to the selected students. These will be deleted too.`
+        : 'This will permanently delete the selected students and their predictions/interventions.';
+    const confirmed = window.confirm(`${warning}\n\nContinue with delete?`);
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    setStatusMessage(null);
+    try {
+      const result = await deleteStudentsAction(Array.from(selected));
+      setRoster((prev) => prev.filter((student) => !result.deletedIds.includes(student.id)));
+      setSelected(new Set());
+      setStatusMessage(`Deleted ${result.deletedCount} student(s).`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Delete failed.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -215,6 +250,15 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            className="rounded-full border border-rose-500/60 px-4 py-2 text-xs font-semibold text-rose-300"
+            onClick={handleDelete}
+            disabled={selectionCount === 0 || isDeleting}
+            aria-disabled={selectionCount === 0 || isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete selected'}
+          </button>
+          <button
+            type="button"
             className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
             disabled
           >
@@ -235,6 +279,12 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
             Export roster
           </button>
         </div>
+        {statusMessage && <p className="text-xs text-ink-400">{statusMessage}</p>}
+        {activeInterventionsCount > 0 && (
+          <p className="text-xs text-amber-300">
+            {activeInterventionsCount} active intervention(s) linked to selected students.
+          </p>
+        )}
       </div>
 
       {viewMode === 'cards' ? (
