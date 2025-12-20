@@ -33,7 +33,11 @@ export async function getQuickInsight(studentDbId: number) {
     .limit(1);
 
   const interventions = await db
-    .select({ id: tables.interventions.id, status: tables.interventions.status })
+    .select({
+      id: tables.interventions.id,
+      title: tables.interventions.title,
+      status: tables.interventions.status
+    })
     .from(tables.interventions)
     .where(eq(tables.interventions.studentId, studentDbId))
     .orderBy(desc(tables.interventions.createdAt))
@@ -42,6 +46,7 @@ export async function getQuickInsight(studentDbId: number) {
   const normalizedInterventions = interventions
     .map((intervention) => ({
       id: intervention.id,
+      title: intervention.title ?? '',
       status: intervention.status ?? 'planned'
     }))
     .sort((a, b) => a.id - b.id);
