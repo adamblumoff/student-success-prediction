@@ -131,9 +131,9 @@ export default async function DashboardPage() {
               </Link>
             </div>
             <div className="mt-5 space-y-3">
-              {stats.topRiskStudents.map((student) => (
+              {stats.topRiskStudents.map((student, index) => (
                 <div
-                  key={student.id}
+                  key={`${student.id}-${student.riskScore ?? 'risk'}-${index}`}
                   className="flex items-center justify-between rounded-2xl border border-ink-700/60 bg-ink-950/50 px-4 py-3 text-sm"
                 >
                   <div>
