@@ -91,21 +91,36 @@ export async function getDashboardStats() {
     { high: 0, medium: 0, low: 0, unknown: 0 }
   );
 
-  const topRisk = await db
-    .select({
-      studentId: tables.students.id,
-      studentIdentifier: tables.students.studentId,
-      name: tables.students.name,
-      gradeLevel: tables.students.gradeLevel,
-      riskScore: tables.predictions.riskScore,
-      riskCategory: tables.predictions.riskCategory,
-      confidenceScore: tables.predictions.confidenceScore
-    })
-    .from(tables.predictions)
-    .leftJoin(tables.students, eq(tables.students.id, tables.predictions.studentId))
-    .where(eq(tables.predictions.institutionId, institutionId))
-    .orderBy(desc(tables.predictions.riskScore))
-    .limit(5);
+  const topRisk = await db.execute<{
+    studentId: number;
+    studentIdentifier: string | null;
+    name: string | null;
+    gradeLevel: string | null;
+    riskScore: number;
+    riskCategory: string;
+    confidenceScore: number | null;
+  }>(sql`
+    select
+      s.id as "studentId",
+      s.student_id as "studentIdentifier",
+      s.name as "name",
+      s.grade_level as "gradeLevel",
+      p.risk_score as "riskScore",
+      p.risk_category as "riskCategory",
+      p.confidence_score as "confidenceScore"
+    from ${tables.students} s
+    join lateral (
+      select risk_score, risk_category, confidence_score
+      from ${tables.predictions} p
+      where p.student_id = s.id
+        and p.institution_id = ${institutionId}
+      order by p.prediction_date desc
+      limit 1
+    ) p on true
+    where s.institution_id = ${institutionId}
+    order by p.risk_score desc
+    limit 5
+  `);
 
   return {
     totalStudents: Number(totalStudents ?? 0),
@@ -117,7 +132,7 @@ export async function getDashboardStats() {
     previousPredictions: Number(previousPredictions ?? 0),
     recentInterventions: Number(recentInterventions ?? 0),
     completedInterventions: Number(completedInterventions ?? 0),
-    topRiskStudents: topRisk.map((row) => ({
+    topRiskStudents: topRisk.rows.map((row) => ({
       id: row.studentId,
       name: row.name,
       studentId: row.studentIdentifier,
