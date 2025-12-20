@@ -98,6 +98,7 @@ export const predictions = pgTable(
     modelVersion: varchar('model_version', { length: 50 }),
     modelType: varchar('model_type', { length: 50 }),
     predictionDate: timestamp('prediction_date', { withTimezone: true }).defaultNow(),
+    dataHash: varchar('data_hash', { length: 64 }),
     featuresUsed: text('features_used'),
     featureImportance: text('feature_importance'),
     sessionId: varchar('session_id', { length: 100 }),
@@ -109,6 +110,12 @@ export const predictions = pgTable(
   },
   (table) => ({
     studentDateIdx: index('ix_predictions_student_date').on(table.studentId, table.predictionDate),
+    studentHashIdx: uniqueIndex('uq_predictions_student_hash').on(
+      table.institutionId,
+      table.studentId,
+      table.modelVersion,
+      table.dataHash
+    ),
     institutionRiskIdx: index('ix_predictions_institution_risk').on(
       table.institutionId,
       table.riskCategory

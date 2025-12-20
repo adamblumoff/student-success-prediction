@@ -9,9 +9,9 @@
 - Run web app: `bun run dev` (repo root).
 - Build web app: `bun run build` (repo root).
 - ML service (local):
-  - `cd services/ml && python -m venv .venv && source .venv/bin/activate`
-  - `pip install -r requirements.txt`
-  - `uvicorn app:app --host 0.0.0.0 --port 9000`
+  - `cd services/ml && python3 -m venv .venv && source .venv/bin/activate`
+  - `python3 -m pip install -r requirements.txt`
+  - `python3 -m uvicorn app:app --host 0.0.0.0 --port 9000`
 
 ## Coding Style & Naming Conventions
 - Python: PEP 8, 4-space indents, type hints; snake_case for modules/functions, PascalCase for classes. Document public functions.

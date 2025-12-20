@@ -1,0 +1,2 @@
+ALTER TABLE "predictions" ADD COLUMN "data_hash" varchar(64);--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_predictions_student_hash" ON "predictions" USING btree ("institution_id","student_id","model_version","data_hash");

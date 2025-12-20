@@ -5,7 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { runMLPrediction, type MLPrediction } from '@/lib/ml-client';
 import { getInstitutionId } from '@/lib/auth';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
 
@@ -86,26 +86,58 @@ export async function analyzeGradebook(formData: FormData) {
         })
         .returning({ id: tables.students.id });
 
-      await tx.insert(tables.predictions).values({
-        institutionId,
-        studentId: student.id,
-        riskScore,
-        riskCategory,
-        successProbability: 1 - riskScore,
-        confidenceScore: Number(pred.confidence ?? Math.abs(riskScore - 0.5) * 2),
-        modelVersion: String((model_info as { model_type?: string } | undefined)?.model_type ?? 'k12_ultra'),
-        modelType: String(pred.model_type ?? 'ultra_advanced'),
-        featuresUsed: JSON.stringify(pred),
-        sessionId,
-        dataSource: 'csv_upload',
-        predictionDate: new Date()
-      });
+      const modelVersion = String(
+        (model_info as { model_type?: string; model_version?: string } | undefined)?.model_version ??
+          (model_info as { model_type?: string } | undefined)?.model_type ??
+          'success_models'
+      );
+      const modelType = String(pred.model_type ?? 'success_default');
+      const dataHash = String((pred as { input_hash?: string }).input_hash ?? '');
+
+      let predictionId: number | undefined;
+      if (dataHash) {
+        const [existing] = await tx
+          .select({ id: tables.predictions.id })
+          .from(tables.predictions)
+          .where(
+            and(
+              eq(tables.predictions.institutionId, institutionId),
+              eq(tables.predictions.studentId, student.id),
+              eq(tables.predictions.modelVersion, modelVersion),
+              eq(tables.predictions.dataHash, dataHash)
+            )
+          );
+        if (existing) predictionId = existing.id;
+      }
+
+      if (!predictionId) {
+        const [inserted] = await tx
+          .insert(tables.predictions)
+          .values({
+            institutionId,
+            studentId: student.id,
+            riskScore,
+            riskCategory,
+            successProbability: 1 - riskScore,
+            confidenceScore: Number(pred.confidence ?? Math.abs(riskScore - 0.5) * 2),
+            modelVersion,
+            modelType,
+            dataHash: dataHash || null,
+            featuresUsed: JSON.stringify(pred),
+            sessionId,
+            dataSource: 'csv_upload',
+            predictionDate: new Date()
+          })
+          .returning({ id: tables.predictions.id });
+        predictionId = inserted?.id;
+      }
 
       storedPredictions.push({
         ...pred,
         risk_category: riskCategory,
         risk_level: riskLevel,
-        student_db_id: student.id
+        student_db_id: student.id,
+        prediction_id: predictionId
       });
     }
   });

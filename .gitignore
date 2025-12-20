@@ -2,178 +2,56 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+*.so
 
 # Virtual environments
-venv/
-env/
-ENV/
 .venv/
-.env/
+venv/
+ENV/
+env/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb_checkpoints/
-
-# Database files
-*.db
-*.sqlite3
+# Node / Next.js
+node_modules/
+.next/
 
 # Logs
 *.log
 logs/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
+# OS / IDE
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
 
-# Model artifacts (large files)
-results/models/*.pkl
-results/models/**/*.pkl
-results/figures/*.png
-results/figures/*.jpg
-
-# Data files (keep structure but not content)
-data/raw/*.csv
-data/archive/*
-
-# Environment variables (all env files except examples)
+# Environment files (keep examples)
 .env
 .env.*
+!.env.example
+!apps/web/.env.example
 
+# ML artifacts
+services/ml/results/models/**/*.pkl
+services/ml/results/models/**/k12_success_*.json
+services/ml/results/figures/**/*
 
+# Local data downloads
+/data/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# API keys and secrets
-config/secrets.yaml
-config/production.yaml
-*.key
-*.pem
-*.crt
-*.p12
-secrets/
-
-# Security-sensitive files
-mvp_data.db
-secure_mvp_data.db
-auth_tokens.json
-session_data/
-
-# Deployment artifacts
-docker-compose.override.yml
-k8s/production/
-terraform/*.tfstate
-terraform/*.tfvars
-
-# Test artifacts
-test_reports/*.html
-test_reports/*.json
-test_reports/*.txt
+# Coverage / test artifacts
+.pytest_cache/
 htmlcov/
 .coverage
-.pytest_cache/
-
-# Playwright test results
+.coverage.*
+.tox/
 test-results/
-tests/e2e/playwright-report/
-tests/e2e/screenshots/
-ui_analysis_screenshots/
-ui_analysis_report.md
-analyze_ui_layout.js
-test_ui_manual.js
-test_progress_bar.js
 playwright-report/
-*.png
-*.jpg
-*.jpeg
-*.webm
-*.mp4
 
-# Backup and old files
-*_old.py
-*_backup.py
-*.bak
-backups/*.sql
-backups/*.tar.gz
-
-# Temporary development files
-*_test.py
-scratch_*
-temp_*
-local_*
-
-# Google API credentials (keep examples)
-config/google_credentials.json
-config/google_token.json
-!config/google_credentials_example.json
-
-# Node.js and npm (from cleanup)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-bun.lockb
-
-# Browser automation artifacts
-*.png
-*.jpg
-*.jpeg
-webapp_screenshot.*
-puppeteer_browser.js
-
-# Build and deployment
-Makefile
-docker-compose.yml
-*.deb
-
-# Next.js
-.next/
-
-# Additional cleanup patterns
+# Temp files
+*.tmp
 *~
-.#*
-.*.swp
-.*.swo
-\#*\#
-
-# Test CSV files (keep examples)
-test_*.csv
-!test_*_example.csv
-
-# Editor temporaries
+*.swp
+*.swo
 *.orig
 *.rej
-.mypy_cache/
-
-# Coverage and profiling
-.tox/
-.coverage.*
-profile_*
-*.prof

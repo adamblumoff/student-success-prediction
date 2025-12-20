@@ -8,6 +8,13 @@
       "when": 1766252709602,
       "tag": "0000_demonic_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766256451296,
+      "tag": "0001_good_apocalypse",
+      "breakpoints": true
     }
   ]
 }
