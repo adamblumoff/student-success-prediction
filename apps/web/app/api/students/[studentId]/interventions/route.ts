@@ -7,14 +7,15 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { studentId: string } }
+  { params }: { params: Promise<{ studentId: string }> }
 ) {
   const { userId } = await auth();
   if (!userId) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const studentId = Number(params.studentId);
+  const resolvedParams = await params;
+  const studentId = Number(resolvedParams.studentId);
   if (!Number.isFinite(studentId)) {
     return new Response(JSON.stringify({ error: 'Invalid student id' }), { status: 400 });
   }
