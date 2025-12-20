@@ -107,21 +107,35 @@ export async function updateInterventionDetails(
   if (!userId) throw new Error('Unauthorized');
 
   const institutionId = getInstitutionId();
-  const nextStatus = updates.status ?? null;
-  const parsedDueDate = updates.dueDate ? new Date(updates.dueDate) : null;
+  const hasStatus = Object.prototype.hasOwnProperty.call(updates, 'status');
+  const hasDueDate = Object.prototype.hasOwnProperty.call(updates, 'dueDate');
+  const hasDescription = Object.prototype.hasOwnProperty.call(updates, 'description');
+  const hasAssignedTo = Object.prototype.hasOwnProperty.call(updates, 'assignedTo');
+
+  const nextStatus = hasStatus ? updates.status ?? null : undefined;
+  const parsedDueDate = hasDueDate
+    ? updates.dueDate
+      ? new Date(updates.dueDate)
+      : null
+    : undefined;
 
   const [updated] = await db
     .update(tables.interventions)
     .set({
       title: updates.title?.trim() || undefined,
       interventionType: updates.interventionType?.trim() || undefined,
-      description: updates.description?.trim() || null,
+      description: hasDescription ? updates.description?.trim() || null : undefined,
       priority: updates.priority ?? undefined,
-      status: nextStatus ?? undefined,
-      assignedTo: updates.assignedTo?.trim() || null,
+      status: nextStatus,
+      assignedTo: hasAssignedTo ? updates.assignedTo?.trim() || null : undefined,
       dueDate: parsedDueDate,
       updatedAt: new Date(),
-      completedDate: nextStatus === 'completed' ? new Date() : null
+      completedDate:
+        nextStatus === undefined
+          ? undefined
+          : nextStatus === 'completed'
+            ? new Date()
+            : null
     })
     .where(
       and(
