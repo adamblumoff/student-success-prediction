@@ -1,1 +1,1 @@
-web: bun --cwd apps/web run start
+web: cd apps/web && bun run start

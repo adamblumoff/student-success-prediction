@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "bun --cwd apps/web dev",
     "build": "bun --cwd apps/web build",
-    "start": "bun --cwd apps/web start",
+    "start": "bun --cwd apps/web run start",
     "lint": "bun --cwd apps/web lint",
     "db:generate": "bun --cwd apps/web db:generate",
     "db:migrate": "bun --cwd apps/web db:migrate",
