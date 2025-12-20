@@ -77,3 +77,51 @@ export async function deleteStudentsAction(studentIds: number[]) {
 
   return { deletedIds: authorizedIds, deletedCount: authorizedIds.length };
 }
+
+export async function assignCounselorAction(studentIds: number[], counselor: string) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  if (!Array.isArray(studentIds) || studentIds.length === 0) {
+    return { updatedIds: [] as number[], updatedCount: 0 };
+  }
+
+  const trimmedCounselor = counselor.trim();
+  if (!trimmedCounselor) {
+    throw new Error('Counselor name is required.');
+  }
+
+  const institutionId = getInstitutionId();
+
+  const rows = await db
+    .select({ id: tables.students.id })
+    .from(tables.students)
+    .where(
+      and(
+        eq(tables.students.institutionId, institutionId),
+        inArray(tables.students.id, studentIds)
+      )
+    );
+
+  const authorizedIds = rows.map((row) => row.id);
+  if (authorizedIds.length === 0) {
+    return { updatedIds: [] as number[], updatedCount: 0 };
+  }
+
+  await db
+    .update(tables.students)
+    .set({ assignedCounselor: trimmedCounselor, updatedAt: new Date() })
+    .where(
+      and(
+        eq(tables.students.institutionId, institutionId),
+        inArray(tables.students.id, authorizedIds)
+      )
+    );
+
+  revalidatePath('/students');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/students'] });
+
+  return { updatedIds: authorizedIds, updatedCount: authorizedIds.length };
+}

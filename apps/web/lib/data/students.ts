@@ -34,6 +34,7 @@ export async function loadStudentsWithRisk() {
     currentGpa: number | null;
     attendanceRate: number | null;
     enrollmentStatus: string | null;
+    assignedCounselor: string | null;
     lastActivity: Date | null;
     activeInterventions: number | null;
     riskCategory: string | null;
@@ -49,6 +50,7 @@ export async function loadStudentsWithRisk() {
       s.current_gpa as "currentGpa",
       s.attendance_rate as "attendanceRate",
       s.enrollment_status as "enrollmentStatus",
+      s.assigned_counselor as "assignedCounselor",
       s.last_activity as "lastActivity",
       coalesce(i.active_count, 0) as "activeInterventions",
       p.risk_category as "riskCategory",

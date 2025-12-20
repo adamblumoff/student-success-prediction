@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteStudentsAction } from '@/lib/actions/students';
+import { assignCounselorAction, deleteStudentsAction } from '@/lib/actions/students';
 import StudentInterventionsModal from '@/components/student-interventions-modal';
 
 export type StudentWithRisk = {
@@ -13,6 +13,7 @@ export type StudentWithRisk = {
   currentGpa: number | null;
   attendanceRate: number | null;
   enrollmentStatus: string | null;
+  assignedCounselor: string | null;
   lastActivity: string | null;
   activeInterventions: number | null;
   riskCategory: string | null;
@@ -52,6 +53,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [modalStudentId, setModalStudentId] = useState<number | null>(null);
   const router = useRouter();
@@ -163,6 +165,120 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleAssignCounselor = async () => {
+    if (selectionCount === 0 || isAssigning) return;
+    const counselor = window.prompt('Assign counselor to selected students');
+    if (counselor === null) return;
+    if (!counselor.trim()) {
+      setStatusMessage('Counselor name is required.');
+      return;
+    }
+
+    setIsAssigning(true);
+    setStatusMessage(null);
+    try {
+      const result = await assignCounselorAction(Array.from(selected), counselor);
+      if (result.updatedCount === 0) {
+        setStatusMessage('No students were updated.');
+        return;
+      }
+      setRoster((prev) =>
+        prev.map((student) =>
+          result.updatedIds.includes(student.id)
+            ? { ...student, assignedCounselor: counselor.trim() }
+            : student
+        )
+      );
+      setStatusMessage(`Assigned counselor to ${result.updatedCount} student(s).`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Assignment failed.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleBulkIntervention = () => {
+    if (selectionCount === 0) {
+      router.push('/interventions');
+      return;
+    }
+    if (selectionCount > 1) {
+      setStatusMessage('Select a single student to prefill an intervention.');
+      return;
+    }
+    const selectedId = Array.from(selected)[0];
+    const student = roster.find((row) => row.id === selectedId);
+    if (!student) {
+      setStatusMessage('Selected student not found.');
+      return;
+    }
+    handleAddIntervention(student);
+  };
+
+  const exportRoster = () => {
+    const selectedStudents =
+      selectionCount > 0
+        ? roster.filter((student) => selected.has(student.id))
+        : filtered;
+    if (selectedStudents.length === 0) {
+      setStatusMessage('No students to export.');
+      return;
+    }
+
+    const escapeCsv = (value: string | number | null | undefined) => {
+      if (value === null || value === undefined) return '';
+      const text = String(value);
+      if (/["\n,]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+      return text;
+    };
+
+    const header = [
+      'Student ID',
+      'Name',
+      'Grade',
+      'GPA',
+      'Attendance Rate',
+      'Status',
+      'Assigned Counselor',
+      'Risk Category',
+      'Risk Score',
+      'Confidence Score',
+      'Active Interventions',
+      'Last Activity',
+      'Prediction Date'
+    ];
+
+    const rows = selectedStudents.map((student) => [
+      student.studentId,
+      student.name ?? '',
+      student.gradeLevel ?? '',
+      student.currentGpa ?? '',
+      student.attendanceRate ?? '',
+      student.enrollmentStatus ?? '',
+      student.assignedCounselor ?? '',
+      student.riskCategory ?? '',
+      student.riskScore ?? '',
+      student.confidenceScore ?? '',
+      student.activeInterventions ?? '',
+      student.lastActivity ?? '',
+      student.predictionDate ?? ''
+    ]);
+
+    const csv = [header, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `student-roster-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setStatusMessage(`Exported ${selectedStudents.length} student(s).`);
   };
 
   const handleAddIntervention = (student: StudentWithRisk) => {
@@ -284,21 +400,25 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <button
             type="button"
             className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
-            disabled
+            onClick={handleAssignCounselor}
+            disabled={selectionCount === 0 || isAssigning}
+            aria-disabled={selectionCount === 0 || isAssigning}
           >
-            Assign counselor
+            {isAssigning ? 'Assigning...' : 'Assign counselor'}
           </button>
           <button
             type="button"
             className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
-            disabled
+            onClick={handleBulkIntervention}
           >
             Add intervention
           </button>
           <button
             type="button"
             className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300"
-            disabled
+            onClick={exportRoster}
+            disabled={selectionCount === 0 && filtered.length === 0}
+            aria-disabled={selectionCount === 0 && filtered.length === 0}
           >
             Export roster
           </button>
@@ -343,19 +463,20 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                   )}
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-ink-400">
-                <div>
-                  Attendance:{' '}
-                  {student.attendanceRate !== null
-                    ? `${Math.round(student.attendanceRate * 100)}%`
-                    : '-'}
-                </div>
-                <div>Status: {student.enrollmentStatus ?? 'active'}</div>
-                <div>
-                  Last activity:{' '}
-                  {student.lastActivity
-                    ? new Date(student.lastActivity).toLocaleDateString()
-                    : '—'}
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-ink-400">
+                  <div>
+                    Attendance:{' '}
+                    {student.attendanceRate !== null
+                      ? `${Math.round(student.attendanceRate * 100)}%`
+                      : '-'}
+                  </div>
+                  <div>Status: {student.enrollmentStatus ?? 'active'}</div>
+                  <div>Counselor: {student.assignedCounselor ?? 'Unassigned'}</div>
+                  <div>
+                    Last activity:{' '}
+                    {student.lastActivity
+                      ? new Date(student.lastActivity).toLocaleDateString()
+                      : '—'}
                 </div>
                 <div>
                   Risk updated:{' '}
@@ -413,6 +534,9 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                       {student.name ?? `Student ${student.studentId}`}
                     </div>
                     <div className="text-xs text-ink-400">{student.studentId}</div>
+                    <div className="text-xs text-ink-500">
+                      Counselor: {student.assignedCounselor ?? 'Unassigned'}
+                    </div>
                   </td>
                   <td className="px-4 py-3">{student.gradeLevel ?? '-'}</td>
                   <td className="px-4 py-3">

@@ -11,6 +11,7 @@
     "lint": "bun --cwd apps/web lint",
     "db:generate": "bun --cwd apps/web db:generate",
     "db:migrate": "bun --cwd apps/web db:migrate",
-    "db:studio": "bun --cwd apps/web db:studio"
+    "db:studio": "bun --cwd apps/web db:studio",
+    "db:baseline": "bun --cwd apps/web db:baseline"
   }
 }

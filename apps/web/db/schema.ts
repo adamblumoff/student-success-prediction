@@ -50,6 +50,7 @@ export const students = pgTable(
     parentEducation: integer('parent_education'),
     socioeconomicStatus: integer('socioeconomic_status'),
     enrollmentStatus: varchar('enrollment_status', { length: 20 }).default('active'),
+    assignedCounselor: varchar('assigned_counselor', { length: 255 }),
     enrollmentDate: timestamp('enrollment_date', { withTimezone: true }),
     graduationDate: timestamp('graduation_date', { withTimezone: true }),
     isEll: boolean('is_ell').default(false),

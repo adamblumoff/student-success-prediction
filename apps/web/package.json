@@ -10,7 +10,8 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:baseline": "node scripts/baseline-migrations.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",

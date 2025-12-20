@@ -66,6 +66,32 @@ This starts the Next.js dev server.
 
 ---
 
+## Database migrations (Drizzle)
+
+Migrations live in `apps/web/db/migrations`.
+
+Generate a migration after editing `apps/web/db/schema.ts`:
+
+```
+bun run db:generate
+```
+
+If the database already exists (e.g., production), baseline once so Drizzle won't try to create tables:
+
+```
+bun run db:baseline
+```
+
+Apply migrations to the configured Postgres database:
+
+```
+bun run db:migrate
+```
+
+Both commands read `DATABASE_URL` from `apps/web/.env`.
+
+---
+
 ## Run the ML Service (Python)
 
 The ML service is separate and should be deployed on Railway as its own service.
@@ -107,3 +133,5 @@ Both services should point to the same production PostgreSQL instance.
 - No legacy tests are retained; new test suites will be introduced later.
 - If you need to re-enable local ML inference, run the ML service locally and point `ML_SERVICE_URL` to it.
 - Student deletions are hard deletes today; plan to add soft-delete + restore in a future iteration.
+- Counselor assignment is stored as free text on `students.assigned_counselor`; plan to normalize to a counselor/user model later.
+- Roster interventions are single-student only for now; bulk interventions will be added later.
