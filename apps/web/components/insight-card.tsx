@@ -10,7 +10,7 @@ type Props = {
   highlight?: boolean;
   riskCategory?: string | null;
   confidenceScore?: number | null;
-  predictionDate?: Date | null;
+  predictionDate?: string | null;
   bulkToken?: number;
   autoGenerate?: boolean;
   onGenerated?: (fromBulk: boolean) => void;

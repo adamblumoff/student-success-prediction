@@ -13,7 +13,13 @@ export default async function StudentsPage() {
           Browse students pulled from the production database and jump into insights.
         </p>
       </div>
-      <StudentRoster students={students} />
+      <StudentRoster
+        students={students.map((student) => ({
+          ...student,
+          lastActivity: student.lastActivity ? student.lastActivity.toISOString() : null,
+          predictionDate: student.predictionDate ? student.predictionDate.toISOString() : null
+        }))}
+      />
       {students.length === 0 && (
         <div className="bg-panel rounded-3xl p-8 text-sm text-ink-300">
           No students yet. Upload a gradebook to populate the roster.

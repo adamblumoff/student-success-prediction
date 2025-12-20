@@ -9,7 +9,7 @@ export type InsightsStudent = {
   riskCategory: string | null;
   riskScore: number | null;
   confidenceScore: number | null;
-  predictionDate: Date | null;
+  predictionDate: string | null;
 };
 
 export default function InsightsBoard({

@@ -26,7 +26,7 @@ export default async function InsightsPage({
           riskCategory: student.riskCategory,
           riskScore: student.riskScore,
           confidenceScore: student.confidenceScore,
-          predictionDate: student.predictionDate
+          predictionDate: student.predictionDate ? student.predictionDate.toISOString() : null
         }))}
         highlightId={highlightId}
       />

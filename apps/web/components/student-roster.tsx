@@ -11,11 +11,11 @@ export type StudentWithRisk = {
   currentGpa: number | null;
   attendanceRate: number | null;
   enrollmentStatus: string | null;
-  lastActivity: Date | null;
+  lastActivity: string | null;
   riskCategory: string | null;
   riskScore: number | null;
   confidenceScore: number | null;
-  predictionDate: Date | null;
+  predictionDate: string | null;
 };
 
 type ViewMode = 'cards' | 'table';
