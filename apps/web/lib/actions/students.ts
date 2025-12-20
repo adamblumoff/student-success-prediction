@@ -34,6 +34,15 @@ export async function deleteStudentsAction(studentIds: number[]) {
 
   await db.transaction(async (tx) => {
     await tx
+      .delete(tables.gptInsights)
+      .where(
+        and(
+          eq(tables.gptInsights.institutionId, institutionId),
+          inArray(tables.gptInsights.studentDatabaseId, authorizedIds)
+        )
+      );
+
+    await tx
       .delete(tables.predictions)
       .where(inArray(tables.predictions.studentId, authorizedIds));
 
