@@ -46,11 +46,21 @@ export async function deleteStudentsAction(studentIds: number[]) {
 
     await tx
       .delete(tables.predictions)
-      .where(inArray(tables.predictions.studentId, authorizedIds));
+      .where(
+        and(
+          eq(tables.predictions.institutionId, institutionId),
+          inArray(tables.predictions.studentId, authorizedIds)
+        )
+      );
 
     await tx
       .delete(tables.interventions)
-      .where(inArray(tables.interventions.studentId, authorizedIds));
+      .where(
+        and(
+          eq(tables.interventions.institutionId, institutionId),
+          inArray(tables.interventions.studentId, authorizedIds)
+        )
+      );
 
     await tx
       .delete(tables.students)
