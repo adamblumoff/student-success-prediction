@@ -91,6 +91,53 @@ export async function deleteIntervention(interventionId: number) {
   return deleted;
 }
 
+export async function updateInterventionDetails(
+  interventionId: number,
+  updates: {
+    title?: string;
+    interventionType?: string;
+    description?: string | null;
+    priority?: string | null;
+    status?: string | null;
+    assignedTo?: string | null;
+    dueDate?: string | null;
+  }
+) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('Unauthorized');
+
+  const institutionId = getInstitutionId();
+  const nextStatus = updates.status ?? null;
+  const parsedDueDate = updates.dueDate ? new Date(updates.dueDate) : null;
+
+  const [updated] = await db
+    .update(tables.interventions)
+    .set({
+      title: updates.title?.trim() || undefined,
+      interventionType: updates.interventionType?.trim() || undefined,
+      description: updates.description?.trim() || null,
+      priority: updates.priority ?? undefined,
+      status: nextStatus ?? undefined,
+      assignedTo: updates.assignedTo?.trim() || null,
+      dueDate: parsedDueDate,
+      updatedAt: new Date(),
+      completedDate: nextStatus === 'completed' ? new Date() : null
+    })
+    .where(
+      and(
+        eq(tables.interventions.id, interventionId),
+        eq(tables.interventions.institutionId, institutionId)
+      )
+    )
+    .returning();
+
+  revalidatePath('/interventions');
+  revalidatePath('/dashboard');
+  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+
+  return updated;
+}
+
 export type InterventionActionState = {
   status: 'idle' | 'success' | 'error';
   error?: string;

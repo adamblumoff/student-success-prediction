@@ -12,6 +12,7 @@ type PrefillPayload = {
   title?: string;
   description?: string;
   interventionType?: string;
+  source?: 'insight' | 'student';
 };
 
 export default function InterventionFormShell({
@@ -46,9 +47,9 @@ export default function InterventionFormShell({
     const studentId = prefill.studentId;
     return {
       studentId,
-      title: prefill.title ?? 'Insight plan',
+      title: prefill.title ?? '',
       description: prefill.description ?? '',
-      interventionType: prefill.interventionType ?? 'Insight plan'
+      interventionType: prefill.interventionType ?? ''
     };
   }, [prefill]);
 
@@ -58,6 +59,7 @@ export default function InterventionFormShell({
       defaults={defaults}
       prefillToken={token}
       prefillStudentName={prefill?.studentName ?? null}
+      prefillSource={prefill?.source ?? null}
     />
   );
 }

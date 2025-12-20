@@ -55,12 +55,14 @@ export default function InterventionForm({
   students,
   defaults,
   prefillToken,
-  prefillStudentName
+  prefillStudentName,
+  prefillSource
 }: {
   students: Array<{ id: number; name: string | null; studentId: string }>;
   defaults?: Defaults;
   prefillToken?: string | null;
   prefillStudentName?: string | null;
+  prefillSource?: 'insight' | 'student' | null;
 }) {
   const [state, formAction] = useActionState(createInterventionAction, initialState);
   const [templateId, setTemplateId] = useState('');
@@ -104,7 +106,9 @@ export default function InterventionForm({
         <h2 className="mt-2 text-2xl font-semibold text-ink-50">Plan support</h2>
         {prefillStudentName && (
           <p className="mt-2 text-sm text-ink-300">
-            Prefilled from GPT insight for {prefillStudentName}.
+            {prefillSource === 'student'
+              ? `Prefilled for ${prefillStudentName}.`
+              : `Prefilled from GPT insight for ${prefillStudentName}.`}
           </p>
         )}
       </div>

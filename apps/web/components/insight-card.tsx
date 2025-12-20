@@ -70,7 +70,8 @@ export default function InsightCard({
       studentName: name,
       title: 'Insight plan',
       interventionType: 'Insight plan',
-      description: html ? toPlainText(html) : ''
+      description: html ? toPlainText(html) : '',
+      source: 'insight'
     };
     sessionStorage.setItem(`${STORAGE_PREFIX}${token}`, JSON.stringify(payload));
     router.push(`/interventions?prefill=${token}`);

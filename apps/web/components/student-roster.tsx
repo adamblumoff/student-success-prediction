@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { deleteStudentsAction } from '@/lib/actions/students';
+import StudentInterventionsModal from '@/components/student-interventions-modal';
 
 export type StudentWithRisk = {
   id: number;
@@ -39,6 +40,8 @@ const getRiskLabel = (riskCategory: string | null) => {
   return riskCategory;
 };
 
+const STORAGE_PREFIX = 'insight-prefill:';
+
 export default function StudentRoster({ students }: { students: StudentWithRisk[] }) {
   const [roster, setRoster] = useState(students);
   const [query, setQuery] = useState('');
@@ -50,6 +53,8 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [modalStudentId, setModalStudentId] = useState<number | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     setRoster(students);
@@ -158,6 +163,21 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleAddIntervention = (student: StudentWithRisk) => {
+    const token = `${student.id}-${Date.now()}`;
+    const payload = {
+      studentId: student.id,
+      studentName: student.name ?? `Student ${student.studentId}`,
+      source: 'student'
+    };
+    sessionStorage.setItem(`${STORAGE_PREFIX}${token}`, JSON.stringify(payload));
+    router.push(`/interventions?prefill=${token}`);
+  };
+
+  const handleViewInsights = (student: StudentWithRisk) => {
+    setModalStudentId(student.id);
   };
 
   return (
@@ -345,18 +365,20 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Link
-                  href={`/insights?student=${student.id}`}
+                <button
+                  type="button"
+                  onClick={() => handleViewInsights(student)}
                   className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-200"
                 >
                   View insights
-                </Link>
-                <Link
-                  href="/interventions"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddIntervention(student)}
                   className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-200"
                 >
                   Add intervention
-                </Link>
+                </button>
               </div>
             </div>
           ))}
@@ -409,12 +431,22 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                       : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/insights?student=${student.id}`}
-                      className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold text-ink-200"
-                    >
-                      Insights
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleViewInsights(student)}
+                        className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold text-ink-200"
+                      >
+                        Insights
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddIntervention(student)}
+                        className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold text-ink-200"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -422,6 +454,11 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           </table>
         </div>
       )}
+      <StudentInterventionsModal
+        studentId={modalStudentId}
+        open={modalStudentId !== null}
+        onClose={() => setModalStudentId(null)}
+      />
     </div>
   );
 }
