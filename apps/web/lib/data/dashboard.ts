@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { getInstitutionId } from '@/lib/auth';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and, gte, lt, desc } from 'drizzle-orm';
 
 export async function getDashboardStats() {
   const { userId } = await auth();
@@ -24,6 +24,52 @@ export async function getDashboardStats() {
     .from(tables.interventions)
     .where(eq(tables.interventions.institutionId, institutionId));
 
+  const [{ latestPredictionDate }] = await db
+    .select({ latestPredictionDate: sql<Date | null>`max(${tables.predictions.predictionDate})` })
+    .from(tables.predictions)
+    .where(eq(tables.predictions.institutionId, institutionId));
+
+  const [{ recentPredictions }] = await db
+    .select({ recentPredictions: sql<number>`count(*)` })
+    .from(tables.predictions)
+    .where(
+      and(
+        eq(tables.predictions.institutionId, institutionId),
+        gte(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
+      )
+    );
+
+  const [{ previousPredictions }] = await db
+    .select({ previousPredictions: sql<number>`count(*)` })
+    .from(tables.predictions)
+    .where(
+      and(
+        eq(tables.predictions.institutionId, institutionId),
+        gte(tables.predictions.predictionDate, sql`now() - interval '14 days'`),
+        lt(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
+      )
+    );
+
+  const [{ recentInterventions }] = await db
+    .select({ recentInterventions: sql<number>`count(*)` })
+    .from(tables.interventions)
+    .where(
+      and(
+        eq(tables.interventions.institutionId, institutionId),
+        gte(tables.interventions.createdAt, sql`now() - interval '7 days'`)
+      )
+    );
+
+  const [{ completedInterventions }] = await db
+    .select({ completedInterventions: sql<number>`count(*)` })
+    .from(tables.interventions)
+    .where(
+      and(
+        eq(tables.interventions.institutionId, institutionId),
+        gte(tables.interventions.completedDate, sql`now() - interval '7 days'`)
+      )
+    );
+
   const riskBuckets = await db
     .select({
       riskCategory: tables.predictions.riskCategory,
@@ -45,10 +91,40 @@ export async function getDashboardStats() {
     { high: 0, medium: 0, low: 0, unknown: 0 }
   );
 
+  const topRisk = await db
+    .select({
+      studentId: tables.students.id,
+      studentIdentifier: tables.students.studentId,
+      name: tables.students.name,
+      gradeLevel: tables.students.gradeLevel,
+      riskScore: tables.predictions.riskScore,
+      riskCategory: tables.predictions.riskCategory,
+      confidenceScore: tables.predictions.confidenceScore
+    })
+    .from(tables.predictions)
+    .leftJoin(tables.students, eq(tables.students.id, tables.predictions.studentId))
+    .where(eq(tables.predictions.institutionId, institutionId))
+    .orderBy(desc(tables.predictions.riskScore))
+    .limit(5);
+
   return {
     totalStudents: Number(totalStudents ?? 0),
     totalPredictions: Number(totalPredictions ?? 0),
     totalInterventions: Number(totalInterventions ?? 0),
-    riskDistribution: distribution
+    riskDistribution: distribution,
+    latestPredictionDate,
+    recentPredictions: Number(recentPredictions ?? 0),
+    previousPredictions: Number(previousPredictions ?? 0),
+    recentInterventions: Number(recentInterventions ?? 0),
+    completedInterventions: Number(completedInterventions ?? 0),
+    topRiskStudents: topRisk.map((row) => ({
+      id: row.studentId,
+      name: row.name,
+      studentId: row.studentIdentifier,
+      gradeLevel: row.gradeLevel,
+      riskScore: row.riskScore,
+      riskCategory: row.riskCategory,
+      confidenceScore: row.confidenceScore
+    }))
   };
 }
