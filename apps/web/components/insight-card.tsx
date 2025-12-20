@@ -1,8 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getQuickInsight } from '@/lib/actions/insights';
+
+const STORAGE_PREFIX = 'insight-prefill:';
+
+const toPlainText = (value: string) => {
+  if (typeof window === 'undefined') return value;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = value;
+  return (wrapper.textContent || wrapper.innerText || '').trim();
+};
 
 type Props = {
   studentId: number;
@@ -33,6 +42,7 @@ export default function InsightCard({
   autoGenerate,
   onGenerated
 }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [html, setHtml] = useState<string | null>(initialHtml ?? null);
   const [cached, setCached] = useState<boolean | null>(
@@ -51,6 +61,19 @@ export default function InsightCard({
       setGeneratedAt(new Date());
       onGenerated?.(fromBulk);
     });
+  };
+
+  const handleCopy = () => {
+    const token = `${studentId}-${Date.now()}`;
+    const payload = {
+      studentId,
+      studentName: name,
+      title: 'Insight plan',
+      interventionType: 'Insight plan',
+      description: html ? toPlainText(html) : ''
+    };
+    sessionStorage.setItem(`${STORAGE_PREFIX}${token}`, JSON.stringify(payload));
+    router.push(`/interventions?prefill=${token}`);
   };
 
   useEffect(() => {
@@ -123,12 +146,14 @@ export default function InsightCard({
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/interventions"
+        <button
+          type="button"
+          onClick={handleCopy}
           className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-200"
+          disabled={!html}
         >
           Copy to intervention plan
-        </Link>
+        </button>
       </div>
     </div>
   );

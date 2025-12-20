@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { createInterventionAction, type InterventionActionState } from '@/lib/actions/interventions';
 
 const initialState: InterventionActionState = { status: 'idle' };
@@ -43,10 +44,23 @@ function SubmitButton() {
   );
 }
 
+type Defaults = {
+  studentId?: number;
+  title?: string;
+  description?: string;
+  interventionType?: string;
+};
+
 export default function InterventionForm({
-  students
+  students,
+  defaults,
+  prefillToken,
+  prefillStudentName
 }: {
   students: Array<{ id: number; name: string | null; studentId: string }>;
+  defaults?: Defaults;
+  prefillToken?: string | null;
+  prefillStudentName?: string | null;
 }) {
   const [state, formAction] = useActionState(createInterventionAction, initialState);
   const [templateId, setTemplateId] = useState('');
@@ -57,6 +71,7 @@ export default function InterventionForm({
   const [assignedRole, setAssignedRole] = useState('Counselor');
   const [assigneeName, setAssigneeName] = useState('');
   const [sendReminder, setSendReminder] = useState(true);
+  const [studentId, setStudentId] = useState<number | undefined>(undefined);
 
   const assignedTo = useMemo(() => {
     if (assigneeName.trim()) return `${assignedRole}: ${assigneeName.trim()}`;
@@ -73,11 +88,25 @@ export default function InterventionForm({
     setPriority(selected.priority);
   };
 
+  useEffect(() => {
+    if (!defaults) return;
+    setTemplateId('');
+    setTitle(defaults.title ?? '');
+    setInterventionType(defaults.interventionType ?? '');
+    setDescription(defaults.description ?? '');
+    if (defaults.studentId) setStudentId(defaults.studentId);
+  }, [defaults, prefillToken]);
+
   return (
     <form action={formAction} className="card space-y-6">
       <div>
         <p className="text-xs uppercase tracking-[0.3em] text-ink-400">New intervention</p>
         <h2 className="mt-2 text-2xl font-semibold text-ink-50">Plan support</h2>
+        {prefillStudentName && (
+          <p className="mt-2 text-sm text-ink-300">
+            Prefilled from GPT insight for {prefillStudentName}.
+          </p>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -87,6 +116,8 @@ export default function InterventionForm({
             <select
               name="studentId"
               required
+              value={studentId ?? ''}
+              onChange={(event) => setStudentId(Number(event.target.value))}
               className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
             >
               <option value="">Select student</option>

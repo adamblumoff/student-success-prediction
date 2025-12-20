@@ -1,6 +1,6 @@
 import { listInterventions } from '@/lib/data/interventions';
 import { loadExistingStudents } from '@/lib/data/students';
-import InterventionForm from '@/components/intervention-form';
+import InterventionFormShell from '@/components/intervention-form-shell';
 import InterventionTable from '@/components/intervention-table';
 
 export default async function InterventionsPage() {
@@ -17,7 +17,7 @@ export default async function InterventionsPage() {
         </p>
       </div>
       <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <InterventionForm
+        <InterventionFormShell
           students={students.map((student) => ({
             id: student.id,
             name: student.name,
