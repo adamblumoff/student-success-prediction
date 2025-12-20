@@ -1,4 +1,5 @@
 import { loadStudentsWithRisk } from '@/lib/data/students';
+import { loadLatestInsights } from '@/lib/data/insights';
 import InsightsBoard from '@/components/insights-board';
 
 export default async function InsightsPage({
@@ -7,6 +8,10 @@ export default async function InsightsPage({
   searchParams?: Promise<{ student?: string }>;
 }) {
   const students = await loadStudentsWithRisk();
+  const latestInsights = await loadLatestInsights(students.map((student) => student.id));
+  const latestByStudent = new Map(
+    latestInsights.map((insight) => [insight.studentDatabaseId, insight])
+  );
   const resolvedParams = await searchParams;
   const highlightId = resolvedParams?.student ? Number(resolvedParams.student) : null;
 
@@ -20,17 +25,23 @@ export default async function InsightsPage({
         </p>
       </div>
       <InsightsBoard
-        students={students.map((student) => ({
-          id: student.id,
-          name: student.name,
-          riskCategory: student.riskCategory,
-          riskScore: student.riskScore,
-          confidenceScore: student.confidenceScore,
-          predictionDate:
-            student.predictionDate instanceof Date
-              ? student.predictionDate.toISOString()
-              : student.predictionDate
-        }))}
+        students={students.map((student) => {
+          const latest = latestByStudent.get(student.id);
+          return {
+            id: student.id,
+            name: student.name,
+            riskCategory: student.riskCategory,
+            riskScore: student.riskScore,
+            confidenceScore: student.confidenceScore,
+            predictionDate:
+              student.predictionDate instanceof Date
+                ? student.predictionDate.toISOString()
+                : student.predictionDate,
+            cachedInsightHtml: latest?.formattedHtml ?? null,
+            cachedInsightAt: latest?.createdAt ? latest.createdAt.toISOString() : null,
+            cachedInsightRisk: latest?.riskLevel ?? null
+          };
+        })}
         highlightId={highlightId}
       />
       {students.length === 0 && (

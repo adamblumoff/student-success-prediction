@@ -10,6 +10,9 @@ export type InsightsStudent = {
   riskScore: number | null;
   confidenceScore: number | null;
   predictionDate: string | null;
+  cachedInsightHtml?: string | null;
+  cachedInsightAt?: string | null;
+  cachedInsightRisk?: string | null;
 };
 
 export default function InsightsBoard({
@@ -109,6 +112,9 @@ export default function InsightsBoard({
             riskCategory={student.riskCategory}
             confidenceScore={student.confidenceScore}
             predictionDate={student.predictionDate}
+            initialHtml={student.cachedInsightHtml ?? null}
+            initialCached={Boolean(student.cachedInsightHtml)}
+            initialGeneratedAt={student.cachedInsightAt ?? null}
             bulkToken={bulkToken ?? undefined}
             autoGenerate={topRiskIds.has(student.id)}
             onGenerated={handleGenerated}

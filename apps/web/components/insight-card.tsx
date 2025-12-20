@@ -11,6 +11,9 @@ type Props = {
   riskCategory?: string | null;
   confidenceScore?: number | null;
   predictionDate?: string | null;
+  initialHtml?: string | null;
+  initialCached?: boolean;
+  initialGeneratedAt?: string | null;
   bulkToken?: number;
   autoGenerate?: boolean;
   onGenerated?: (fromBulk: boolean) => void;
@@ -23,14 +26,21 @@ export default function InsightCard({
   riskCategory,
   confidenceScore,
   predictionDate,
+  initialHtml,
+  initialCached,
+  initialGeneratedAt,
   bulkToken,
   autoGenerate,
   onGenerated
 }: Props) {
   const [isPending, startTransition] = useTransition();
-  const [html, setHtml] = useState<string | null>(null);
-  const [cached, setCached] = useState<boolean | null>(null);
-  const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
+  const [html, setHtml] = useState<string | null>(initialHtml ?? null);
+  const [cached, setCached] = useState<boolean | null>(
+    initialCached === undefined ? null : initialCached
+  );
+  const [generatedAt, setGeneratedAt] = useState<Date | null>(
+    initialGeneratedAt ? new Date(initialGeneratedAt) : null
+  );
   const lastBulkToken = useRef<number | null>(null);
 
   const handleClick = (fromBulk = false) => {
