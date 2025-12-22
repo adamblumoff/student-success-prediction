@@ -504,7 +504,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                   onClick={() => handleViewInsights(student)}
                   className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-200"
                 >
-                  View insights
+                  View interventions
                 </button>
                 <button
                   type="button"
@@ -574,7 +574,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                         onClick={() => handleViewInsights(student)}
                         className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold text-ink-200"
                       >
-                        Insights
+                        Interventions
                       </button>
                       <button
                         type="button"
