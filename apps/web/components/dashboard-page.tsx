@@ -5,6 +5,8 @@ import Link from 'next/link';
 import TimeRangeToggle from '@/components/time-range-toggle';
 import { useAppData } from '@/components/app-data-provider';
 
+const NOW = Date.now();
+
 type RiskDistribution = {
   high: number;
   medium: number;
@@ -46,7 +48,7 @@ export default function DashboardPageClient() {
         ? new Date(Math.max(...predictionDates.map((date) => date.getTime())))
         : null;
 
-    const now = Date.now();
+    const now = NOW;
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     const fourteenDays = 14 * 24 * 60 * 60 * 1000;
 

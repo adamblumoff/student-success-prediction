@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { createInterventionAction, type InterventionActionState } from '@/lib/actions/interventions';
 
 const initialState: InterventionActionState = { status: 'idle' };
@@ -54,26 +54,26 @@ type Defaults = {
 export default function InterventionForm({
   students,
   defaults,
-  prefillToken,
   prefillStudentName,
   prefillSource
 }: {
   students: Array<{ id: number; name: string | null; studentId: string }>;
   defaults?: Defaults;
-  prefillToken?: string | null;
   prefillStudentName?: string | null;
   prefillSource?: 'insight' | 'student' | null;
 }) {
   const [state, formAction] = useActionState(createInterventionAction, initialState);
   const [templateId, setTemplateId] = useState('');
-  const [title, setTitle] = useState('');
-  const [interventionType, setInterventionType] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(() => defaults?.title ?? '');
+  const [interventionType, setInterventionType] = useState(
+    () => defaults?.interventionType ?? ''
+  );
+  const [description, setDescription] = useState(() => defaults?.description ?? '');
   const [priority, setPriority] = useState('medium');
   const [assignedRole, setAssignedRole] = useState('Counselor');
   const [assigneeName, setAssigneeName] = useState('');
   const [sendReminder, setSendReminder] = useState(true);
-  const [studentId, setStudentId] = useState<number | undefined>(undefined);
+  const [studentId, setStudentId] = useState<number | undefined>(() => defaults?.studentId);
 
   const assignedTo = useMemo(() => {
     if (assigneeName.trim()) return `${assignedRole}: ${assigneeName.trim()}`;
@@ -90,14 +90,6 @@ export default function InterventionForm({
     setPriority(selected.priority);
   };
 
-  useEffect(() => {
-    if (!defaults) return;
-    setTemplateId('');
-    setTitle(defaults.title ?? '');
-    setInterventionType(defaults.interventionType ?? '');
-    setDescription(defaults.description ?? '');
-    if (defaults.studentId) setStudentId(defaults.studentId);
-  }, [defaults, prefillToken]);
 
   return (
     <form action={formAction} className="card space-y-6">

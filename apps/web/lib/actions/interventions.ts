@@ -1,37 +1,30 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
+import { createInterventionSchema, parseFormData } from '@/lib/validation';
 
 export async function createIntervention(formData: FormData) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
-  const studentId = Number(formData.get('studentId'));
-  const title = String(formData.get('title') || '').trim();
-  const interventionType = String(formData.get('interventionType') || '').trim();
-
-  if (!studentId || !title || !interventionType) {
-    throw new Error('Student, title, and type are required');
-  }
+  const parsed = parseFormData(createInterventionSchema, formData);
 
   const [created] = await db
     .insert(tables.interventions)
     .values({
+      districtId,
       institutionId,
-      studentId,
-      title,
-      interventionType,
-      description: String(formData.get('description') || '').trim() || null,
-      priority: String(formData.get('priority') || '').trim() || 'medium',
-      status: String(formData.get('status') || '').trim() || 'planned',
-      assignedTo: String(formData.get('assignedTo') || '').trim() || null,
-      dueDate: formData.get('dueDate') ? new Date(String(formData.get('dueDate'))) : null
+      studentId: parsed.studentId,
+      title: parsed.title,
+      interventionType: parsed.interventionType,
+      description: parsed.description?.trim() || null,
+      priority: parsed.priority?.trim() || 'medium',
+      status: parsed.status?.trim() || 'planned',
+      assignedTo: parsed.assignedTo?.trim() || null,
+      dueDate: parsed.dueDate ? new Date(parsed.dueDate) : null
     })
     .returning();
 
@@ -43,10 +36,8 @@ export async function createIntervention(formData: FormData) {
 }
 
 export async function updateInterventionStatus(interventionId: number, status: string) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
   const [updated] = await db
     .update(tables.interventions)
     .set({
@@ -57,6 +48,7 @@ export async function updateInterventionStatus(interventionId: number, status: s
     .where(
       and(
         eq(tables.interventions.id, interventionId),
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId)
       )
     )
@@ -70,15 +62,14 @@ export async function updateInterventionStatus(interventionId: number, status: s
 }
 
 export async function deleteIntervention(interventionId: number) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
   const [deleted] = await db
     .delete(tables.interventions)
     .where(
       and(
         eq(tables.interventions.id, interventionId),
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId)
       )
     )
@@ -103,10 +94,8 @@ export async function updateInterventionDetails(
     dueDate?: string | null;
   }
 ) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
   const hasStatus = Object.prototype.hasOwnProperty.call(updates, 'status');
   const hasDueDate = Object.prototype.hasOwnProperty.call(updates, 'dueDate');
   const hasDescription = Object.prototype.hasOwnProperty.call(updates, 'description');
@@ -140,6 +129,7 @@ export async function updateInterventionDetails(
     .where(
       and(
         eq(tables.interventions.id, interventionId),
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId)
       )
     )

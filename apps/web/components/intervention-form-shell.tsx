@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import InterventionForm from '@/components/intervention-form';
 
@@ -22,23 +22,14 @@ export default function InterventionFormShell({
 }) {
   const searchParams = useSearchParams();
   const token = searchParams.get('prefill');
-  const [prefill, setPrefill] = useState<PrefillPayload | null>(null);
-
-  useEffect(() => {
-    if (!token) {
-      setPrefill(null);
-      return;
-    }
+  const prefill = useMemo<PrefillPayload | null>(() => {
+    if (!token || typeof window === 'undefined') return null;
     const stored = sessionStorage.getItem(`${STORAGE_PREFIX}${token}`);
-    if (!stored) {
-      setPrefill(null);
-      return;
-    }
+    if (!stored) return null;
     try {
-      const payload = JSON.parse(stored) as PrefillPayload;
-      setPrefill(payload);
+      return JSON.parse(stored) as PrefillPayload;
     } catch {
-      setPrefill(null);
+      return null;
     }
   }, [token]);
 
@@ -55,9 +46,9 @@ export default function InterventionFormShell({
 
   return (
     <InterventionForm
+      key={token ?? 'empty'}
       students={students}
       defaults={defaults}
-      prefillToken={token}
       prefillStudentName={prefill?.studentName ?? null}
       prefillSource={prefill?.source ?? null}
     />

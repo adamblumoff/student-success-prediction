@@ -11,10 +11,30 @@ import {
   uniqueIndex
 } from 'drizzle-orm/pg-core';
 
+export const districts = pgTable(
+  'districts',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+    externalId: varchar('external_id', { length: 191 }).notNull(),
+    defaultInstitutionId: integer('default_institution_id'),
+    timezone: varchar('timezone', { length: 50 }).default('UTC'),
+    active: boolean('active').default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+  },
+  (table) => ({
+    externalIdx: uniqueIndex('uq_districts_external_id').on(table.externalId),
+    nameIdx: index('ix_districts_name').on(table.name),
+    activeIdx: index('ix_districts_active').on(table.active)
+  })
+);
+
 export const institutions = pgTable(
   'institutions',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     name: varchar('name', { length: 255 }).notNull(),
     code: varchar('code', { length: 50 }).notNull(),
     type: varchar('type', { length: 50 }).notNull(),
@@ -24,8 +44,9 @@ export const institutions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true })
   },
   (table) => ({
-    codeIdx: uniqueIndex('uq_institutions_code').on(table.code),
+    codeIdx: uniqueIndex('uq_institutions_district_code').on(table.districtId, table.code),
     nameIdx: index('ix_institutions_name').on(table.name),
+    districtIdx: index('ix_institutions_district').on(table.districtId),
     activeIdx: index('ix_institutions_active').on(table.active)
   })
 );
@@ -34,6 +55,7 @@ export const students = pgTable(
   'students',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     studentId: varchar('student_id', { length: 100 }).notNull(),
     sisId: varchar('sis_id', { length: 100 }),
@@ -74,6 +96,7 @@ export const students = pgTable(
       table.institutionId,
       table.studentId
     ),
+    districtIdx: index('ix_students_district').on(table.districtId),
     institutionGradeIdx: index('ix_students_institution_grade').on(
       table.institutionId,
       table.gradeLevel
@@ -89,6 +112,7 @@ export const predictions = pgTable(
   'predictions',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     studentId: integer('student_id').notNull(),
     riskScore: real('risk_score').notNull(),
@@ -116,6 +140,7 @@ export const predictions = pgTable(
       table.modelVersion,
       table.dataHash
     ),
+    districtIdx: index('ix_predictions_district').on(table.districtId),
     institutionRiskIdx: index('ix_predictions_institution_risk').on(
       table.institutionId,
       table.riskCategory
@@ -131,6 +156,7 @@ export const interventions = pgTable(
   'interventions',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     studentId: integer('student_id').notNull(),
     predictionId: integer('prediction_id'),
@@ -154,6 +180,7 @@ export const interventions = pgTable(
   },
   (table) => ({
     studentStatusIdx: index('ix_interventions_student_status').on(table.studentId, table.status),
+    districtIdx: index('ix_interventions_district').on(table.districtId),
     institutionTypeIdx: index('ix_interventions_institution_type').on(
       table.institutionId,
       table.interventionType
@@ -169,6 +196,7 @@ export const auditLogs = pgTable(
   'audit_logs',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     userId: integer('user_id'),
     userEmail: varchar('user_email', { length: 255 }),
@@ -188,6 +216,10 @@ export const auditLogs = pgTable(
   },
   (table) => ({
     userActionIdx: index('ix_audit_logs_user_action').on(table.userId, table.action),
+    districtTimestampIdx: index('ix_audit_logs_district_timestamp').on(
+      table.districtId,
+      table.timestamp
+    ),
     institutionTimestampIdx: index('ix_audit_logs_institution_timestamp').on(
       table.institutionId,
       table.timestamp
@@ -200,6 +232,7 @@ export const modelMetadata = pgTable(
   'model_metadata',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id'),
     institutionId: integer('institution_id'),
     modelName: varchar('model_name', { length: 100 }).notNull(),
     modelVersion: varchar('model_version', { length: 50 }).notNull(),
@@ -227,6 +260,7 @@ export const users = pgTable(
   'users',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     username: varchar('username', { length: 100 }).notNull(),
     email: varchar('email', { length: 255 }).notNull(),
@@ -243,6 +277,7 @@ export const users = pgTable(
   (table) => ({
     usernameIdx: uniqueIndex('uq_users_username').on(table.username),
     emailIdx: uniqueIndex('uq_users_email').on(table.email),
+    districtIdx: index('ix_users_district').on(table.districtId),
     roleIdx: index('ix_users_role').on(table.role),
     activeIdx: index('ix_users_active').on(table.isActive)
   })
@@ -274,6 +309,7 @@ export const gptInsights = pgTable(
   'gpt_insights',
   {
     id: serial('id').primaryKey(),
+    districtId: integer('district_id').notNull(),
     institutionId: integer('institution_id').notNull(),
     studentId: varchar('student_id', { length: 100 }).notNull(),
     studentDatabaseId: integer('student_database_id'),
@@ -294,6 +330,10 @@ export const gptInsights = pgTable(
   },
   (table) => ({
     studentHashIdx: index('ix_gpt_insights_student_hash').on(table.studentId, table.dataHash),
+    districtCreatedIdx: index('ix_gpt_insights_district_created').on(
+      table.districtId,
+      table.createdAt
+    ),
     sessionRiskIdx: index('ix_gpt_insights_session_risk').on(table.sessionId, table.riskLevel),
     institutionCreatedIdx: index('ix_gpt_insights_institution_created').on(
       table.institutionId,
@@ -302,6 +342,7 @@ export const gptInsights = pgTable(
   })
 );
 
+export type District = typeof districts.$inferSelect;
 export type Institution = typeof institutions.$inferSelect;
 export type Student = typeof students.$inferSelect;
 export type Prediction = typeof predictions.$inferSelect;

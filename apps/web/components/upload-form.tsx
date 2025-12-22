@@ -33,7 +33,7 @@ export default function UploadForm() {
           <p className="badge badge-risk-low">Gradebook analysis</p>
           <h2 className="mt-4 text-2xl font-semibold text-ink-50">Upload your latest CSV</h2>
           <p className="mt-2 text-sm text-ink-300">
-            We'll send the gradebook to the ML service and hydrate your dashboard with
+            We&apos;ll send the gradebook to the ML service and hydrate your dashboard with
             fresh predictions.
           </p>
         </div>

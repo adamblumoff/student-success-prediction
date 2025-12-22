@@ -7,6 +7,7 @@ import StudentInterventionsModal from '@/components/student-interventions-modal'
 
 export type StudentWithRisk = {
   id: number;
+  institutionId?: number;
   studentId: string;
   name: string | null;
   gradeLevel: string | null;

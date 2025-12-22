@@ -1,13 +1,10 @@
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
-import { eq, desc } from 'drizzle-orm';
+import { requireTenantContext } from '@/lib/auth';
+import { and, eq, desc } from 'drizzle-orm';
 
 export async function listInterventions() {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
   const rows = await db
     .select({
       intervention: tables.interventions,
@@ -15,7 +12,12 @@ export async function listInterventions() {
     })
     .from(tables.interventions)
     .leftJoin(tables.students, eq(tables.interventions.studentId, tables.students.id))
-    .where(eq(tables.interventions.institutionId, institutionId))
+    .where(
+      and(
+        eq(tables.interventions.districtId, districtId),
+        eq(tables.interventions.institutionId, institutionId)
+      )
+    )
     .orderBy(desc(tables.interventions.createdAt));
 
   return rows;

@@ -1,24 +1,27 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { emitRealtimeEvent } from '@/lib/realtime';
 import { revalidatePath } from 'next/cache';
 import { sha256 } from '@/lib/hash';
 import { generateInsight } from '@/lib/gpt';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 
 export async function getQuickInsight(studentDbId: number) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
 
   const [student] = await db
     .select()
     .from(tables.students)
-    .where(and(eq(tables.students.id, studentDbId), eq(tables.students.institutionId, institutionId)))
+    .where(
+      and(
+        eq(tables.students.id, studentDbId),
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
+      )
+    )
     .limit(1);
 
   if (!student) {
@@ -28,7 +31,13 @@ export async function getQuickInsight(studentDbId: number) {
   const [prediction] = await db
     .select()
     .from(tables.predictions)
-    .where(eq(tables.predictions.studentId, studentDbId))
+    .where(
+      and(
+        eq(tables.predictions.districtId, districtId),
+        eq(tables.predictions.institutionId, institutionId),
+        eq(tables.predictions.studentId, studentDbId)
+      )
+    )
     .orderBy(desc(tables.predictions.predictionDate))
     .limit(1);
 
@@ -39,7 +48,13 @@ export async function getQuickInsight(studentDbId: number) {
       status: tables.interventions.status
     })
     .from(tables.interventions)
-    .where(eq(tables.interventions.studentId, studentDbId))
+    .where(
+      and(
+        eq(tables.interventions.districtId, districtId),
+        eq(tables.interventions.institutionId, institutionId),
+        eq(tables.interventions.studentId, studentDbId)
+      )
+    )
     .orderBy(desc(tables.interventions.createdAt))
     .limit(25);
 
@@ -81,7 +96,7 @@ export async function getQuickInsight(studentDbId: number) {
     .from(tables.gptInsights)
     .where(
       and(
-        eq(tables.gptInsights.institutionId, institutionId),
+        eq(tables.gptInsights.districtId, districtId),
         eq(tables.gptInsights.studentDatabaseId, student.id),
         eq(tables.gptInsights.dataHash, dataHash)
       )
@@ -123,6 +138,7 @@ export async function getQuickInsight(studentDbId: number) {
   const [saved] = await db
     .insert(tables.gptInsights)
     .values({
+      districtId,
       institutionId,
       studentId: student.studentId,
       studentDatabaseId: student.id,

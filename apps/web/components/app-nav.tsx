@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
-import { BarChart3, UploadCloud, Users, Sparkles, CalendarClock, Plug } from 'lucide-react';
+import { BarChart3, UploadCloud, Users, Sparkles, CalendarClock, Plug, Settings } from 'lucide-react';
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -11,7 +11,8 @@ const links = [
   { href: '/students', label: 'Students', icon: Users },
   { href: '/interventions', label: 'Interventions', icon: CalendarClock },
   { href: '/insights', label: 'GPT Insights', icon: Sparkles },
-  { href: '/integrations', label: 'Integrations', icon: Plug }
+  { href: '/integrations', label: 'Integrations', icon: Plug },
+  { href: '/settings', label: 'Settings', icon: Settings }
 ];
 
 export default function AppNav() {
@@ -19,7 +20,7 @@ export default function AppNav() {
 
   return (
     <nav className="flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-ink-700/60 bg-ink-900/80 px-6 py-4 shadow-[0_30px_70px_-50px_rgba(8,10,16,0.9)]">
-      <div className="flex items-center gap-3">
+      <Link href="/dashboard" className="flex items-center gap-3">
         <div className="grid h-10 w-10 place-items-center rounded-2xl bg-slate-950 text-[0.65rem] font-semibold leading-none text-ink-50">
           SSP
         </div>
@@ -27,7 +28,7 @@ export default function AppNav() {
           <p className="text-xs uppercase tracking-[0.3em] text-ink-400">Studio</p>
           <p className="text-lg font-semibold text-ink-50">Student Success</p>
         </div>
-      </div>
+      </Link>
       <div className="flex flex-wrap items-center gap-2">
         {links.map((link) => {
           const active = pathname === link.href;

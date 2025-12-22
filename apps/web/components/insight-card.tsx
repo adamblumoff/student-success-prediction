@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { getQuickInsight } from '@/lib/actions/insights';
 
@@ -53,7 +53,7 @@ export default function InsightCard({
   );
   const lastBulkToken = useRef<number | null>(null);
 
-  const handleClick = (fromBulk = false) => {
+  const handleClick = useCallback((fromBulk = false) => {
     startTransition(async () => {
       const result = await getQuickInsight(studentId);
       setHtml(result.formattedHtml);
@@ -61,7 +61,7 @@ export default function InsightCard({
       setGeneratedAt(new Date());
       onGenerated?.(fromBulk);
     });
-  };
+  }, [onGenerated, studentId]);
 
   const handleCopy = () => {
     const token = `${studentId}-${Date.now()}`;
@@ -82,7 +82,7 @@ export default function InsightCard({
     if (lastBulkToken.current === bulkToken) return;
     lastBulkToken.current = bulkToken;
     handleClick(true);
-  }, [autoGenerate, bulkToken]);
+  }, [autoGenerate, bulkToken, handleClick]);
 
   return (
     <div className={`card ${highlight ? 'ring-2 ring-sage-400' : ''}`}>

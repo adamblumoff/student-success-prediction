@@ -1,39 +1,57 @@
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { eq, sql, and, gte, lt, desc } from 'drizzle-orm';
 
 export async function getDashboardStats() {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) throw new Error('Unauthorized');
-
-  const institutionId = getInstitutionId();
 
   const [{ totalStudents }] = await db
     .select({ totalStudents: sql<number>`count(*)` })
     .from(tables.students)
-    .where(eq(tables.students.institutionId, institutionId));
+    .where(
+      and(
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
+      )
+    );
 
   const [{ totalPredictions }] = await db
     .select({ totalPredictions: sql<number>`count(*)` })
     .from(tables.predictions)
-    .where(eq(tables.predictions.institutionId, institutionId));
+    .where(
+      and(
+        eq(tables.predictions.districtId, districtId),
+        eq(tables.predictions.institutionId, institutionId)
+      )
+    );
 
   const [{ totalInterventions }] = await db
     .select({ totalInterventions: sql<number>`count(*)` })
     .from(tables.interventions)
-    .where(eq(tables.interventions.institutionId, institutionId));
+    .where(
+      and(
+        eq(tables.interventions.districtId, districtId),
+        eq(tables.interventions.institutionId, institutionId)
+      )
+    );
 
   const [{ latestPredictionDate }] = await db
     .select({ latestPredictionDate: sql<Date | null>`max(${tables.predictions.predictionDate})` })
     .from(tables.predictions)
-    .where(eq(tables.predictions.institutionId, institutionId));
+    .where(
+      and(
+        eq(tables.predictions.districtId, districtId),
+        eq(tables.predictions.institutionId, institutionId)
+      )
+    );
 
   const [{ recentPredictions }] = await db
     .select({ recentPredictions: sql<number>`count(*)` })
     .from(tables.predictions)
     .where(
       and(
+        eq(tables.predictions.districtId, districtId),
         eq(tables.predictions.institutionId, institutionId),
         gte(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
       )
@@ -44,6 +62,7 @@ export async function getDashboardStats() {
     .from(tables.predictions)
     .where(
       and(
+        eq(tables.predictions.districtId, districtId),
         eq(tables.predictions.institutionId, institutionId),
         gte(tables.predictions.predictionDate, sql`now() - interval '14 days'`),
         lt(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
@@ -55,6 +74,7 @@ export async function getDashboardStats() {
     .from(tables.interventions)
     .where(
       and(
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId),
         gte(tables.interventions.createdAt, sql`now() - interval '7 days'`)
       )
@@ -65,6 +85,7 @@ export async function getDashboardStats() {
     .from(tables.interventions)
     .where(
       and(
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId),
         gte(tables.interventions.completedDate, sql`now() - interval '7 days'`)
       )
@@ -76,7 +97,12 @@ export async function getDashboardStats() {
       count: sql<number>`count(*)`
     })
     .from(tables.predictions)
-    .where(eq(tables.predictions.institutionId, institutionId))
+    .where(
+      and(
+        eq(tables.predictions.districtId, districtId),
+        eq(tables.predictions.institutionId, institutionId)
+      )
+    )
     .groupBy(tables.predictions.riskCategory);
 
   const distribution = riskBuckets.reduce(
@@ -113,11 +139,13 @@ export async function getDashboardStats() {
       select risk_score, risk_category, confidence_score
       from ${tables.predictions} p
       where p.student_id = s.id
+        and p.district_id = ${districtId}
         and p.institution_id = ${institutionId}
       order by p.prediction_date desc
       limit 1
     ) p on true
-    where s.institution_id = ${institutionId}
+    where s.district_id = ${districtId}
+      and s.institution_id = ${institutionId}
     order by p.risk_score desc
     limit 5
   `);

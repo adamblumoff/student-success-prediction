@@ -1,31 +1,31 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { and, eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
+import { assignCounselorSchema, deleteStudentsSchema } from '@/lib/validation';
 
 export async function deleteStudentsAction(studentIds: number[]) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  if (!Array.isArray(studentIds) || studentIds.length === 0) {
+  const parsed = deleteStudentsSchema.parse({ studentIds });
+  if (parsed.studentIds.length === 0) {
     return { deletedIds: [] as number[], deletedCount: 0 };
   }
-
-  const institutionId = getInstitutionId();
 
   const rows = await db
     .select({ id: tables.students.id })
     .from(tables.students)
     .where(
       and(
+        eq(tables.students.districtId, districtId),
         eq(tables.students.institutionId, institutionId),
-        inArray(tables.students.id, studentIds)
+        inArray(tables.students.id, parsed.studentIds)
       )
     );
 
@@ -39,6 +39,7 @@ export async function deleteStudentsAction(studentIds: number[]) {
       .delete(tables.gptInsights)
       .where(
         and(
+          eq(tables.gptInsights.districtId, districtId),
           eq(tables.gptInsights.institutionId, institutionId),
           inArray(tables.gptInsights.studentDatabaseId, authorizedIds)
         )
@@ -48,6 +49,7 @@ export async function deleteStudentsAction(studentIds: number[]) {
       .delete(tables.predictions)
       .where(
         and(
+          eq(tables.predictions.districtId, districtId),
           eq(tables.predictions.institutionId, institutionId),
           inArray(tables.predictions.studentId, authorizedIds)
         )
@@ -57,6 +59,7 @@ export async function deleteStudentsAction(studentIds: number[]) {
       .delete(tables.interventions)
       .where(
         and(
+          eq(tables.interventions.districtId, districtId),
           eq(tables.interventions.institutionId, institutionId),
           inArray(tables.interventions.studentId, authorizedIds)
         )
@@ -64,7 +67,13 @@ export async function deleteStudentsAction(studentIds: number[]) {
 
     await tx
       .delete(tables.students)
-      .where(inArray(tables.students.id, authorizedIds));
+      .where(
+        and(
+          eq(tables.students.districtId, districtId),
+          eq(tables.students.institutionId, institutionId),
+          inArray(tables.students.id, authorizedIds)
+        )
+      );
   });
 
   revalidatePath('/students');
@@ -79,29 +88,26 @@ export async function deleteStudentsAction(studentIds: number[]) {
 }
 
 export async function assignCounselorAction(studentIds: number[], counselor: string) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  if (!Array.isArray(studentIds) || studentIds.length === 0) {
+  const parsed = assignCounselorSchema.parse({ studentIds, counselor });
+  if (parsed.studentIds.length === 0) {
     return { updatedIds: [] as number[], updatedCount: 0 };
   }
 
-  const trimmedCounselor = counselor.trim();
-  if (!trimmedCounselor) {
-    throw new Error('Counselor name is required.');
-  }
-
-  const institutionId = getInstitutionId();
+  const trimmedCounselor = parsed.counselor.trim();
 
   const rows = await db
     .select({ id: tables.students.id })
     .from(tables.students)
     .where(
       and(
+        eq(tables.students.districtId, districtId),
         eq(tables.students.institutionId, institutionId),
-        inArray(tables.students.id, studentIds)
+        inArray(tables.students.id, parsed.studentIds)
       )
     );
 
@@ -115,6 +121,7 @@ export async function assignCounselorAction(studentIds: number[], counselor: str
     .set({ assignedCounselor: trimmedCounselor, updatedAt: new Date() })
     .where(
       and(
+        eq(tables.students.districtId, districtId),
         eq(tables.students.institutionId, institutionId),
         inArray(tables.students.id, authorizedIds)
       )

@@ -1,30 +1,16 @@
 'use server';
 
 import crypto from 'crypto';
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { runMLPrediction, type MLPrediction } from '@/lib/ml-client';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
-
-function normalizeRiskCategory(input: string | undefined, riskScore: number) {
-  if (input) return input;
-  if (riskScore >= 0.7) return 'High Risk';
-  if (riskScore >= 0.3) return 'Moderate Risk';
-  return 'Low Risk';
-}
-
-function normalizeRiskLevel(input: string | undefined, riskScore: number) {
-  if (input) return input;
-  if (riskScore >= 0.7) return 'danger';
-  if (riskScore >= 0.3) return 'warning';
-  return 'success';
-}
+import { calculateRiskCategory, calculateRiskLevel } from '@/lib/risk';
 
 export async function analyzeGradebook(formData: FormData) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     throw new Error('Unauthorized');
   }
@@ -36,7 +22,6 @@ export async function analyzeGradebook(formData: FormData) {
 
   const { predictions, model_info } = await runMLPrediction(file);
 
-  const institutionId = getInstitutionId();
   const sessionId = crypto.randomUUID();
   const summary = {
     total: predictions.length,
@@ -53,14 +38,15 @@ export async function analyzeGradebook(formData: FormData) {
         pred.student_id ?? pred.id ?? (pred as { ID?: string }).ID ?? `student-${crypto.randomUUID()}`
       );
       const riskScore = Number(pred.risk_probability ?? 0.5);
-      const riskCategory = normalizeRiskCategory(pred.risk_category as string | undefined, riskScore);
-      const riskLevel = normalizeRiskLevel(pred.risk_level as string | undefined, riskScore);
+      const riskCategory = calculateRiskCategory(riskScore);
+      const riskLevel = calculateRiskLevel(riskScore);
 
       if (riskScore >= 0.7) summary.high += 1;
       else if (riskScore >= 0.3) summary.medium += 1;
       else summary.low += 1;
 
       const studentValues = {
+        districtId,
         institutionId,
         studentId: studentExternalId,
         name: (pred.name as string | undefined) ?? null,
@@ -101,6 +87,7 @@ export async function analyzeGradebook(formData: FormData) {
           .from(tables.predictions)
           .where(
             and(
+              eq(tables.predictions.districtId, districtId),
               eq(tables.predictions.institutionId, institutionId),
               eq(tables.predictions.studentId, student.id),
               eq(tables.predictions.modelVersion, modelVersion),
@@ -114,6 +101,7 @@ export async function analyzeGradebook(formData: FormData) {
         const [inserted] = await tx
           .insert(tables.predictions)
           .values({
+            districtId,
             institutionId,
             studentId: student.id,
             riskScore,

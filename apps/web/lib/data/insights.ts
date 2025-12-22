@@ -1,10 +1,9 @@
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { desc, eq, inArray, and } from 'drizzle-orm';
 
 export async function loadLatestInsights(studentIds: number[]) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     throw new Error('Unauthorized');
   }
@@ -18,7 +17,6 @@ export async function loadLatestInsights(studentIds: number[]) {
     }>;
   }
 
-  const institutionId = getInstitutionId();
   const rows = await db
     .select({
       studentDatabaseId: tables.gptInsights.studentDatabaseId,
@@ -29,6 +27,7 @@ export async function loadLatestInsights(studentIds: number[]) {
     .from(tables.gptInsights)
     .where(
       and(
+        eq(tables.gptInsights.districtId, districtId),
         eq(tables.gptInsights.institutionId, institutionId),
         inArray(tables.gptInsights.studentDatabaseId, studentIds)
       )
