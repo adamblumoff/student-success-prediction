@@ -1,15 +1,14 @@
-import { auth } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
-import { getInstitutionId } from '@/lib/auth';
+import { requireTenantContext } from '@/lib/auth';
 import { and, desc, eq } from 'drizzle-orm';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ studentId: string }> }
 ) {
-  const { userId } = await auth();
+  const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
@@ -20,7 +19,6 @@ export async function GET(
     return new Response(JSON.stringify({ error: 'Invalid student id' }), { status: 400 });
   }
 
-  const institutionId = getInstitutionId();
   const [student] = await db
     .select({
       id: tables.students.id,
@@ -30,7 +28,13 @@ export async function GET(
       enrollmentStatus: tables.students.enrollmentStatus
     })
     .from(tables.students)
-    .where(and(eq(tables.students.id, studentId), eq(tables.students.institutionId, institutionId)))
+    .where(
+      and(
+        eq(tables.students.id, studentId),
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
+      )
+    )
     .limit(1);
 
   if (!student) {
@@ -52,11 +56,16 @@ export async function GET(
     .from(tables.interventions)
     .where(
       and(
+        eq(tables.interventions.districtId, districtId),
         eq(tables.interventions.institutionId, institutionId),
         eq(tables.interventions.studentId, studentId)
       )
     )
     .orderBy(desc(tables.interventions.createdAt));
 
-  return Response.json({ student, interventions });
+  return Response.json({ student, interventions }, {
+    headers: {
+      'Cache-Control': 'no-store'
+    }
+  });
 }
