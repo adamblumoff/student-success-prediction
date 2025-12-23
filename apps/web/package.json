@@ -2,6 +2,7 @@
   "name": "student-success-next",
   "version": "2.0.0",
   "private": true,
+  "packageManager": "bun@1.3.5",
   "type": "module",
   "scripts": {
     "dev": "next dev",
