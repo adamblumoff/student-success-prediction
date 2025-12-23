@@ -70,7 +70,10 @@ type AppDataContextValue = {
     interventions: InterventionPayload[]
   ) => void;
   loadInterventionsForInstitution: (institutionId?: number | null) => Promise<void>;
-  loadInsightsForInstitution: (institutionId?: number | null) => Promise<void>;
+  loadInsightsForInstitution: (
+    institutionId?: number | null,
+    options?: { force?: boolean }
+  ) => Promise<void>;
   isLoadingInsights: boolean;
   isLoadingInterventions: boolean;
   isLoadingAll: boolean;
@@ -259,9 +262,9 @@ export default function AppDataProvider({
   );
 
   const loadInsightsForInstitution = useCallback(
-    async (institutionId?: number | null) => {
+    async (institutionId?: number | null, options?: { force?: boolean }) => {
       if (!institutionId) return;
-      if (insightsByInstitution[institutionId]) return;
+      if (!options?.force && insightsByInstitution[institutionId]) return;
       if (loadingInsightsFor === institutionId) return;
 
       setLoadingInsightsFor(institutionId);

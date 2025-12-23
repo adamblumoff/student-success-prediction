@@ -17,15 +17,16 @@ export type InsightsStudent = {
 
 export default function InsightsBoard({
   students,
-  highlightId
+  highlightId,
+  onRefresh
 }: {
   students: InsightsStudent[];
   highlightId: number | null;
+  onRefresh?: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
-  const [bulkToken, setBulkToken] = useState<number | null>(null);
-  const [bulkRemaining, setBulkRemaining] = useState(0);
+  const [bulkQueue, setBulkQueue] = useState<number[]>([]);
 
   const topRiskIds = useMemo(() => {
     const sorted = [...students]
@@ -56,14 +57,16 @@ export default function InsightsBoard({
   const handleBulkGenerate = () => {
     const count = topRiskIds.size;
     if (count === 0) return;
-    setBulkRemaining(count);
-    setBulkToken(Date.now());
+    setBulkQueue(Array.from(topRiskIds));
   };
 
   const handleGenerated = (fromBulk: boolean) => {
     if (!fromBulk) return;
-    setBulkRemaining((prev) => Math.max(0, prev - 1));
+    setBulkQueue((prev) => (prev.length > 0 ? prev.slice(1) : prev));
   };
+
+  const bulkActiveId = bulkQueue[0] ?? null;
+  const bulkRemaining = bulkQueue.length;
 
   return (
     <div className="space-y-6">
@@ -115,9 +118,9 @@ export default function InsightsBoard({
             initialHtml={student.cachedInsightHtml ?? null}
             initialCached={Boolean(student.cachedInsightHtml)}
             initialGeneratedAt={student.cachedInsightAt ?? null}
-            bulkToken={bulkToken ?? undefined}
-            autoGenerate={topRiskIds.has(student.id)}
+            bulkActiveId={bulkActiveId}
             onGenerated={handleGenerated}
+            onRefresh={onRefresh}
           />
         ))}
       </div>

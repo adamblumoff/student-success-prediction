@@ -1,9 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getQuickInsight } from '@/lib/actions/insights';
-
 const STORAGE_PREFIX = 'insight-prefill:';
 
 const toPlainText = (value: string) => {
@@ -23,9 +21,9 @@ type Props = {
   initialHtml?: string | null;
   initialCached?: boolean;
   initialGeneratedAt?: string | null;
-  bulkToken?: number;
-  autoGenerate?: boolean;
+  bulkActiveId?: number | null;
   onGenerated?: (fromBulk: boolean) => void;
+  onRefresh?: () => void;
 };
 
 export default function InsightCard({
@@ -38,12 +36,12 @@ export default function InsightCard({
   initialHtml,
   initialCached,
   initialGeneratedAt,
-  bulkToken,
-  autoGenerate,
-  onGenerated
+  bulkActiveId,
+  onGenerated,
+  onRefresh
 }: Props) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isGenerating, setIsGenerating] = useState(false);
   const [html, setHtml] = useState<string | null>(initialHtml ?? null);
   const [cached, setCached] = useState<boolean | null>(
     initialCached === undefined ? null : initialCached
@@ -51,17 +49,41 @@ export default function InsightCard({
   const [generatedAt, setGeneratedAt] = useState<Date | null>(
     initialGeneratedAt ? new Date(initialGeneratedAt) : null
   );
-  const lastBulkToken = useRef<number | null>(null);
 
-  const handleClick = useCallback((fromBulk = false) => {
-    startTransition(async () => {
-      const result = await getQuickInsight(studentId);
-      setHtml(result.formattedHtml);
-      setCached(result.cached);
-      setGeneratedAt(new Date());
-      onGenerated?.(fromBulk);
-    });
-  }, [onGenerated, studentId]);
+  const pendingKey = useMemo(() => `insight-pending:${studentId}`, [studentId]);
+
+  const handleClick = useCallback(
+    async (fromBulk = false) => {
+      if (isGenerating) return;
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(pendingKey, String(Date.now()));
+      }
+      setIsGenerating(true);
+      try {
+        const response = await fetch('/api/insights/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId })
+        });
+        if (!response.ok) return;
+        const result = (await response.json()) as {
+          cached: boolean;
+          formattedHtml: string | null;
+          riskLevel: string | null;
+        };
+        setHtml(result.formattedHtml);
+        setCached(result.cached);
+        setGeneratedAt(new Date());
+      } finally {
+        setIsGenerating(false);
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.removeItem(pendingKey);
+        }
+        onGenerated?.(fromBulk);
+      }
+    },
+    [isGenerating, onGenerated, pendingKey, studentId]
+  );
 
   const handleCopy = () => {
     const token = `${studentId}-${Date.now()}`;
@@ -78,11 +100,41 @@ export default function InsightCard({
   };
 
   useEffect(() => {
-    if (!autoGenerate || !bulkToken) return;
-    if (lastBulkToken.current === bulkToken) return;
-    lastBulkToken.current = bulkToken;
+    if (bulkActiveId !== studentId) return;
     handleClick(true);
-  }, [autoGenerate, bulkToken, handleClick]);
+  }, [bulkActiveId, handleClick, studentId]);
+
+  useEffect(() => {
+    if (!initialHtml) return;
+    setHtml(initialHtml);
+    setCached(initialCached === undefined ? null : initialCached);
+    setGeneratedAt(initialGeneratedAt ? new Date(initialGeneratedAt) : null);
+    if (isGenerating) {
+      setIsGenerating(false);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(pendingKey);
+      }
+    }
+  }, [initialCached, initialGeneratedAt, initialHtml, isGenerating, pendingKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.sessionStorage.getItem(pendingKey)) return;
+    if (initialHtml) {
+      window.sessionStorage.removeItem(pendingKey);
+      return;
+    }
+    setIsGenerating(true);
+  }, [initialHtml, pendingKey]);
+
+  useEffect(() => {
+    if (!isGenerating) return;
+    if (!onRefresh) return;
+    const interval = window.setInterval(() => {
+      onRefresh();
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [isGenerating, onRefresh]);
 
   return (
     <div className={`card ${highlight ? 'ring-2 ring-sage-400' : ''}`}>
@@ -108,10 +160,10 @@ export default function InsightCard({
           )}
           <button
             type="button"
-            onClick={() => handleClick(false)}
+            onClick={() => void handleClick(false)}
             className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-200"
           >
-            {isPending ? 'Generating...' : 'Generate'}
+            {isGenerating ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>

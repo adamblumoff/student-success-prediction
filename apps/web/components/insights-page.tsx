@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import InsightsBoard from '@/components/insights-board';
 import { useAppData, type StudentWithRisk } from '@/components/app-data-provider';
@@ -58,10 +58,14 @@ export default function InsightsPageClient({
     selectedInstitutionId
   ]);
 
-  useEffect(() => {
+  const refreshInsights = useCallback(() => {
     if (!selectedInstitutionId) return;
-    void loadInsightsForInstitution(selectedInstitutionId);
+    void loadInsightsForInstitution(selectedInstitutionId, { force: true });
   }, [loadInsightsForInstitution, selectedInstitutionId]);
+
+  useEffect(() => {
+    refreshInsights();
+  }, [refreshInsights]);
 
   const students = useMemo(() => {
     if (selectedInstitutionId && selectedInstitutionId !== initialInstitutionId) {
@@ -112,6 +116,7 @@ export default function InsightsPageClient({
           };
         })}
         highlightId={Number.isFinite(highlightStudentId ?? NaN) ? highlightStudentId : null}
+        onRefresh={refreshInsights}
       />
       {isLoadingInsights && (
         <p className="text-xs uppercase tracking-[0.35em] text-ink-400">
