@@ -5,48 +5,98 @@ import InterventionFormShell from '@/components/intervention-form-shell';
 import InterventionTable from '@/components/intervention-table';
 import { useAppData } from '@/components/app-data-provider';
 
-export default function InterventionsPageClient() {
+export default function InterventionsPageClient({
+  initialStudents,
+  initialInterventions
+}: {
+  initialStudents: {
+    id: number;
+    institutionId: number;
+    studentId: string;
+    name: string | null;
+    gradeLevel: string | null;
+    currentGpa: number | null;
+    attendanceRate: number | null;
+    enrollmentStatus: string | null;
+    assignedCounselor: string | null;
+    lastActivity: string | null;
+    activeInterventions: number | null;
+    riskCategory: string | null;
+    riskScore: number | null;
+    confidenceScore: number | null;
+    predictionDate: string | null;
+  }[];
+  initialInterventions: {
+    id: number;
+    studentId: number | null;
+    institutionId: number;
+    title: string;
+    interventionType: string;
+    status: string | null;
+    priority: string | null;
+    assignedTo: string | null;
+    dueDate: string | null;
+    createdAt: string | null;
+    completedDate: string | null;
+    studentName: string | null;
+    studentIdentifier: string | null;
+  }[];
+}) {
   const {
     students,
     interventions,
     selectedInstitutionId,
+    seedStudentsForInstitution,
+    seedInterventionsForInstitution,
     loadInterventionsForInstitution,
     isLoadingInterventions
   } = useAppData();
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialStudents.length > 0) {
+      seedStudentsForInstitution(selectedInstitutionId, initialStudents);
+    }
+  }, [initialStudents, seedStudentsForInstitution, selectedInstitutionId]);
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
+    if (initialInterventions.length > 0) {
+      seedInterventionsForInstitution(selectedInstitutionId, initialInterventions);
+    }
+  }, [initialInterventions, seedInterventionsForInstitution, selectedInstitutionId]);
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
     void loadInterventionsForInstitution(selectedInstitutionId);
   }, [loadInterventionsForInstitution, selectedInstitutionId]);
 
-  const studentOptions = useMemo(
-    () =>
-      students.map((student) => ({
-        id: student.id,
-        name: student.name,
-        studentId: student.studentId
-      })),
-    [students]
-  );
+  const studentOptions = useMemo(() => {
+    const source = students.length > 0 ? students : initialStudents;
+    return source.map((student) => ({
+      id: student.id,
+      name: student.name,
+      studentId: student.studentId
+    }));
+  }, [initialStudents, students]);
 
-  const rows = useMemo(
-    () =>
-      interventions.map((row) => ({
-        intervention: {
-          id: row.id,
-          title: row.title,
-          interventionType: row.interventionType,
-          status: row.status,
-          priority: row.priority,
-          assignedTo: row.assignedTo,
-          dueDate: row.dueDate
-        },
-        student: row.studentId
-          ? { name: row.studentName, studentId: row.studentIdentifier ?? '' }
-          : null
-      })),
-    [interventions]
-  );
+  const rows = useMemo(() => {
+    const source = interventions.length > 0 ? interventions : initialInterventions;
+    return source.map((row) => ({
+      intervention: {
+        id: row.id,
+        title: row.title,
+        interventionType: row.interventionType,
+        status: row.status,
+        priority: row.priority,
+        assignedTo: row.assignedTo,
+        dueDate: row.dueDate
+      },
+      student: row.studentId
+        ? { name: row.studentName, studentId: row.studentIdentifier ?? '' }
+        : null
+    }));
+  }, [initialInterventions, interventions]);
 
   return (
     <section className="space-y-6">

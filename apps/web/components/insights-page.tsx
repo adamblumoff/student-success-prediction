@@ -6,14 +6,23 @@ import InsightsBoard from '@/components/insights-board';
 import { useAppData, type StudentWithRisk } from '@/components/app-data-provider';
 
 export default function InsightsPageClient({
-  initialStudents
+  initialStudents,
+  initialInsights
 }: {
   initialStudents: StudentWithRisk[];
+  initialInsights: {
+    studentDatabaseId: number;
+    institutionId: number;
+    formattedHtml: string | null;
+    riskLevel: string | null;
+    createdAt: string | null;
+  }[];
 }) {
   const {
     students: contextStudents,
     selectedInstitutionId,
     seedStudentsForInstitution,
+    seedInsightsForInstitution,
     loadInsightsForInstitution,
     isLoadingInsights,
     insights
@@ -30,6 +39,13 @@ export default function InsightsPageClient({
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialInsights.length > 0) {
+      seedInsightsForInstitution(selectedInstitutionId, initialInsights);
+    }
+  }, [initialInsights, seedInsightsForInstitution, selectedInstitutionId]);
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
     void loadInsightsForInstitution(selectedInstitutionId);
   }, [loadInsightsForInstitution, selectedInstitutionId]);
 
@@ -38,15 +54,20 @@ export default function InsightsPageClient({
     [contextStudents, initialStudents]
   );
 
+  const insightsSource = useMemo(
+    () => (insights.length > 0 ? insights : initialInsights),
+    [initialInsights, insights]
+  );
+
   const latestByStudent = useMemo(() => {
     const map = new Map<number, (typeof insights)[number]>();
-    for (const insight of insights) {
+    for (const insight of insightsSource) {
       if (!map.has(insight.studentDatabaseId)) {
         map.set(insight.studentDatabaseId, insight);
       }
     }
     return map;
-  }, [insights]);
+  }, [insightsSource]);
 
   return (
     <section className="space-y-6">

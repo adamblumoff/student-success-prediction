@@ -1,45 +1,31 @@
 import { db, tables } from '@/db';
 import { requireTenantContext } from '@/lib/auth';
-import { desc, eq, inArray, and } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
-export async function loadLatestInsights(studentIds: number[]) {
+export async function loadLatestInsights() {
   const { userId, districtId, institutionId } = await requireTenantContext();
   if (!userId) {
     throw new Error('Unauthorized');
   }
 
-  if (studentIds.length === 0) {
-    return [] as Array<{
-      studentDatabaseId: number;
-      formattedHtml: string;
-      riskLevel: string;
-      createdAt: Date | null;
-    }>;
-  }
+  const insightsResult = await db.execute<{
+    studentDatabaseId: number;
+    institutionId: number;
+    formattedHtml: string | null;
+    riskLevel: string | null;
+    createdAt: Date | null;
+  }>(sql`
+    select distinct on (g.student_database_id)
+      g.student_database_id as "studentDatabaseId",
+      g.institution_id as "institutionId",
+      g.formatted_html as "formattedHtml",
+      g.risk_level as "riskLevel",
+      g.created_at as "createdAt"
+    from ${tables.gptInsights} g
+    where g.district_id = ${districtId}
+      and g.institution_id = ${institutionId}
+    order by g.student_database_id, g.created_at desc
+  `);
 
-  const rows = await db
-    .select({
-      studentDatabaseId: tables.gptInsights.studentDatabaseId,
-      formattedHtml: tables.gptInsights.formattedHtml,
-      riskLevel: tables.gptInsights.riskLevel,
-      createdAt: tables.gptInsights.createdAt
-    })
-    .from(tables.gptInsights)
-    .where(
-      and(
-        eq(tables.gptInsights.districtId, districtId),
-        eq(tables.gptInsights.institutionId, institutionId),
-        inArray(tables.gptInsights.studentDatabaseId, studentIds)
-      )
-    )
-    .orderBy(desc(tables.gptInsights.createdAt));
-
-  const latestByStudent = new Map<number, (typeof rows)[number]>();
-  for (const row of rows) {
-    const id = row.studentDatabaseId ?? 0;
-    if (!id || latestByStudent.has(id)) continue;
-    latestByStudent.set(id, row);
-  }
-
-  return Array.from(latestByStudent.values());
+  return insightsResult.rows;
 }

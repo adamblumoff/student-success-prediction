@@ -64,6 +64,11 @@ type AppDataContextValue = {
   insights: InsightPayload[];
   interventions: InterventionPayload[];
   seedStudentsForInstitution: (institutionId: number, students: StudentWithRisk[]) => void;
+  seedInsightsForInstitution: (institutionId: number, insights: InsightPayload[]) => void;
+  seedInterventionsForInstitution: (
+    institutionId: number,
+    interventions: InterventionPayload[]
+  ) => void;
   loadInterventionsForInstitution: (institutionId?: number | null) => Promise<void>;
   loadInsightsForInstitution: (institutionId?: number | null) => Promise<void>;
   isLoadingInsights: boolean;
@@ -202,6 +207,28 @@ export default function AppDataProvider({
     []
   );
 
+  const seedInsightsForInstitution = useCallback(
+    (institutionId: number, nextInsights: InsightPayload[]) => {
+      if (!institutionId) return;
+      setInsightsByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: nextInsights
+      }));
+    },
+    []
+  );
+
+  const seedInterventionsForInstitution = useCallback(
+    (institutionId: number, nextInterventions: InterventionPayload[]) => {
+      if (!institutionId) return;
+      setInterventionsByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: nextInterventions
+      }));
+    },
+    []
+  );
+
   const loadInterventionsForInstitution = useCallback(
     async (institutionId?: number | null) => {
       if (!institutionId) return;
@@ -281,6 +308,8 @@ export default function AppDataProvider({
       insights,
       interventions,
       seedStudentsForInstitution,
+      seedInsightsForInstitution,
+      seedInterventionsForInstitution,
       loadInterventionsForInstitution,
       loadInsightsForInstitution,
       isLoadingInsights:
@@ -297,6 +326,8 @@ export default function AppDataProvider({
       insights,
       interventions,
       seedStudentsForInstitution,
+      seedInsightsForInstitution,
+      seedInterventionsForInstitution,
       loadInterventionsForInstitution,
       loadInsightsForInstitution,
       loadingInsightsFor,
