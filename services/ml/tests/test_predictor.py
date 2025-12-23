@@ -42,3 +42,44 @@ def test_row_hash_stable():
     first = predictor._row_hash(row)
     second = predictor._row_hash(row)
     assert first == second
+
+
+def test_feature_vector_respects_feature_list():
+    predictor = K12SuccessPredictor()
+    predictor.features = ["current_gpa", "attendance_rate"]
+    vec = predictor._feature_vector({"current_gpa": 3.1, "attendance_rate": 0.8})
+    assert vec.shape == (1, 2)
+    assert float(vec[0, 0]) == 3.1
+    assert float(vec[0, 1]) == 0.8
+
+
+def test_normalize_value_handles_types():
+    predictor = K12SuccessPredictor()
+    assert predictor._normalize_value("  hi ") == "hi"
+    assert predictor._normalize_value(3) == 3
+    assert predictor._normalize_value(3.5) == 3.5
+
+
+def test_generate_recommendations_low_risk():
+    predictor = K12SuccessPredictor()
+    recs = predictor.generate_recommendations(
+        {"risk_level": "success", "current_gpa": 3.5, "attendance_rate": 0.95}
+    )
+    assert len(recs) > 0
+    assert "Monitor for continued success" in recs[-1]
+
+
+def test_generate_recommendations_high_risk():
+    predictor = K12SuccessPredictor()
+    recs = predictor.generate_recommendations(
+        {"risk_level": "danger", "current_gpa": 1.8, "attendance_rate": 0.8, "grade_level": 9}
+    )
+    assert any("attendance" in r.lower() for r in recs)
+    assert any("support" in r.lower() or "intervention" in r.lower() for r in recs)
+
+
+def test_get_model_info_defaults():
+    predictor = K12SuccessPredictor()
+    predictor.metadata = None
+    info = predictor.get_model_info()
+    assert info["model_type"] == "success_model"
