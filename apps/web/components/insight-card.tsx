@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 const STORAGE_PREFIX = 'insight-prefill:';
+const PENDING_PREFIX = 'insight-pending:';
 
 const toPlainText = (value: string) => {
   if (typeof window === 'undefined') return value;
@@ -50,13 +51,14 @@ export default function InsightCard({
     initialGeneratedAt ? new Date(initialGeneratedAt) : null
   );
 
-  const pendingKey = useMemo(() => `insight-pending:${studentId}`, [studentId]);
+  const pendingKey = useMemo(() => `${PENDING_PREFIX}${studentId}`, [studentId]);
 
   const handleClick = useCallback(
     async (fromBulk = false) => {
       if (isGenerating) return;
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(pendingKey, String(Date.now()));
+        window.dispatchEvent(new Event('insight:pending-change'));
       }
       setIsGenerating(true);
       try {
@@ -78,6 +80,7 @@ export default function InsightCard({
         setIsGenerating(false);
         if (typeof window !== 'undefined') {
           window.sessionStorage.removeItem(pendingKey);
+          window.dispatchEvent(new Event('insight:pending-change'));
         }
         onGenerated?.(fromBulk);
       }
@@ -113,6 +116,7 @@ export default function InsightCard({
       setIsGenerating(false);
       if (typeof window !== 'undefined') {
         window.sessionStorage.removeItem(pendingKey);
+        window.dispatchEvent(new Event('insight:pending-change'));
       }
     }
   }, [initialCached, initialGeneratedAt, initialHtml, isGenerating, pendingKey]);
@@ -122,19 +126,11 @@ export default function InsightCard({
     if (!window.sessionStorage.getItem(pendingKey)) return;
     if (initialHtml) {
       window.sessionStorage.removeItem(pendingKey);
+      window.dispatchEvent(new Event('insight:pending-change'));
       return;
     }
     setIsGenerating(true);
   }, [initialHtml, pendingKey]);
-
-  useEffect(() => {
-    if (!isGenerating) return;
-    if (!onRefresh) return;
-    const interval = window.setInterval(() => {
-      onRefresh();
-    }, 3000);
-    return () => window.clearInterval(interval);
-  }, [isGenerating, onRefresh]);
 
   return (
     <div className={`card ${highlight ? 'ring-2 ring-sage-400' : ''}`}>

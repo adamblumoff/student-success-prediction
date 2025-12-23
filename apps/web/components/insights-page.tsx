@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import InsightsBoard from '@/components/insights-board';
 import { useAppData, type StudentWithRisk } from '@/components/app-data-provider';
@@ -29,6 +29,7 @@ export default function InsightsPageClient({
     isLoadingInsights,
     insights
   } = useAppData();
+  const [hasPending, setHasPending] = useState(false);
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('student');
   const highlightStudentId = highlightId ? Number(highlightId) : null;
@@ -66,6 +67,51 @@ export default function InsightsPageClient({
   useEffect(() => {
     refreshInsights();
   }, [refreshInsights]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const scanPending = () => {
+      let pending = false;
+      for (let i = 0; i < window.sessionStorage.length; i += 1) {
+        const key = window.sessionStorage.key(i);
+        if (key && key.startsWith('insight-pending:')) {
+          const raw = window.sessionStorage.getItem(key);
+          const startedAt = raw ? Number(raw) : NaN;
+          if (Number.isFinite(startedAt) && Date.now() - startedAt > 5 * 60 * 1000) {
+            window.sessionStorage.removeItem(key);
+            continue;
+          }
+          pending = true;
+          break;
+        }
+      }
+      setHasPending(pending);
+    };
+
+    scanPending();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        scanPending();
+      }
+    };
+
+    window.addEventListener('focus', scanPending);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('insight:pending-change', scanPending);
+    return () => {
+      window.removeEventListener('focus', scanPending);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('insight:pending-change', scanPending);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasPending) return;
+    const interval = window.setInterval(() => {
+      refreshInsights();
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [hasPending, refreshInsights]);
 
   const students = useMemo(() => {
     if (selectedInstitutionId && selectedInstitutionId !== initialInstitutionId) {

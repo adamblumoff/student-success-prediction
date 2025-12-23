@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react';
 
@@ -144,6 +145,16 @@ export default function AppDataProvider({
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [loadingInterventionsFor, setLoadingInterventionsFor] = useState<number | null>(null);
   const [loadingInsightsFor, setLoadingInsightsFor] = useState<number | null>(null);
+  const insightsByInstitutionRef = useRef(insightsByInstitution);
+  const loadingInsightsForRef = useRef(loadingInsightsFor);
+
+  useEffect(() => {
+    insightsByInstitutionRef.current = insightsByInstitution;
+  }, [insightsByInstitution]);
+
+  useEffect(() => {
+    loadingInsightsForRef.current = loadingInsightsFor;
+  }, [loadingInsightsFor]);
 
   useEffect(() => {
     const stored = readStoredInstitutionId();
@@ -264,8 +275,8 @@ export default function AppDataProvider({
   const loadInsightsForInstitution = useCallback(
     async (institutionId?: number | null, options?: { force?: boolean }) => {
       if (!institutionId) return;
-      if (!options?.force && insightsByInstitution[institutionId]) return;
-      if (loadingInsightsFor === institutionId) return;
+      if (!options?.force && insightsByInstitutionRef.current[institutionId]) return;
+      if (loadingInsightsForRef.current === institutionId) return;
 
       setLoadingInsightsFor(institutionId);
       try {
@@ -284,7 +295,7 @@ export default function AppDataProvider({
         setLoadingInsightsFor((current) => (current === institutionId ? null : current));
       }
     },
-    [insightsByInstitution, loadingInsightsFor]
+    []
   );
 
   const students = useMemo(() => {
