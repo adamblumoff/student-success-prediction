@@ -45,6 +45,7 @@ Create a `.env` file in `apps/web/` (see `apps/web/.env.example`):
 
 ```
 DATABASE_URL=postgresql://...
+LOCAL_DATABASE_URL=postgresql://...
 CLERK_SECRET_KEY=...
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
@@ -63,6 +64,8 @@ Notes:
 - `MAX_CSV_BYTES` also gates uploads on the web app (defaults to 5MB if unset).
 - `SKIP_ML=true` bypasses ML calls and returns empty predictions (useful for UI-only dev).
 - The app expects the production Postgres instance as the single source of truth.
+- `LOCAL_DATABASE_URL` is used for local testing and migrations.
+  Tests refuse to run without `LOCAL_DATABASE_URL` to avoid touching production data.
 
 Create a `.env` file in `services/ml/` for the ML service:
 
@@ -111,6 +114,7 @@ bun run db:migrate
 ```
 
 Both commands read `DATABASE_URL` from `apps/web/.env`.
+`db:migrate` now runs migrations for both `DATABASE_URL` (remote) and `LOCAL_DATABASE_URL` (local).
 
 ---
 
@@ -139,6 +143,25 @@ cd services/ml
 and writes artifacts to `services/ml/results/models/k12` before starting Uvicorn.
 
 Set `ML_SERVICE_URL` and `ML_SERVICE_API_KEY` in the web app environment to the deployed ML service values.
+
+---
+
+## Testing (Unit + Integration)
+
+Web app:
+
+```
+bun run test:unit
+bun run test:integration
+```
+
+ML service:
+
+```
+cd services/ml
+python3 -m pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
 
 ---
 

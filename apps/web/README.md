@@ -32,6 +32,7 @@ Copy `apps/web/.env.example` to `apps/web/.env` and set:
 
 ```
 DATABASE_URL=postgresql://...
+LOCAL_DATABASE_URL=postgresql://...
 CLERK_SECRET_KEY=...
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
@@ -49,6 +50,8 @@ SKIP_ML=false
 Notes:
 - `MAX_CSV_BYTES` also gates uploads in the app (defaults to 5MB if unset).
 - `SKIP_ML=true` bypasses the ML service and returns empty predictions (useful for UI-only dev).
+- `LOCAL_DATABASE_URL` is used by tests and `db:migrate` to keep a local copy in sync.
+  Tests refuse to run without `LOCAL_DATABASE_URL` to avoid touching production data.
 
 ## Database migrations (Drizzle)
 
@@ -64,6 +67,19 @@ Baseline an existing database once:
 ```
 bun run db:baseline
 ```
+
+`db:migrate` now runs migrations for both `DATABASE_URL` (remote) and `LOCAL_DATABASE_URL` (local).
+
+## Tests
+
+```
+bun run test
+```
+
+Notes:
+- Integration tests use `LOCAL_DATABASE_URL` when present.
+- Coverage thresholds are configured in the Vitest configs; run with `--coverage` to enforce locally.
+- Use `bun run test` (Vitest). `bun test` runs Bun's built-in runner and won't pick up the test harness.
 
 ## Key routes
 

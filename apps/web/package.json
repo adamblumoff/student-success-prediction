@@ -8,10 +8,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "test": "vitest run --config vitest.unit.config.ts && vitest run --config vitest.integration.config.ts",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "eslint \"./**/*.{js,jsx,ts,tsx}\" --ignore-pattern \"./.next/**\"",
     "format": "eslint \"./**/*.{js,jsx,ts,tsx}\" --ignore-pattern \"./.next/**\" --fix",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node scripts/migrate-all.mjs",
     "db:studio": "drizzle-kit studio",
     "db:baseline": "node scripts/baseline-migrations.mjs"
   },
@@ -30,6 +33,9 @@
     "zod": "^4.2.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.24.0",
     "eslint-config-next": "^16.1.0",
     "@types/node": "^25.0.3",
@@ -40,8 +46,11 @@
     "@tailwindcss/postcss": "^4.1.18",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.8",
+    "jsdom": "^25.0.1",
+    "msw": "^2.10.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
   }
 }

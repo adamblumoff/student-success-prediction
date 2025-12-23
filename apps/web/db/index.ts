@@ -2,8 +2,14 @@ import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString =
+  process.env.NODE_ENV === 'test'
+    ? process.env.LOCAL_DATABASE_URL
+    : process.env.DATABASE_URL;
 if (!connectionString) {
+  if (process.env.NODE_ENV === 'test') {
+    throw new Error('LOCAL_DATABASE_URL is not set for tests');
+  }
   throw new Error('DATABASE_URL is not set');
 }
 
