@@ -114,7 +114,7 @@ export default function InterventionForm({
               required
               value={studentId ?? ''}
               onChange={(event) => setStudentId(Number(event.target.value))}
-              className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
+              className="select-field rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
             >
               <option value="">Select student</option>
               {students.map((student) => (
@@ -130,7 +130,7 @@ export default function InterventionForm({
             <select
               value={templateId}
               onChange={(event) => handleTemplateChange(event.target.value)}
-              className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
+              className="select-field rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
             >
               <option value="">Custom plan</option>
               {templates.map((template) => (
@@ -185,7 +185,7 @@ export default function InterventionForm({
                 name="priority"
                 value={priority}
                 onChange={(event) => setPriority(event.target.value)}
-                className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
+                className="select-field rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
               >
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
@@ -196,7 +196,7 @@ export default function InterventionForm({
               Status
               <select
                 name="status"
-                className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
+                className="select-field rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
               >
                 <option value="planned">Planned</option>
                 <option value="active">Active</option>
@@ -220,7 +220,7 @@ export default function InterventionForm({
               <select
                 value={assignedRole}
                 onChange={(event) => setAssignedRole(event.target.value)}
-                className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
+                className="select-field rounded-2xl border border-ink-700/60 bg-ink-950/60 p-3 text-sm text-ink-100"
               >
                 <option value="Counselor">Counselor</option>
                 <option value="Assistant Principal">Assistant Principal</option>

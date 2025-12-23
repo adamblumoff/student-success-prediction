@@ -82,7 +82,7 @@ export default function InsightsBoard({
           <select
             value={riskFilter}
             onChange={(event) => setRiskFilter(event.target.value)}
-            className="h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
+            className="select-field h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
           >
             <option value="all">All risk</option>
             <option value="high">High risk</option>

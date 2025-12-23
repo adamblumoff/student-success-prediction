@@ -35,7 +35,7 @@ export default function InstitutionSwitcher({
         name="institutionId"
         value={value ?? ''}
         onChange={(event) => setDraftId(Number(event.target.value))}
-        className="rounded-full border border-ink-700/60 bg-ink-950/60 px-3 py-2 text-xs text-ink-100"
+        className="select-field rounded-full border border-ink-700/60 bg-ink-950/60 px-3 py-2 text-xs text-ink-100"
       >
         {institutions.map((item) => (
           <option key={item.id} value={item.id}>

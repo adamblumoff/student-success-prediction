@@ -221,7 +221,7 @@ export default function StudentInterventionsModal({
                       <select
                         value={String(draft.status ?? '')}
                         onChange={(event) => setDraft((prev) => ({ ...prev, status: event.target.value }))}
-                        className="rounded-2xl border border-ink-700/60 bg-ink-900/70 p-2"
+                        className="select-field rounded-2xl border border-ink-700/60 bg-ink-900/70 p-2"
                       >
                         <option value="planned">Planned</option>
                         <option value="active">Active</option>
@@ -235,7 +235,7 @@ export default function StudentInterventionsModal({
                         onChange={(event) =>
                           setDraft((prev) => ({ ...prev, priority: event.target.value }))
                         }
-                        className="rounded-2xl border border-ink-700/60 bg-ink-900/70 p-2"
+                        className="select-field rounded-2xl border border-ink-700/60 bg-ink-900/70 p-2"
                       >
                         <option value="high">High</option>
                         <option value="medium">Medium</option>

@@ -369,7 +369,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <select
             value={riskFilter}
             onChange={(event) => setRiskFilter(event.target.value as RiskFilter)}
-            className="h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
+            className="select-field h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
           >
             <option value="all">All risk</option>
             <option value="high">High risk</option>
@@ -380,7 +380,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <select
             value={gradeFilter}
             onChange={(event) => setGradeFilter(event.target.value)}
-            className="h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
+            className="select-field h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
           >
             <option value="all">All grades</option>
             {grades.map((grade) => (
@@ -392,7 +392,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
-            className="h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
+            className="select-field h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
           >
             <option value="all">All status</option>
             {statuses.map((status) => (
@@ -404,7 +404,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <select
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as SortMode)}
-            className="h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
+            className="select-field h-10 rounded-full border border-ink-700/60 bg-ink-950/60 px-4 text-sm text-ink-100"
           >
             <option value="risk-desc">Highest risk</option>
             <option value="risk-asc">Lowest risk</option>

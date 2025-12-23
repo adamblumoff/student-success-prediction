@@ -94,7 +94,7 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
               <select
                 value={row.intervention.status ?? 'planned'}
                 onChange={(event) => handleStatusChange(row.intervention.id, event.target.value)}
-                className="rounded-full border border-ink-700/60 bg-ink-900/60 px-3 py-2 text-xs text-ink-200"
+                className="select-field rounded-full border border-ink-700/60 bg-ink-900/60 px-3 py-2 text-xs text-ink-200"
               >
                 <option value="planned">Planned</option>
                 <option value="active">Active</option>
