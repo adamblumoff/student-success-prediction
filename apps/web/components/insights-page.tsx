@@ -7,7 +7,8 @@ import { useAppData, type StudentWithRisk } from '@/components/app-data-provider
 
 export default function InsightsPageClient({
   initialStudents,
-  initialInsights
+  initialInsights,
+  initialInstitutionId
 }: {
   initialStudents: StudentWithRisk[];
   initialInsights: {
@@ -17,6 +18,7 @@ export default function InsightsPageClient({
     riskLevel: string | null;
     createdAt: string | null;
   }[];
+  initialInstitutionId: number | null;
 }) {
   const {
     students: contextStudents,
@@ -33,31 +35,47 @@ export default function InsightsPageClient({
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialInstitutionId !== selectedInstitutionId) return;
     if (initialStudents.length === 0) return;
     seedStudentsForInstitution(selectedInstitutionId, initialStudents);
-  }, [initialStudents, seedStudentsForInstitution, selectedInstitutionId]);
+  }, [
+    initialInstitutionId,
+    initialStudents,
+    seedStudentsForInstitution,
+    selectedInstitutionId
+  ]);
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialInstitutionId !== selectedInstitutionId) return;
     if (initialInsights.length > 0) {
       seedInsightsForInstitution(selectedInstitutionId, initialInsights);
     }
-  }, [initialInsights, seedInsightsForInstitution, selectedInstitutionId]);
+  }, [
+    initialInstitutionId,
+    initialInsights,
+    seedInsightsForInstitution,
+    selectedInstitutionId
+  ]);
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
     void loadInsightsForInstitution(selectedInstitutionId);
   }, [loadInsightsForInstitution, selectedInstitutionId]);
 
-  const students = useMemo(
-    () => (contextStudents.length > 0 ? contextStudents : initialStudents),
-    [contextStudents, initialStudents]
-  );
+  const students = useMemo(() => {
+    if (selectedInstitutionId && selectedInstitutionId !== initialInstitutionId) {
+      return contextStudents;
+    }
+    return contextStudents.length > 0 ? contextStudents : initialStudents;
+  }, [contextStudents, initialInstitutionId, initialStudents, selectedInstitutionId]);
 
-  const insightsSource = useMemo(
-    () => (insights.length > 0 ? insights : initialInsights),
-    [initialInsights, insights]
-  );
+  const insightsSource = useMemo(() => {
+    if (selectedInstitutionId && selectedInstitutionId !== initialInstitutionId) {
+      return insights;
+    }
+    return insights.length > 0 ? insights : initialInsights;
+  }, [initialInsights, initialInstitutionId, insights, selectedInstitutionId]);
 
   const latestByStudent = useMemo(() => {
     const map = new Map<number, (typeof insights)[number]>();

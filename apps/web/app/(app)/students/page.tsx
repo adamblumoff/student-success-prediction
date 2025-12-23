@@ -1,5 +1,6 @@
 import StudentsPageClient from '@/components/students-page';
 import { loadStudentsWithRisk } from '@/lib/data/students';
+import { requireTenantContext } from '@/lib/auth';
 
 const toIso = (value: Date | string | null) => {
   if (!value) return null;
@@ -9,6 +10,7 @@ const toIso = (value: Date | string | null) => {
 
 export default async function StudentsPage() {
   const students = await loadStudentsWithRisk();
+  const { institutionId } = await requireTenantContext();
   return (
     <StudentsPageClient
       initialStudents={students.map((student) => ({
@@ -16,6 +18,7 @@ export default async function StudentsPage() {
         lastActivity: toIso(student.lastActivity),
         predictionDate: toIso(student.predictionDate)
       }))}
+      initialInstitutionId={institutionId}
     />
   );
 }

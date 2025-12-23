@@ -1,6 +1,7 @@
 import InsightsPageClient from '@/components/insights-page';
 import { loadStudentsWithRisk } from '@/lib/data/students';
 import { loadLatestInsights } from '@/lib/data/insights';
+import { requireTenantContext } from '@/lib/auth';
 
 const toIso = (value: Date | string | null) => {
   if (!value) return null;
@@ -11,6 +12,7 @@ const toIso = (value: Date | string | null) => {
 export default async function InsightsPage() {
   const students = await loadStudentsWithRisk();
   const insights = await loadLatestInsights();
+  const { institutionId } = await requireTenantContext();
   return (
     <InsightsPageClient
       initialStudents={students.map((student) => ({
@@ -22,6 +24,7 @@ export default async function InsightsPage() {
         ...insight,
         createdAt: toIso(insight.createdAt)
       }))}
+      initialInstitutionId={institutionId}
     />
   );
 }

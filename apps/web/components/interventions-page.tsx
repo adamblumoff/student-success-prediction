@@ -7,7 +7,8 @@ import { useAppData } from '@/components/app-data-provider';
 
 export default function InterventionsPageClient({
   initialStudents,
-  initialInterventions
+  initialInterventions,
+  initialInstitutionId
 }: {
   initialStudents: {
     id: number;
@@ -41,6 +42,7 @@ export default function InterventionsPageClient({
     studentName: string | null;
     studentIdentifier: string | null;
   }[];
+  initialInstitutionId: number | null;
 }) {
   const {
     students,
@@ -54,17 +56,29 @@ export default function InterventionsPageClient({
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialInstitutionId !== selectedInstitutionId) return;
     if (initialStudents.length > 0) {
       seedStudentsForInstitution(selectedInstitutionId, initialStudents);
     }
-  }, [initialStudents, seedStudentsForInstitution, selectedInstitutionId]);
+  }, [
+    initialInstitutionId,
+    initialStudents,
+    seedStudentsForInstitution,
+    selectedInstitutionId
+  ]);
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
+    if (initialInstitutionId !== selectedInstitutionId) return;
     if (initialInterventions.length > 0) {
       seedInterventionsForInstitution(selectedInstitutionId, initialInterventions);
     }
-  }, [initialInterventions, seedInterventionsForInstitution, selectedInstitutionId]);
+  }, [
+    initialInstitutionId,
+    initialInterventions,
+    seedInterventionsForInstitution,
+    selectedInstitutionId
+  ]);
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
@@ -72,16 +86,26 @@ export default function InterventionsPageClient({
   }, [loadInterventionsForInstitution, selectedInstitutionId]);
 
   const studentOptions = useMemo(() => {
-    const source = students.length > 0 ? students : initialStudents;
+    const source =
+      selectedInstitutionId && selectedInstitutionId !== initialInstitutionId
+        ? students
+        : students.length > 0
+          ? students
+          : initialStudents;
     return source.map((student) => ({
       id: student.id,
       name: student.name,
       studentId: student.studentId
     }));
-  }, [initialStudents, students]);
+  }, [initialInstitutionId, initialStudents, selectedInstitutionId, students]);
 
   const rows = useMemo(() => {
-    const source = interventions.length > 0 ? interventions : initialInterventions;
+    const source =
+      selectedInstitutionId && selectedInstitutionId !== initialInstitutionId
+        ? interventions
+        : interventions.length > 0
+          ? interventions
+          : initialInterventions;
     return source.map((row) => ({
       intervention: {
         id: row.id,
@@ -92,11 +116,11 @@ export default function InterventionsPageClient({
         assignedTo: row.assignedTo,
         dueDate: row.dueDate
       },
-      student: row.studentId
-        ? { name: row.studentName, studentId: row.studentIdentifier ?? '' }
-        : null
+        student: row.studentId
+          ? { name: row.studentName, studentId: row.studentIdentifier ?? '' }
+          : null
     }));
-  }, [initialInterventions, interventions]);
+  }, [initialInstitutionId, initialInterventions, interventions, selectedInstitutionId]);
 
   return (
     <section className="space-y-6">

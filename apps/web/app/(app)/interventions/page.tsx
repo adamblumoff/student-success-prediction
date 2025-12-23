@@ -1,6 +1,7 @@
 import InterventionsPageClient from '@/components/interventions-page';
 import { listInterventions } from '@/lib/data/interventions';
 import { loadStudentsWithRisk } from '@/lib/data/students';
+import { requireTenantContext } from '@/lib/auth';
 
 const toIso = (value: Date | string | null) => {
   if (!value) return null;
@@ -11,6 +12,7 @@ const toIso = (value: Date | string | null) => {
 export default async function InterventionsPage() {
   const students = await loadStudentsWithRisk();
   const interventions = await listInterventions();
+  const { institutionId } = await requireTenantContext();
 
   const formattedStudents = students.map((student) => ({
     ...student,
@@ -38,6 +40,7 @@ export default async function InterventionsPage() {
     <InterventionsPageClient
       initialStudents={formattedStudents}
       initialInterventions={formattedInterventions}
+      initialInstitutionId={institutionId}
     />
   );
 }
