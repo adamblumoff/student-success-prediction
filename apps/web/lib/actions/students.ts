@@ -3,7 +3,7 @@
 import { db, tables } from '@/db';
 import { requireTenantContext } from '@/lib/auth';
 import { and, eq, inArray } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
 import { assignCounselorSchema, deleteStudentsSchema } from '@/lib/validation';
 
@@ -79,6 +79,7 @@ export async function deleteStudentsAction(studentIds: number[]) {
   revalidatePath('/students');
   revalidatePath('/dashboard');
   revalidatePath('/insights');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({
     type: 'data:mutation',
     paths: ['/students', '/dashboard', '/insights']
@@ -128,6 +129,7 @@ export async function assignCounselorAction(studentIds: number[], counselor: str
     );
 
   revalidatePath('/students');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({ type: 'data:mutation', paths: ['/students'] });
 
   return { updatedIds: authorizedIds, updatedCount: authorizedIds.length };

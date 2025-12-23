@@ -1,6 +1,6 @@
 {
-  "id": "63022c29-1d27-45c2-b839-a0abc797d78c",
-  "prevId": "ee7b5a92-00b7-43fa-a6db-870d8fdf0af3",
+  "id": "1f78b14f-76ff-4fe6-84ea-29ef97ef962d",
+  "prevId": "63022c29-1d27-45c2-b839-a0abc797d78c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1606,6 +1606,30 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "latest_risk_score": {
+          "name": "latest_risk_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_risk_category": {
+          "name": "latest_risk_category",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_confidence_score": {
+          "name": "latest_confidence_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_prediction_date": {
+          "name": "latest_prediction_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -1698,6 +1722,27 @@
             },
             {
               "expression": "enrollment_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_students_institution_latest_prediction": {
+          "name": "ix_students_institution_latest_prediction",
+          "columns": [
+            {
+              "expression": "institution_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "latest_prediction_date",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

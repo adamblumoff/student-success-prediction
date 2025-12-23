@@ -63,6 +63,11 @@ type AppDataContextValue = {
   students: StudentWithRisk[];
   insights: InsightPayload[];
   interventions: InterventionPayload[];
+  seedStudentsForInstitution: (institutionId: number, students: StudentWithRisk[]) => void;
+  loadInterventionsForInstitution: (institutionId?: number | null) => Promise<void>;
+  loadInsightsForInstitution: (institutionId?: number | null) => Promise<void>;
+  isLoadingInsights: boolean;
+  isLoadingInterventions: boolean;
   isLoadingAll: boolean;
 };
 
@@ -97,13 +102,40 @@ export default function AppDataProvider({
   initialInsights: InsightPayload[];
   initialInterventions: InterventionPayload[];
 }) {
+  const initialStudentsInstitutionId = initialStudents[0]?.institutionId ?? null;
+  const initialInsightsInstitutionId = initialInsights[0]?.institutionId ?? null;
+  const initialInterventionsInstitutionId = initialInterventions[0]?.institutionId ?? null;
+  const derivedInitialInstitutionId =
+    initialInstitutionId ??
+    initialStudentsInstitutionId ??
+    initialInterventionsInstitutionId ??
+    initialInsightsInstitutionId ??
+    institutions[0]?.id ??
+    null;
+
   const [selectedInstitutionId, setSelectedInstitutionIdState] = useState<number | null>(
-    initialInstitutionId ?? institutions[0]?.id ?? null
+    derivedInitialInstitutionId
   );
-  const [allStudents, setAllStudents] = useState<StudentWithRisk[] | null>(null);
-  const [allInsights, setAllInsights] = useState<InsightPayload[] | null>(null);
-  const [allInterventions, setAllInterventions] = useState<InterventionPayload[] | null>(null);
+  const [studentsByInstitution, setStudentsByInstitution] = useState<
+    Record<number, StudentWithRisk[]>
+  >(() =>
+    derivedInitialInstitutionId ? { [derivedInitialInstitutionId]: initialStudents } : {}
+  );
+  const [insightsByInstitution, setInsightsByInstitution] = useState<
+    Record<number, InsightPayload[]>
+  >(() =>
+    initialInsightsInstitutionId ? { [initialInsightsInstitutionId]: initialInsights } : {}
+  );
+  const [interventionsByInstitution, setInterventionsByInstitution] = useState<
+    Record<number, InterventionPayload[]>
+  >(() =>
+    initialInterventionsInstitutionId
+      ? { [initialInterventionsInstitutionId]: initialInterventions }
+      : {}
+  );
   const [isLoadingAll, setIsLoadingAll] = useState(false);
+  const [loadingInterventionsFor, setLoadingInterventionsFor] = useState<number | null>(null);
+  const [loadingInsightsFor, setLoadingInsightsFor] = useState<number | null>(null);
 
   useEffect(() => {
     const stored = readStoredInstitutionId();
@@ -115,11 +147,17 @@ export default function AppDataProvider({
   }, []);
 
   useEffect(() => {
+    if (!selectedInstitutionId) return;
+    if (studentsByInstitution[selectedInstitutionId]) return;
+
     let cancelled = false;
-    const loadAll = async () => {
+    const loadInstitution = async () => {
       setIsLoadingAll(true);
       try {
-        const response = await fetch('/api/data/all', { cache: 'no-store' });
+        const response = await fetch(
+          `/api/data/all?institutionId=${selectedInstitutionId}&includeStudents=1&includeInsights=0&includeInterventions=0`,
+          { cache: 'no-store' }
+        );
         if (!response.ok) return;
         const payload = (await response.json()) as {
           students: StudentWithRisk[];
@@ -127,9 +165,10 @@ export default function AppDataProvider({
           interventions: InterventionPayload[];
         };
         if (cancelled) return;
-        setAllStudents(payload.students);
-        setAllInsights(payload.insights);
-        setAllInterventions(payload.interventions);
+        setStudentsByInstitution((prev) => ({
+          ...prev,
+          [selectedInstitutionId]: payload.students
+        }));
       } catch {
         // Ignore background load failures; fallback to initial data.
       } finally {
@@ -137,12 +176,12 @@ export default function AppDataProvider({
       }
     };
 
-    const timer = window.setTimeout(loadAll, 0);
+    const timer = window.setTimeout(loadInstitution, 0);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [selectedInstitutionId, studentsByInstitution]);
 
   const setSelectedInstitutionId = useCallback((id: number) => {
     setSelectedInstitutionIdState(id);
@@ -152,23 +191,86 @@ export default function AppDataProvider({
     writeInstitutionCookie(id);
   }, []);
 
+  const seedStudentsForInstitution = useCallback(
+    (institutionId: number, nextStudents: StudentWithRisk[]) => {
+      if (!institutionId) return;
+      setStudentsByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: nextStudents
+      }));
+    },
+    []
+  );
+
+  const loadInterventionsForInstitution = useCallback(
+    async (institutionId?: number | null) => {
+      if (!institutionId) return;
+      if (interventionsByInstitution[institutionId]) return;
+      if (loadingInterventionsFor === institutionId) return;
+
+      setLoadingInterventionsFor(institutionId);
+      try {
+        const response = await fetch(
+          `/api/data/all?institutionId=${institutionId}&includeStudents=0&includeInsights=0&includeInterventions=1`,
+          { cache: 'no-store' }
+        );
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          interventions: InterventionPayload[];
+        };
+        setInterventionsByInstitution((prev) => ({
+          ...prev,
+          [institutionId]: payload.interventions
+        }));
+      } catch {
+        // Ignore intervention load failures; fallback to empty state.
+      } finally {
+        setLoadingInterventionsFor((current) => (current === institutionId ? null : current));
+      }
+    },
+    [interventionsByInstitution, loadingInterventionsFor]
+  );
+
+  const loadInsightsForInstitution = useCallback(
+    async (institutionId?: number | null) => {
+      if (!institutionId) return;
+      if (insightsByInstitution[institutionId]) return;
+      if (loadingInsightsFor === institutionId) return;
+
+      setLoadingInsightsFor(institutionId);
+      try {
+        const response = await fetch(`/api/insights/latest?institutionId=${institutionId}`, {
+          cache: 'no-store'
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { insights: InsightPayload[] };
+        setInsightsByInstitution((prev) => ({
+          ...prev,
+          [institutionId]: payload.insights
+        }));
+      } catch {
+        // Ignore insight load failures; insights can still be generated on demand.
+      } finally {
+        setLoadingInsightsFor((current) => (current === institutionId ? null : current));
+      }
+    },
+    [insightsByInstitution, loadingInsightsFor]
+  );
+
   const students = useMemo(() => {
-    const base = allStudents ?? initialStudents;
-    if (!selectedInstitutionId) return base;
-    return base.filter((student) => student.institutionId === selectedInstitutionId);
-  }, [allStudents, initialStudents, selectedInstitutionId]);
+    if (!selectedInstitutionId) return initialStudents;
+    return studentsByInstitution[selectedInstitutionId] ?? [];
+  }, [initialStudents, selectedInstitutionId, studentsByInstitution]);
 
   const insights = useMemo(() => {
-    const base = allInsights ?? initialInsights;
-    if (!selectedInstitutionId) return base;
-    return base.filter((insight) => insight.institutionId === selectedInstitutionId);
-  }, [allInsights, initialInsights, selectedInstitutionId]);
+    if (!selectedInstitutionId) return initialInsights;
+    return insightsByInstitution[selectedInstitutionId] ?? [];
+  }, [initialInsights, insightsByInstitution, selectedInstitutionId]);
 
   const interventions = useMemo(() => {
-    const base = allInterventions ?? initialInterventions;
-    if (!selectedInstitutionId) return base;
-    return base.filter((row) => row.institutionId === selectedInstitutionId);
-  }, [allInterventions, initialInterventions, selectedInstitutionId]);
+    if (!selectedInstitutionId) return initialInterventions;
+    return interventionsByInstitution[selectedInstitutionId] ?? [];
+  }, [initialInterventions, interventionsByInstitution, selectedInstitutionId]);
 
   const value = useMemo(
     () => ({
@@ -178,6 +280,13 @@ export default function AppDataProvider({
       students,
       insights,
       interventions,
+      seedStudentsForInstitution,
+      loadInterventionsForInstitution,
+      loadInsightsForInstitution,
+      isLoadingInsights:
+        selectedInstitutionId !== null && loadingInsightsFor === selectedInstitutionId,
+      isLoadingInterventions:
+        selectedInstitutionId !== null && loadingInterventionsFor === selectedInstitutionId,
       isLoadingAll
     }),
     [
@@ -187,6 +296,11 @@ export default function AppDataProvider({
       students,
       insights,
       interventions,
+      seedStudentsForInstitution,
+      loadInterventionsForInstitution,
+      loadInsightsForInstitution,
+      loadingInsightsFor,
+      loadingInterventionsFor,
       isLoadingAll
     ]
   );

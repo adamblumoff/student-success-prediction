@@ -4,8 +4,8 @@ import crypto from 'crypto';
 import { db, tables } from '@/db';
 import { runMLPrediction, type MLPrediction } from '@/lib/ml-client';
 import { requireTenantContext } from '@/lib/auth';
-import { and, eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { and, eq, isNull, lte, or } from 'drizzle-orm';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
 import { calculateRiskCategory, calculateRiskLevel } from '@/lib/risk';
 
@@ -98,6 +98,7 @@ export async function analyzeGradebook(formData: FormData) {
       }
 
       if (!predictionId) {
+        const predictionDate = new Date();
         const [inserted] = await tx
           .insert(tables.predictions)
           .values({
@@ -114,10 +115,28 @@ export async function analyzeGradebook(formData: FormData) {
             featuresUsed: JSON.stringify(pred),
             sessionId,
             dataSource: 'csv_upload',
-            predictionDate: new Date()
+            predictionDate
           })
           .returning({ id: tables.predictions.id });
         predictionId = inserted?.id;
+
+        await tx
+          .update(tables.students)
+          .set({
+            latestRiskScore: riskScore,
+            latestRiskCategory: riskCategory,
+            latestConfidenceScore: Number(pred.confidence ?? Math.abs(riskScore - 0.5) * 2),
+            latestPredictionDate: predictionDate
+          })
+          .where(
+            and(
+              eq(tables.students.id, student.id),
+              or(
+                isNull(tables.students.latestPredictionDate),
+                lte(tables.students.latestPredictionDate, predictionDate)
+              )
+            )
+          );
       }
 
       storedPredictions.push({
@@ -134,6 +153,7 @@ export async function analyzeGradebook(formData: FormData) {
   revalidatePath('/students');
   revalidatePath('/insights');
   revalidatePath('/upload');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({
     type: 'data:mutation',
     paths: ['/dashboard', '/students', '/insights', '/upload']

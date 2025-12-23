@@ -85,7 +85,11 @@ export const students = pgTable(
     parentPhone: varchar('parent_phone', { length: 20 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }),
-    lastActivity: timestamp('last_activity', { withTimezone: true })
+    lastActivity: timestamp('last_activity', { withTimezone: true }),
+    latestRiskScore: real('latest_risk_score'),
+    latestRiskCategory: varchar('latest_risk_category', { length: 20 }),
+    latestConfidenceScore: real('latest_confidence_score'),
+    latestPredictionDate: timestamp('latest_prediction_date', { withTimezone: true })
   },
   (table) => ({
     institutionStudentIdx: uniqueIndex('uq_students_institution_student_id').on(
@@ -104,6 +108,10 @@ export const students = pgTable(
     institutionStatusIdx: index('ix_students_institution_status').on(
       table.institutionId,
       table.enrollmentStatus
+    ),
+    latestPredictionIdx: index('ix_students_institution_latest_prediction').on(
+      table.institutionId,
+      table.latestPredictionDate
     )
   })
 );
@@ -140,6 +148,9 @@ export const predictions = pgTable(
       table.modelVersion,
       table.dataHash
     ),
+    districtInstitutionStudentDateIdx: index(
+      'ix_predictions_district_institution_student_date'
+    ).on(table.districtId, table.institutionId, table.studentId, table.predictionDate),
     districtIdx: index('ix_predictions_district').on(table.districtId),
     institutionRiskIdx: index('ix_predictions_institution_risk').on(
       table.institutionId,
@@ -181,6 +192,9 @@ export const interventions = pgTable(
   (table) => ({
     studentStatusIdx: index('ix_interventions_student_status').on(table.studentId, table.status),
     districtIdx: index('ix_interventions_district').on(table.districtId),
+    districtInstitutionStudentStatusIdx: index(
+      'ix_interventions_district_institution_student_status'
+    ).on(table.districtId, table.institutionId, table.studentId, table.status),
     institutionTypeIdx: index('ix_interventions_institution_type').on(
       table.institutionId,
       table.interventionType
@@ -334,6 +348,9 @@ export const gptInsights = pgTable(
       table.districtId,
       table.createdAt
     ),
+    districtInstitutionStudentCreatedIdx: index(
+      'ix_gpt_insights_district_institution_student_created'
+    ).on(table.districtId, table.institutionId, table.studentDatabaseId, table.createdAt),
     sessionRiskIdx: index('ix_gpt_insights_session_risk').on(table.sessionId, table.riskLevel),
     institutionCreatedIdx: index('ix_gpt_insights_institution_created').on(
       table.institutionId,

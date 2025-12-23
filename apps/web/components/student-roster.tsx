@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignCounselorAction, deleteStudentsAction } from '@/lib/actions/students';
 import StudentInterventionsModal from '@/components/student-interventions-modal';
@@ -28,6 +28,12 @@ type ViewMode = 'cards' | 'table';
 type RiskFilter = 'all' | 'high' | 'moderate' | 'low' | 'unknown';
 
 type SortMode = 'risk-desc' | 'risk-asc' | 'name' | 'gpa-desc';
+
+const INITIAL_RENDER_COUNT = 50;
+const RENDER_BATCH_SIZE = 50;
+const CARD_ESTIMATED_HEIGHT = 280;
+const TABLE_ROW_HEIGHT = 48;
+const TABLE_HEADER_HEIGHT = 48;
 
 const getRiskTone = (riskCategory: string | null) => {
   const normalized = riskCategory?.toLowerCase() ?? '';
@@ -58,10 +64,16 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [modalStudentId, setModalStudentId] = useState<number | null>(null);
   const router = useRouter();
+  const [visibleCount, setVisibleCount] = useState(INITIAL_RENDER_COUNT);
+  const visibleCountRef = useRef(visibleCount);
 
   useEffect(() => {
     setRoster(students);
   }, [students]);
+
+  useEffect(() => {
+    visibleCountRef.current = visibleCount;
+  }, [visibleCount]);
 
   const grades = useMemo(() => {
     const unique = new Set(
@@ -118,6 +130,53 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
 
     return sortedStudents;
   }, [roster, query, riskFilter, gradeFilter, statusFilter, sortMode]);
+
+  useEffect(() => {
+    setVisibleCount(Math.min(INITIAL_RENDER_COUNT, filtered.length));
+    let cancelled = false;
+
+    const scheduleNext = () => {
+      if (cancelled) return;
+      if (visibleCountRef.current >= filtered.length) return;
+      const next = Math.min(visibleCountRef.current + RENDER_BATCH_SIZE, filtered.length);
+      setVisibleCount(next);
+      if (next < filtered.length) {
+        const idleCallback =
+          typeof window !== 'undefined' && 'requestIdleCallback' in window
+            ? (window as Window & { requestIdleCallback: (cb: () => void) => void })
+                .requestIdleCallback
+            : (cb: () => void) => globalThis.setTimeout(cb, 0);
+        idleCallback(scheduleNext);
+      }
+    };
+
+    if (filtered.length > visibleCountRef.current) {
+      const idleCallback =
+        typeof window !== 'undefined' && 'requestIdleCallback' in window
+          ? (window as Window & { requestIdleCallback: (cb: () => void) => void })
+              .requestIdleCallback
+          : (cb: () => void) => globalThis.setTimeout(cb, 0);
+      idleCallback(scheduleNext);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filtered.length]);
+
+  const visibleStudents = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  const estimatedListHeight = useMemo(() => {
+    if (filtered.length === 0) return 0;
+    if (viewMode === 'table') {
+      return TABLE_HEADER_HEIGHT + filtered.length * TABLE_ROW_HEIGHT;
+    }
+    const rows = Math.ceil(filtered.length / 2);
+    return rows * CARD_ESTIMATED_HEIGHT;
+  }, [filtered.length, viewMode]);
 
   const toggleSelect = (id: number) => {
     setSelected((prev) => {
@@ -385,7 +444,9 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           />
           <span>{selectionCount} selected</span>
           <span className="text-ink-500">·</span>
-          <span>{filtered.length} students</span>
+          <span>
+            {visibleStudents.length} of {filtered.length} students
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -446,9 +507,13 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
       </div>
 
       {viewMode === 'cards' ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((student) => (
-            <div key={student.id} className="card">
+        <div className="grid gap-4 md:grid-cols-2" style={{ minHeight: estimatedListHeight }}>
+          {visibleStudents.map((student) => (
+            <div
+              key={student.id}
+              className="card"
+              style={{ contentVisibility: 'auto', containIntrinsicSize: '280px' }}
+            >
               <div className="flex items-start justify-between gap-3">
                 <label className="flex items-start gap-3">
                   <input
@@ -519,7 +584,10 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           ))}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-ink-700/60 bg-ink-900/70">
+        <div
+          className="overflow-hidden rounded-3xl border border-ink-700/60 bg-ink-900/70"
+          style={{ minHeight: estimatedListHeight }}
+        >
           <table className="w-full text-left text-sm">
             <thead className="bg-ink-950/70 text-xs uppercase tracking-[0.25em] text-ink-500">
               <tr>
@@ -533,8 +601,12 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-800/60">
-              {filtered.map((student) => (
-                <tr key={student.id} className="text-ink-200">
+              {visibleStudents.map((student) => (
+                <tr
+                  key={student.id}
+                  className="text-ink-200"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '48px' }}
+                >
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"

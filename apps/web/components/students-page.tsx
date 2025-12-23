@@ -1,10 +1,27 @@
 'use client';
 
+import { useEffect, useMemo } from 'react';
 import StudentRoster from '@/components/student-roster';
-import { useAppData } from '@/components/app-data-provider';
+import { useAppData, type StudentWithRisk } from '@/components/app-data-provider';
 
-export default function StudentsPageClient() {
-  const { students, isLoadingAll } = useAppData();
+export default function StudentsPageClient({
+  initialStudents
+}: {
+  initialStudents: StudentWithRisk[];
+}) {
+  const { students: contextStudents, isLoadingAll, selectedInstitutionId, seedStudentsForInstitution } =
+    useAppData();
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
+    if (initialStudents.length === 0) return;
+    seedStudentsForInstitution(selectedInstitutionId, initialStudents);
+  }, [initialStudents, seedStudentsForInstitution, selectedInstitutionId]);
+
+  const students = useMemo(
+    () => (contextStudents.length > 0 ? contextStudents : initialStudents),
+    [contextStudents, initialStudents]
+  );
 
   return (
     <section className="space-y-6">

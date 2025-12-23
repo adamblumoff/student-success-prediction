@@ -54,19 +54,11 @@ export async function loadStudentsWithRisk() {
       s.assigned_counselor as "assignedCounselor",
       s.last_activity as "lastActivity",
       coalesce(i.active_count, 0) as "activeInterventions",
-      p.risk_category as "riskCategory",
-      p.risk_score as "riskScore",
-      p.confidence_score as "confidenceScore",
-      p.prediction_date as "predictionDate"
+      s.latest_risk_category as "riskCategory",
+      s.latest_risk_score as "riskScore",
+      s.latest_confidence_score as "confidenceScore",
+      s.latest_prediction_date as "predictionDate"
     from ${tables.students} s
-    left join lateral (
-      select risk_category, risk_score, confidence_score, prediction_date
-      from ${tables.predictions} p
-      where p.student_id = s.id and p.district_id = ${districtId}
-        and p.institution_id = ${institutionId}
-      order by p.prediction_date desc
-      limit 1
-    ) p on true
     left join lateral (
       select count(*)::int as active_count
       from ${tables.interventions} i

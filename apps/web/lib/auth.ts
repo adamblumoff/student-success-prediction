@@ -2,6 +2,7 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { db, tables } from '@/db';
 import { and, asc, eq } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
 export async function requireUserAndOrg() {
   const { userId, orgId } = await auth();
@@ -146,10 +147,14 @@ export async function ensureAppUser() {
   return created ?? null;
 }
 
-export async function requireTenantContext() {
+const readTenantContext = cache(async () => {
   const { userId, orgId } = await requireUserAndOrg();
   const districtId = await ensureDistrict(orgId);
   const activeInstitutionId = await resolveActiveInstitutionId(districtId);
   const institutionId = activeInstitutionId ?? (await ensureInstitutionForDistrict(districtId));
   return { userId, orgId, districtId, institutionId };
+});
+
+export async function requireTenantContext() {
+  return readTenantContext();
 }

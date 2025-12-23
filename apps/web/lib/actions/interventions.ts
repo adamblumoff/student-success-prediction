@@ -3,7 +3,7 @@
 import { db, tables } from '@/db';
 import { requireTenantContext } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { emitRealtimeEvent } from '@/lib/realtime';
 import { createInterventionSchema, parseFormData } from '@/lib/validation';
 
@@ -30,6 +30,7 @@ export async function createIntervention(formData: FormData) {
 
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
 
   return created;
@@ -56,6 +57,7 @@ export async function updateInterventionStatus(interventionId: number, status: s
 
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
 
   return updated;
@@ -77,6 +79,7 @@ export async function deleteIntervention(interventionId: number) {
 
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
 
   return deleted;
@@ -137,6 +140,7 @@ export async function updateInterventionDetails(
 
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
+  revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
 
   return updated;

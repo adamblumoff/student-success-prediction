@@ -1,8 +1,9 @@
 import { db, tables } from '@/db';
 import { requireTenantContext } from '@/lib/auth';
 import { eq } from 'drizzle-orm';
+import { cache } from 'react';
 
-export async function loadTenantSummary() {
+const loadTenantSummaryCached = cache(async () => {
   const { districtId, institutionId } = await requireTenantContext();
 
   const [district] = await db
@@ -33,4 +34,8 @@ export async function loadTenantSummary() {
     .orderBy(tables.institutions.id);
 
   return { district, institution, institutions };
+});
+
+export async function loadTenantSummary() {
+  return loadTenantSummaryCached();
 }

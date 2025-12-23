@@ -1,12 +1,23 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import InterventionFormShell from '@/components/intervention-form-shell';
 import InterventionTable from '@/components/intervention-table';
 import { useAppData } from '@/components/app-data-provider';
 
 export default function InterventionsPageClient() {
-  const { students, interventions } = useAppData();
+  const {
+    students,
+    interventions,
+    selectedInstitutionId,
+    loadInterventionsForInstitution,
+    isLoadingInterventions
+  } = useAppData();
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
+    void loadInterventionsForInstitution(selectedInstitutionId);
+  }, [loadInterventionsForInstitution, selectedInstitutionId]);
 
   const studentOptions = useMemo(
     () =>
@@ -51,6 +62,11 @@ export default function InterventionsPageClient() {
         <InterventionFormShell students={studentOptions} />
         <InterventionTable initialRows={rows} />
       </div>
+      {isLoadingInterventions && (
+        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">
+          Loading interventions…
+        </p>
+      )}
     </section>
   );
 }

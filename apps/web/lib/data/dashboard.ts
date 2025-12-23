@@ -1,6 +1,6 @@
 import { db, tables } from '@/db';
 import { requireTenantContext } from '@/lib/auth';
-import { eq, sql, and, gte, lt, desc } from 'drizzle-orm';
+import { eq, sql, and, gte, lt, desc, isNotNull } from 'drizzle-orm';
 
 export async function getDashboardStats() {
   const { userId, districtId, institutionId } = await requireTenantContext();
@@ -17,12 +17,14 @@ export async function getDashboardStats() {
     );
 
   const [{ totalPredictions }] = await db
-    .select({ totalPredictions: sql<number>`count(*)` })
-    .from(tables.predictions)
+    .select({
+      totalPredictions: sql<number>`count(*) filter (where ${tables.students.latestPredictionDate} is not null)`
+    })
+    .from(tables.students)
     .where(
       and(
-        eq(tables.predictions.districtId, districtId),
-        eq(tables.predictions.institutionId, institutionId)
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
       )
     );
 
@@ -37,35 +39,37 @@ export async function getDashboardStats() {
     );
 
   const [{ latestPredictionDate }] = await db
-    .select({ latestPredictionDate: sql<Date | null>`max(${tables.predictions.predictionDate})` })
-    .from(tables.predictions)
+    .select({
+      latestPredictionDate: sql<Date | null>`max(${tables.students.latestPredictionDate})`
+    })
+    .from(tables.students)
     .where(
       and(
-        eq(tables.predictions.districtId, districtId),
-        eq(tables.predictions.institutionId, institutionId)
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
       )
     );
 
   const [{ recentPredictions }] = await db
     .select({ recentPredictions: sql<number>`count(*)` })
-    .from(tables.predictions)
+    .from(tables.students)
     .where(
       and(
-        eq(tables.predictions.districtId, districtId),
-        eq(tables.predictions.institutionId, institutionId),
-        gte(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId),
+        gte(tables.students.latestPredictionDate, sql`now() - interval '7 days'`)
       )
     );
 
   const [{ previousPredictions }] = await db
     .select({ previousPredictions: sql<number>`count(*)` })
-    .from(tables.predictions)
+    .from(tables.students)
     .where(
       and(
-        eq(tables.predictions.districtId, districtId),
-        eq(tables.predictions.institutionId, institutionId),
-        gte(tables.predictions.predictionDate, sql`now() - interval '14 days'`),
-        lt(tables.predictions.predictionDate, sql`now() - interval '7 days'`)
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId),
+        gte(tables.students.latestPredictionDate, sql`now() - interval '14 days'`),
+        lt(tables.students.latestPredictionDate, sql`now() - interval '7 days'`)
       )
     );
 
@@ -93,17 +97,18 @@ export async function getDashboardStats() {
 
   const riskBuckets = await db
     .select({
-      riskCategory: tables.predictions.riskCategory,
+      riskCategory: tables.students.latestRiskCategory,
       count: sql<number>`count(*)`
     })
-    .from(tables.predictions)
+    .from(tables.students)
     .where(
       and(
-        eq(tables.predictions.districtId, districtId),
-        eq(tables.predictions.institutionId, institutionId)
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId),
+        isNotNull(tables.students.latestRiskScore)
       )
     )
-    .groupBy(tables.predictions.riskCategory);
+    .groupBy(tables.students.latestRiskCategory);
 
   const distribution = riskBuckets.reduce(
     (acc, bucket) => {
@@ -117,38 +122,25 @@ export async function getDashboardStats() {
     { high: 0, medium: 0, low: 0, unknown: 0 }
   );
 
-  const topRisk = await db.execute<{
-    studentId: number;
-    studentIdentifier: string | null;
-    name: string | null;
-    gradeLevel: string | null;
-    riskScore: number;
-    riskCategory: string;
-    confidenceScore: number | null;
-  }>(sql`
-    select
-      s.id as "studentId",
-      s.student_id as "studentIdentifier",
-      s.name as "name",
-      s.grade_level as "gradeLevel",
-      p.risk_score as "riskScore",
-      p.risk_category as "riskCategory",
-      p.confidence_score as "confidenceScore"
-    from ${tables.students} s
-    join lateral (
-      select risk_score, risk_category, confidence_score
-      from ${tables.predictions} p
-      where p.student_id = s.id
-        and p.district_id = ${districtId}
-        and p.institution_id = ${institutionId}
-      order by p.prediction_date desc
-      limit 1
-    ) p on true
-    where s.district_id = ${districtId}
-      and s.institution_id = ${institutionId}
-    order by p.risk_score desc
-    limit 5
-  `);
+  const topRisk = await db
+    .select({
+      studentId: tables.students.id,
+      studentIdentifier: tables.students.studentId,
+      name: tables.students.name,
+      gradeLevel: tables.students.gradeLevel,
+      riskScore: tables.students.latestRiskScore,
+      riskCategory: tables.students.latestRiskCategory,
+      confidenceScore: tables.students.latestConfidenceScore
+    })
+    .from(tables.students)
+    .where(
+      and(
+        eq(tables.students.districtId, districtId),
+        eq(tables.students.institutionId, institutionId)
+      )
+    )
+    .orderBy(desc(tables.students.latestRiskScore))
+    .limit(5);
 
   return {
     totalStudents: Number(totalStudents ?? 0),
@@ -160,14 +152,14 @@ export async function getDashboardStats() {
     previousPredictions: Number(previousPredictions ?? 0),
     recentInterventions: Number(recentInterventions ?? 0),
     completedInterventions: Number(completedInterventions ?? 0),
-    topRiskStudents: topRisk.rows.map((row) => ({
+    topRiskStudents: topRisk.map((row) => ({
       id: row.studentId,
       name: row.name,
       studentId: row.studentIdentifier,
       gradeLevel: row.gradeLevel,
-      riskScore: row.riskScore,
-      riskCategory: row.riskCategory,
-      confidenceScore: row.confidenceScore
+      riskScore: row.riskScore ?? 0,
+      riskCategory: row.riskCategory ?? null,
+      confidenceScore: row.confidenceScore ?? null
     }))
   };
 }

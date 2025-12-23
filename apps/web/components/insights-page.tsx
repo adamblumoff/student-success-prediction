@@ -1,15 +1,42 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import InsightsBoard from '@/components/insights-board';
-import { useAppData } from '@/components/app-data-provider';
+import { useAppData, type StudentWithRisk } from '@/components/app-data-provider';
 
-export default function InsightsPageClient() {
-  const { students, insights } = useAppData();
+export default function InsightsPageClient({
+  initialStudents
+}: {
+  initialStudents: StudentWithRisk[];
+}) {
+  const {
+    students: contextStudents,
+    selectedInstitutionId,
+    seedStudentsForInstitution,
+    loadInsightsForInstitution,
+    isLoadingInsights,
+    insights
+  } = useAppData();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get('student');
   const highlightStudentId = highlightId ? Number(highlightId) : null;
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
+    if (initialStudents.length === 0) return;
+    seedStudentsForInstitution(selectedInstitutionId, initialStudents);
+  }, [initialStudents, seedStudentsForInstitution, selectedInstitutionId]);
+
+  useEffect(() => {
+    if (!selectedInstitutionId) return;
+    void loadInsightsForInstitution(selectedInstitutionId);
+  }, [loadInsightsForInstitution, selectedInstitutionId]);
+
+  const students = useMemo(
+    () => (contextStudents.length > 0 ? contextStudents : initialStudents),
+    [contextStudents, initialStudents]
+  );
 
   const latestByStudent = useMemo(() => {
     const map = new Map<number, (typeof insights)[number]>();
@@ -47,6 +74,11 @@ export default function InsightsPageClient() {
         })}
         highlightId={Number.isFinite(highlightStudentId ?? NaN) ? highlightStudentId : null}
       />
+      {isLoadingInsights && (
+        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">
+          Loading cached insights…
+        </p>
+      )}
       {students.length === 0 && (
         <div className="bg-panel rounded-3xl p-8 text-sm text-ink-300">
           Upload a gradebook to enable GPT insights.
