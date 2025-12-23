@@ -63,9 +63,17 @@ export async function generateInsight(input: InsightInput): Promise<InsightResul
     .filter(Boolean)
     .slice(0, 3);
 
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const formattedHtml = `
     <ul>
-      ${lines.map((line) => `<li>${line}</li>`).join('')}
+      ${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}
     </ul>
   `.trim();
 

@@ -19,6 +19,10 @@ export async function analyzeGradebook(formData: FormData) {
   if (!file || !(file instanceof File)) {
     throw new Error('CSV file is required');
   }
+  const maxBytes = Number(process.env.MAX_CSV_BYTES ?? 5 * 1024 * 1024);
+  if (Number.isFinite(maxBytes) && file.size > maxBytes) {
+    throw new Error('CSV file is too large');
+  }
 
   const { predictions, model_info } = await runMLPrediction(file);
 

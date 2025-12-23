@@ -3,6 +3,8 @@
 ## Project Structure & Module Organization
 - `apps/web/`: Next.js app (App Router, Server Actions, Clerk auth, Drizzle ORM, Tailwind UI).
 - `services/ml/`: Python ML service (FastAPI + K12 Ultra Predictor + model artifacts).
+## Framework Versions
+- Next.js: 16.1
 
 ## Build, Test, and Development Commands
 - Install deps: `bun install` (repo root; workspaces).
@@ -27,4 +29,5 @@
 
 ## Security & Configuration Tips
 - PostgreSQL is mandatory. Set `DATABASE_URL` or `DB_HOST/DB_USER/DB_PASSWORD/DB_NAME`; no SQLite fallback in the app.
-- Always set Clerk keys, `OPENAI_API_KEY`, and `ML_SERVICE_URL`. Use `apps/web/.env` locally and never commit secrets.
+- Always set Clerk keys, `OPENAI_API_KEY`, `ML_SERVICE_URL`, and `ML_SERVICE_API_KEY`. Use `apps/web/.env` locally and never commit secrets.
+- The ML service loads `services/ml/.env`; set `ML_SERVICE_API_KEY` there and optionally tune `ML_REQUIRE_API_KEY`, `MAX_CSV_BYTES`, `MAX_CSV_ROWS`, `RATE_LIMIT_PER_MIN`.

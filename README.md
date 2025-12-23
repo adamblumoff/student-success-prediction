@@ -50,6 +50,8 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-4o-mini
 ML_SERVICE_URL=https://your-ml-service
+ML_SERVICE_API_KEY=your-ml-service-api-key
+MAX_CSV_BYTES=5242880
 ```
 
 Important: The app expects the production Postgres instance as the single source of truth.
@@ -104,13 +106,23 @@ pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port 9000
 ```
 
-Set `ML_SERVICE_URL` to the deployed ML service endpoint.
+Create `services/ml/.env` for local dev (auto-loaded):
+
+```
+ML_SERVICE_API_KEY=your-ml-service-api-key
+ML_REQUIRE_API_KEY=true
+MAX_CSV_BYTES=5242880
+MAX_CSV_ROWS=20000
+RATE_LIMIT_PER_MIN=60
+```
+
+Set `ML_SERVICE_URL` and `ML_SERVICE_API_KEY` in the web app environment to the deployed ML service values.
 
 ---
 
 ## Deployment (Railway)
 
-- Next.js app: repo root using `Procfile` (runs `apps/web`)
+- Next.js app: root directory `apps/web` using `apps/web/Procfile`
 - ML service: root directory `services/ml` using `services/ml/Procfile`
 
 Both services should point to the same production PostgreSQL instance.

@@ -33,13 +33,15 @@ export async function runMLPrediction(file: File): Promise<MLResponse> {
   if (!serviceUrl) {
     throw new Error('ML_SERVICE_URL is not configured');
   }
+  const apiKey = process.env.ML_SERVICE_API_KEY;
 
   const form = new FormData();
   form.append('file', file, file.name || 'gradebook.csv');
 
   const response = await fetch(`${serviceUrl.replace(/\/$/, '')}/predict`, {
     method: 'POST',
-    body: form
+    body: form,
+    headers: apiKey ? { 'x-ml-api-key': apiKey } : undefined
   });
 
   if (!response.ok) {

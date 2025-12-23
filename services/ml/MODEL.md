@@ -83,6 +83,16 @@ The `/predict` endpoint returns:
 - `risk_probability` (1 − success probability)
 - `risk_level` and `risk_category` based on that risk value
 
+## Service configuration
+The ML service loads `services/ml/.env` automatically (via `python-dotenv`).
+
+Environment variables:
+- `ML_SERVICE_API_KEY` (required when auth is enabled)
+- `ML_REQUIRE_API_KEY=true|false` (defaults to true)
+- `MAX_CSV_BYTES` (default 5MB)
+- `MAX_CSV_ROWS` (default 20000)
+- `RATE_LIMIT_PER_MIN` (default 60)
+
 ## Evaluation
 Use:
 - `evaluate_model.py` for metrics

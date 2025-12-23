@@ -12,6 +12,18 @@ const toPlainText = (value: string) => {
   return (wrapper.textContent || wrapper.innerText || '').trim();
 };
 
+const extractInsightLines = (value: string) => {
+  const stripTags = (input: string) =>
+    input.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const matches = Array.from(value.matchAll(/<li>(.*?)<\/li>/gis)).map((match) =>
+    stripTags(match[1])
+  );
+  const lines = matches.length
+    ? matches
+    : value.split(/\n+/).map((line) => stripTags(line));
+  return lines.filter(Boolean).slice(0, 3);
+};
+
 type Props = {
   studentId: number;
   name: string | null;
@@ -188,10 +200,13 @@ export default function InsightCard({
       )}
 
       {html && (
-        <div
-          className="mt-4 rounded-2xl border border-ink-700/60 bg-ink-950/60 p-4 text-sm text-ink-200"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        <div className="mt-4 rounded-2xl border border-ink-700/60 bg-ink-950/60 p-4 text-sm text-ink-200">
+          <ul className="list-disc space-y-2 pl-5">
+            {extractInsightLines(html).map((line, index) => (
+              <li key={`${studentId}-${index}`}>{line}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
