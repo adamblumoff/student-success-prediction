@@ -23,17 +23,25 @@ This document describes how the current ML models are created, trained, and inte
    - Success label uses final grade ≥ 60%.
 
 ## Dataset preparation
+
+The default training pipeline (see `services/ml/start.sh`) uses `services/ml/data` as a working
+directory and outputs artifacts to `services/ml/results/models/k12`.
+
+Steps:
 1) Download public datasets:
    - `services/ml/scripts/download_public_datasets.py`
 2) Prepare real datasets:
-   - `prepare_oulad.py` → `/tmp/oulad_gradebook.csv`
-   - `prepare_uci_student_performance.py` → `/tmp/uci_gradebook.csv`
+   - `prepare_oulad.py` → `services/ml/data/oulad_gradebook.csv`
+   - `prepare_uci_student_performance.py` → `services/ml/data/uci_gradebook.csv`
 3) Generate synthetic data:
-   - `generate_synthetic_gradebook.py` → `/tmp/gradebook-synth.csv`
+   - `generate_synthetic_gradebook.py` → `services/ml/data/gradebook-synth.csv`
 4) Mix datasets:
-   - `build_mixed_dataset.py` → `/tmp/gradebook-mixed.csv`
+   - `build_mixed_dataset.py` → `services/ml/data/gradebook-mixed.csv`
    - Default mix: 50% synthetic, 30% OULAD, 20% UCI
    - Adds numeric jitter + dropout to increase realism
+
+You can override the pipeline defaults via environment variables used in `start.sh`
+(`DATA_DIR`, `MODEL_OUT_DIR`, `SYNTH_ROWS`, `MIX_ROWS`, `SYNTH_SUCCESS_RATE`, etc.).
 
 ## Feature set
 The models use a stable subset of gradebook fields:
@@ -52,7 +60,9 @@ The models use a stable subset of gradebook fields:
 - `teacher_relationship_quality`
 - `social_skills`
 
-Missing values are filled with defaults in the predictor.
+The predictor normalizes column names (lowercase + underscores) and accepts synonyms
+(see `K12SuccessPredictor.gradebook_mappings`). Missing values are filled with
+reasonable defaults.
 
 ## Training
 Use `services/ml/scripts/train_success_models.py`:
@@ -62,7 +72,7 @@ Use `services/ml/scripts/train_success_models.py`:
 Example:
 ```bash
 python3 services/ml/scripts/train_success_models.py \
-  --csv /tmp/gradebook-mixed.csv \
+  --csv services/ml/data/gradebook-mixed.csv \
   --label-col success_label \
   --out-dir services/ml/results/models/k12
 ```
@@ -80,8 +90,17 @@ The API uses `K12SuccessPredictor` (`services/ml/k12_success_predictor.py`).
 - Configure with `K12_MODEL_FLAVOR=default|fast`
 
 The `/predict` endpoint returns:
-- `risk_probability` (1 − success probability)
-- `risk_level` and `risk_category` based on that risk value
+- `predictions`: list of per-student results including:
+  - `risk_probability`, `risk_category`, `risk_level`, `confidence`
+  - `model_type`, `feature_coverage`, `input_hash`
+  - pass-through fields from the CSV (e.g., `assignment_completion`)
+- `model_info`: metadata from the model artifact (when available)
+- `latency_ms`
+
+Risk thresholds:
+- `< 0.3` → `Low Risk` / `success`
+- `< 0.7` → `Moderate Risk` / `warning`
+- `>= 0.7` → `High Risk` / `danger`
 
 ## Service configuration
 The ML service loads `services/ml/.env` automatically (via `python-dotenv`).
@@ -92,6 +111,10 @@ Environment variables:
 - `MAX_CSV_BYTES` (default 5MB)
 - `MAX_CSV_ROWS` (default 20000)
 - `RATE_LIMIT_PER_MIN` (default 60)
+- `K12_MODEL_FLAVOR=default|fast`
+- `K12_MODELS_DIR` (override model directory)
+
+The `/predict` endpoint expects the API key in the `x-ml-api-key` header when auth is enabled.
 
 ## Evaluation
 Use:
