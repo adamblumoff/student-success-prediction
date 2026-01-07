@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import TimeRangeToggle from '@/components/time-range-toggle';
 import { useAppData } from '@/components/app-data-provider';
 
 type RiskDistribution = {
@@ -116,7 +115,6 @@ export default function DashboardPageClient() {
             The latest student risk landscape, refreshed from the production data pipeline.
           </p>
         </div>
-        <TimeRangeToggle />
       </div>
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
