@@ -12,16 +12,18 @@ export default async function SettingsPage() {
   return (
     <section className="space-y-6">
       <div className="card">
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">Settings</p>
-        <h1 className="mt-2 text-3xl font-semibold text-ink-50">Workspace preferences</h1>
-        <p className="mt-2 text-sm text-ink-300">
+        <p className="text-xs uppercase text-ink-400">Settings</p>
+        <h1 className="mt-2 text-3xl font-semibold text-ink-50 text-balance">
+          Workspace preferences
+        </h1>
+        <p className="mt-2 text-sm text-ink-300 text-pretty">
           Update the district name shown across the platform.
         </p>
       </div>
 
       <form action={updateTenantSettings} className="card space-y-6">
         <div className="space-y-2">
-          <label className="text-xs uppercase tracking-[0.3em] text-ink-500">District name</label>
+          <label className="text-xs uppercase text-ink-500">District name</label>
           <input
             name="districtName"
             defaultValue={district?.name ?? ''}
@@ -32,15 +34,17 @@ export default async function SettingsPage() {
         <SubmitButton
           label="Save changes"
           pendingLabel="Saving..."
-          className="rounded-full border border-ink-700/60 px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-ink-100 hover:border-ink-500/70 hover:bg-ink-800/70"
+          className="rounded-full border border-ink-700/60 px-5 py-3 text-xs font-semibold uppercase text-ink-100 hover:border-ink-500/70 hover:bg-ink-800/70"
         />
       </form>
 
       <div className="card space-y-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-ink-400">Schools</p>
-          <h2 className="mt-2 text-2xl font-semibold text-ink-50">Manage institutions</h2>
-          <p className="mt-2 text-sm text-ink-300">
+          <p className="text-xs uppercase text-ink-400">Schools</p>
+          <h2 className="mt-2 text-2xl font-semibold text-ink-50 text-balance">
+            Manage institutions
+          </h2>
+          <p className="mt-2 text-sm text-ink-300 text-pretty">
             Create and edit schools in your district. The first school is used when no
             selection is active.
           </p>
@@ -52,7 +56,7 @@ export default async function SettingsPage() {
               <form action={updateInstitution} className="grid gap-3 md:grid-cols-3">
                 <input type="hidden" name="institutionId" value={item.id} />
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-[0.3em] text-ink-500">Name</label>
+                  <label className="text-xs uppercase text-ink-500">Name</label>
                   <input
                     name="name"
                     defaultValue={item.name}
@@ -60,7 +64,7 @@ export default async function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-[0.3em] text-ink-500">Code</label>
+                  <label className="text-xs uppercase text-ink-500">Code</label>
                   <input
                     name="code"
                     defaultValue={item.code}
@@ -68,7 +72,7 @@ export default async function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs uppercase tracking-[0.3em] text-ink-500">Type</label>
+                  <label className="text-xs uppercase text-ink-500">Type</label>
                   <input
                     name="type"
                     defaultValue={item.type}
@@ -79,7 +83,7 @@ export default async function SettingsPage() {
                   <SubmitButton
                     label="Save"
                     pendingLabel="Saving..."
-                    className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-ink-200"
+                    className="rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold uppercase text-ink-200"
                   />
                 </div>
               </form>
@@ -89,7 +93,7 @@ export default async function SettingsPage() {
 
         <form action={createInstitution} className="grid gap-3 md:grid-cols-3">
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.3em] text-ink-500">New school</label>
+            <label className="text-xs uppercase text-ink-500">New school</label>
             <input
               name="name"
               placeholder="School name"
@@ -97,7 +101,7 @@ export default async function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.3em] text-ink-500">Code</label>
+            <label className="text-xs uppercase text-ink-500">Code</label>
             <input
               name="code"
               placeholder="SCH-001"
@@ -105,7 +109,7 @@ export default async function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.3em] text-ink-500">Type</label>
+            <label className="text-xs uppercase text-ink-500">Type</label>
             <input
               name="type"
               defaultValue="K12"
@@ -116,7 +120,7 @@ export default async function SettingsPage() {
             <SubmitButton
               label="Add school"
               pendingLabel="Adding..."
-              className="rounded-full border border-ink-700/60 px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-ink-100 hover:border-ink-500/70 hover:bg-ink-800/70"
+              className="rounded-full border border-ink-700/60 px-5 py-3 text-xs font-semibold uppercase text-ink-100 hover:border-ink-500/70 hover:bg-ink-800/70"
             />
           </div>
         </form>

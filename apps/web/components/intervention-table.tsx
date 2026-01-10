@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { updateInterventionStatus, deleteIntervention } from '@/lib/actions/interventions';
+import { cn } from '@/lib/cn';
 
 type Row = {
   intervention: {
@@ -57,8 +58,10 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
     <div className="card">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-ink-400">Active plans</p>
-          <h2 className="mt-2 text-2xl font-semibold text-ink-50">Interventions</h2>
+          <p className="text-xs uppercase text-ink-400">Active plans</p>
+          <h2 className="mt-2 text-2xl font-semibold text-ink-50 text-balance">
+            Interventions
+          </h2>
         </div>
         {isPending && <span className="text-xs text-ink-500">Updating...</span>}
       </div>
@@ -76,11 +79,11 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
                   {row.intervention.interventionType}
                 </p>
               </div>
-              <span className={`badge ${statusTone(row.intervention.status)}`}>
+              <span className={cn('badge', statusTone(row.intervention.status))}>
                 {row.intervention.status ?? 'planned'}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-ink-400">
+            <div className="mt-3 flex flex-wrap gap-3 text-xs text-ink-400 tabular-nums">
               <span>Priority: {row.intervention.priority ?? 'medium'}</span>
               <span>Assigned: {row.intervention.assignedTo ?? 'Unassigned'}</span>
               <span>
@@ -132,7 +135,7 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-ink-700/60 p-6 text-sm text-ink-400">
+          <div className="rounded-2xl border border-dashed border-ink-700/60 p-6 text-sm text-ink-400 text-pretty">
             No interventions yet. Add your first plan on the left and keep the team in sync.
           </div>
         )}

@@ -125,9 +125,11 @@ export default function InterventionsPageClient({
   return (
     <section className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">Interventions</p>
-        <h1 className="mt-2 text-3xl font-semibold text-ink-50">Plan support</h1>
-        <p className="mt-2 text-sm text-ink-300">
+        <p className="text-xs uppercase text-ink-400">Interventions</p>
+        <h1 className="mt-2 text-3xl font-semibold text-ink-50 text-balance">
+          Plan support
+        </h1>
+        <p className="mt-2 text-sm text-ink-300 text-pretty">
           Create interventions with clear ownership, due dates, and outcomes for every
           student.
         </p>
@@ -137,9 +139,7 @@ export default function InterventionsPageClient({
         <InterventionTable initialRows={rows} />
       </div>
       {isLoadingInterventions && (
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">
-          Loading interventions…
-        </p>
+        <p className="text-xs uppercase text-ink-400">Loading interventions…</p>
       )}
     </section>
   );

@@ -140,9 +140,11 @@ export default function InsightsPageClient({
   return (
     <section className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">GPT Insights</p>
-        <h1 className="mt-2 text-3xl font-semibold text-ink-50">Personalized recommendations</h1>
-        <p className="mt-2 text-sm text-ink-300">
+        <p className="text-xs uppercase text-ink-400">GPT Insights</p>
+        <h1 className="mt-2 text-3xl font-semibold text-ink-50 text-balance">
+          Personalized recommendations
+        </h1>
+        <p className="mt-2 text-sm text-ink-300 text-pretty">
           Generate three concise recommendations based on the latest student context.
         </p>
       </div>
@@ -165,12 +167,10 @@ export default function InsightsPageClient({
         onRefresh={refreshInsights}
       />
       {isLoadingInsights && (
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">
-          Loading cached insights…
-        </p>
+        <p className="text-xs uppercase text-ink-400">Loading cached insights…</p>
       )}
       {students.length === 0 && (
-        <div className="bg-panel rounded-3xl p-8 text-sm text-ink-300">
+        <div className="bg-panel rounded-3xl p-8 text-sm text-ink-300 text-pretty">
           Upload a gradebook to enable GPT insights.
         </div>
       )}

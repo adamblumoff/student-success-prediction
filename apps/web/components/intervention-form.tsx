@@ -94,10 +94,12 @@ export default function InterventionForm({
   return (
     <form action={formAction} className="card space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-ink-400">New intervention</p>
-        <h2 className="mt-2 text-2xl font-semibold text-ink-50">Plan support</h2>
+        <p className="text-xs uppercase text-ink-400">New intervention</p>
+        <h2 className="mt-2 text-2xl font-semibold text-ink-50 text-balance">
+          Plan support
+        </h2>
         {prefillStudentName && (
-          <p className="mt-2 text-sm text-ink-300">
+          <p className="mt-2 text-sm text-ink-300 text-pretty">
             {prefillSource === 'student'
               ? `Prefilled for ${prefillStudentName}.`
               : `Prefilled from GPT insight for ${prefillStudentName}.`}

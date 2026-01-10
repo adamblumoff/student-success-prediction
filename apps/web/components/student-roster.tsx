@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { assignCounselorAction, deleteStudentsAction } from '@/lib/actions/students';
 import StudentInterventionsModal from '@/components/student-interventions-modal';
+import { cn } from '@/lib/cn';
 
 export type StudentWithRisk = {
   id: number;
@@ -416,18 +417,24 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           <button
             type="button"
             onClick={() => setViewMode('cards')}
-            className={`rounded-full px-4 py-2 ${
-              viewMode === 'cards' ? 'bg-ink-700/70 text-ink-50' : 'hover:bg-ink-800/60'
-            }`}
+            className={cn(
+              'rounded-full px-4 py-2',
+              viewMode === 'cards'
+                ? 'bg-ink-700/70 text-ink-50'
+                : 'hover:bg-ink-800/60'
+            )}
           >
             Cards
           </button>
           <button
             type="button"
             onClick={() => setViewMode('table')}
-            className={`rounded-full px-4 py-2 ${
-              viewMode === 'table' ? 'bg-ink-700/70 text-ink-50' : 'hover:bg-ink-800/60'
-            }`}
+            className={cn(
+              'rounded-full px-4 py-2',
+              viewMode === 'table'
+                ? 'bg-ink-700/70 text-ink-50'
+                : 'hover:bg-ink-800/60'
+            )}
           >
             Table
           </button>
@@ -460,11 +467,12 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           </button>
           <button
             type="button"
-            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+            className={cn(
+              'rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition',
               canAssignCounselor
                 ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
                 : 'cursor-not-allowed opacity-60'
-            }`}
+            )}
             onClick={handleAssignCounselor}
             disabled={!canAssignCounselor}
             aria-disabled={!canAssignCounselor}
@@ -473,11 +481,12 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           </button>
           <button
             type="button"
-            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+            className={cn(
+              'rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition',
               canBulkIntervention
                 ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
                 : 'cursor-not-allowed opacity-60'
-            }`}
+            )}
             onClick={handleBulkIntervention}
             disabled={!canBulkIntervention}
             aria-disabled={!canBulkIntervention}
@@ -486,11 +495,12 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           </button>
           <button
             type="button"
-            className={`rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition ${
+            className={cn(
+              'rounded-full border border-ink-700/60 px-4 py-2 text-xs font-semibold text-ink-300 transition',
               canExportRoster
                 ? 'cursor-pointer hover:border-ink-600/80 hover:bg-ink-800/70 hover:text-ink-100'
                 : 'opacity-60'
-            }`}
+            )}
             onClick={exportRoster}
             disabled={!canExportRoster}
             aria-disabled={!canExportRoster}
@@ -523,16 +533,16 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                     className="mt-1 h-4 w-4 rounded border border-ink-600 bg-ink-950"
                   />
                   <div>
-                    <p className="text-lg font-semibold text-ink-50">
+                    <p className="text-lg font-semibold text-ink-50 text-balance">
                       {student.name ?? `Student ${student.studentId}`}
                     </p>
-                    <p className="text-sm text-ink-400">
+                    <p className="text-sm text-ink-400 tabular-nums">
                       Grade {student.gradeLevel ?? '-'} · GPA {student.currentGpa ?? '-'}
                     </p>
                   </div>
                 </label>
                 <div className="flex flex-col items-end gap-2">
-                  <span className={`badge ${getRiskTone(student.riskCategory)}`}>
+                  <span className={cn('badge', getRiskTone(student.riskCategory))}>
                     {getRiskLabel(student.riskCategory)}
                   </span>
                   {student.confidenceScore !== null && (
@@ -542,7 +552,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                   )}
                 </div>
               </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-ink-400">
+                <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-ink-400 tabular-nums">
                   <div>
                     Attendance:{' '}
                     {student.attendanceRate !== null
@@ -588,8 +598,8 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
           className="overflow-hidden rounded-3xl border border-ink-700/60 bg-ink-900/70"
           style={{ minHeight: estimatedListHeight }}
         >
-          <table className="w-full text-left text-sm">
-            <thead className="bg-ink-950/70 text-xs uppercase tracking-[0.25em] text-ink-500">
+          <table className="w-full text-left text-sm tabular-nums">
+            <thead className="bg-ink-950/70 text-xs uppercase text-ink-500">
               <tr>
                 <th className="px-4 py-3">Select</th>
                 <th className="px-4 py-3">Student</th>
@@ -626,7 +636,7 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
                   </td>
                   <td className="px-4 py-3">{student.gradeLevel ?? '-'}</td>
                   <td className="px-4 py-3">
-                    <span className={`badge ${getRiskTone(student.riskCategory)}`}>
+                    <span className={cn('badge', getRiskTone(student.riskCategory))}>
                       {getRiskLabel(student.riskCategory)}
                     </span>
                   </td>

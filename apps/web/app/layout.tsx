@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Fraunces, Sora } from 'next/font/google';
 import Providers from './providers';
+import { cn } from '@/lib/cn';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -28,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${sora.variable} ${fraunces.variable}`}>
+      <html lang="en" className={cn(sora.variable, fraunces.variable)}>
         <body>
           <Providers>{children}</Providers>
         </body>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/cn';
 const STORAGE_PREFIX = 'insight-prefill:';
 const PENDING_PREFIX = 'insight-pending:';
 
@@ -145,23 +146,26 @@ export default function InsightCard({
   }, [initialHtml, pendingKey]);
 
   return (
-    <div className={`card ${highlight ? 'ring-2 ring-sage-400' : ''}`}>
+    <div className={cn('card', highlight && 'ring-2 ring-sage-400')}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-lg font-semibold text-ink-50">{name ?? `Student ${studentId}`}</p>
+          <p className="text-lg font-semibold text-ink-50 text-balance">
+            {name ?? `Student ${studentId}`}
+          </p>
           <p className="text-xs text-ink-400">Quick GPT insight</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {riskCategory && (
             <span
-              className={`badge ${
+              className={cn(
+                'badge',
                 riskCategory.toLowerCase().includes('high')
                   ? 'badge-risk-high'
                   : riskCategory.toLowerCase().includes('moderate') ||
                       riskCategory.toLowerCase().includes('medium')
                     ? 'badge-risk-medium'
                     : 'badge-risk-low'
-              }`}
+              )}
             >
               {riskCategory}
             </span>
@@ -176,7 +180,7 @@ export default function InsightCard({
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-400">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-ink-400 tabular-nums">
         <span>Signals: GPA, attendance, enrollment status</span>
         <span>•</span>
         <span>

@@ -20,9 +20,11 @@ export default function IntegrationsPage() {
   return (
     <section className="space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-ink-400">Integrations</p>
-        <h1 className="mt-2 text-3xl font-semibold text-ink-50">Connect your data systems</h1>
-        <p className="mt-2 text-sm text-ink-300">
+        <p className="text-xs uppercase text-ink-400">Integrations</p>
+        <h1 className="mt-2 text-3xl font-semibold text-ink-50 text-balance">
+          Connect your data systems
+        </h1>
+        <p className="mt-2 text-sm text-ink-300 text-pretty">
           Connect SIS and LMS systems to keep predictions and interventions refreshed.
         </p>
       </div>
@@ -30,9 +32,13 @@ export default function IntegrationsPage() {
         {integrations.map((integration) => (
           <div key={integration.name} className="card space-y-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-400">Integration</p>
-              <h2 className="mt-2 text-xl font-semibold text-ink-50">{integration.name}</h2>
-              <p className="mt-2 text-sm text-ink-300">{integration.description}</p>
+              <p className="text-xs uppercase text-ink-400">Integration</p>
+              <h2 className="mt-2 text-xl font-semibold text-ink-50 text-balance">
+                {integration.name}
+              </h2>
+              <p className="mt-2 text-sm text-ink-300 text-pretty">
+                {integration.description}
+              </p>
             </div>
             <div className="flex items-center justify-between text-xs text-ink-400">
               <span>Status</span>
@@ -59,7 +65,7 @@ export default function IntegrationsPage() {
           </div>
         ))}
       </div>
-      <div className="bg-panel rounded-3xl p-6 text-sm text-ink-300">
+      <div className="bg-panel rounded-3xl p-6 text-sm text-ink-300 text-pretty">
         Prefer manual uploads? Use the Upload tab to submit CSVs until integrations are
         enabled.
       </div>

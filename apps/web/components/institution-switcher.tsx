@@ -30,7 +30,7 @@ export default function InstitutionSwitcher({
       }}
       className="flex items-center gap-2"
     >
-      <label className="text-xs uppercase tracking-[0.3em] text-ink-500">School</label>
+      <label className="text-xs uppercase text-ink-500">School</label>
       <select
         name="institutionId"
         value={value ?? ''}
@@ -46,7 +46,7 @@ export default function InstitutionSwitcher({
       <SubmitButton
         label="Apply"
         pendingLabel="Applying..."
-        className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-ink-200"
+        className="rounded-full border border-ink-700/60 px-3 py-2 text-xs font-semibold uppercase text-ink-200"
         disabled={value === selectedInstitutionId}
       />
     </form>

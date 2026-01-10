@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAppData } from '@/components/app-data-provider';
+import { cn } from '@/lib/cn';
 
 type RiskDistribution = {
   high: number;
@@ -109,9 +110,11 @@ export default function DashboardPageClient() {
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-ink-400">System snapshot</p>
-          <h1 className="mt-2 text-3xl font-semibold text-ink-50">District health overview</h1>
-          <p className="mt-2 text-sm text-ink-300">
+          <p className="text-xs uppercase text-ink-400">System snapshot</p>
+          <h1 className="mt-2 text-3xl font-semibold text-ink-50 text-balance">
+            District health overview
+          </h1>
+          <p className="mt-2 text-sm text-ink-300 text-pretty">
             The latest student risk landscape, refreshed from the production data pipeline.
           </p>
         </div>
@@ -133,19 +136,19 @@ export default function DashboardPageClient() {
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">Students</p>
+              <p className="text-xs uppercase text-ink-500">Students</p>
               <p className="mt-2 text-2xl font-semibold text-ink-50 tabular-nums">
                 {stats.totalStudents}
               </p>
             </div>
             <div className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">Predictions</p>
+              <p className="text-xs uppercase text-ink-500">Predictions</p>
               <p className="mt-2 text-2xl font-semibold text-ink-50 tabular-nums">
                 {stats.totalPredictions}
               </p>
             </div>
             <div className="rounded-2xl border border-ink-700/60 bg-ink-950/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">Interventions</p>
+              <p className="text-xs uppercase text-ink-500">Interventions</p>
               <p className="mt-2 text-2xl font-semibold text-ink-50 tabular-nums">
                 {stats.totalInterventions}
               </p>
@@ -153,19 +156,19 @@ export default function DashboardPageClient() {
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-sage-900/40 p-4 text-sage-200">
-              <p className="text-xs uppercase tracking-[0.3em]">Low risk</p>
+              <p className="text-xs uppercase">Low risk</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">
                 {stats.riskDistribution.low}
               </p>
             </div>
             <div className="rounded-2xl bg-amber-900/40 p-4 text-amber-200">
-              <p className="text-xs uppercase tracking-[0.3em]">Moderate risk</p>
+              <p className="text-xs uppercase">Moderate risk</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">
                 {stats.riskDistribution.medium}
               </p>
             </div>
             <div className="rounded-2xl bg-rose-900/40 p-4 text-rose-200">
-              <p className="text-xs uppercase tracking-[0.3em]">High risk</p>
+              <p className="text-xs uppercase">High risk</p>
               <p className="mt-2 text-xl font-semibold tabular-nums">
                 {stats.riskDistribution.high}
               </p>
@@ -173,7 +176,7 @@ export default function DashboardPageClient() {
           </div>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-ink-700/50 bg-ink-950/50 p-4 text-sm">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">
+              <p className="text-xs uppercase text-ink-500">
                 New predictions
               </p>
               <p className="mt-2 text-lg font-semibold text-ink-50 tabular-nums">
@@ -186,7 +189,7 @@ export default function DashboardPageClient() {
               </p>
             </div>
             <div className="rounded-2xl border border-ink-700/50 bg-ink-950/50 p-4 text-sm">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">
+              <p className="text-xs uppercase text-ink-500">
                 Interventions created
               </p>
               <p className="mt-2 text-lg font-semibold text-ink-50 tabular-nums">
@@ -195,7 +198,7 @@ export default function DashboardPageClient() {
               <p className="mt-1 text-xs text-ink-400">Last 7 days</p>
             </div>
             <div className="rounded-2xl border border-ink-700/50 bg-ink-950/50 p-4 text-sm">
-              <p className="text-xs uppercase tracking-[0.3em] text-ink-500">
+              <p className="text-xs uppercase text-ink-500">
                 Interventions closed
               </p>
               <p className="mt-2 text-lg font-semibold text-ink-50 tabular-nums">
@@ -210,8 +213,8 @@ export default function DashboardPageClient() {
           <div className="bg-panel rounded-3xl p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-ink-400">At risk</p>
-                <h2 className="mt-2 text-xl font-semibold text-ink-50">
+                <p className="text-xs uppercase text-ink-400">At risk</p>
+                <h2 className="mt-2 text-xl font-semibold text-ink-50 text-balance">
                   Top students to review
                 </h2>
               </div>
@@ -234,18 +237,19 @@ export default function DashboardPageClient() {
                     </p>
                     <p className="text-xs text-ink-400">
                       Grade {student.gradeLevel ?? '-'} · Risk score{' '}
-                      {student.riskScore.toFixed(2)}
+                      <span className="tabular-nums">{student.riskScore.toFixed(2)}</span>
                     </p>
                   </div>
                   <span
-                    className={`badge ${
+                    className={cn(
+                      'badge',
                       student.riskCategory?.toLowerCase().includes('high')
                         ? 'badge-risk-high'
                         : student.riskCategory?.toLowerCase().includes('moderate') ||
                             student.riskCategory?.toLowerCase().includes('medium')
                           ? 'badge-risk-medium'
                           : 'badge-risk-low'
-                    }`}
+                    )}
                   >
                     {student.riskCategory ?? 'Risk'}
                   </span>
@@ -268,8 +272,8 @@ export default function DashboardPageClient() {
           </div>
 
           <div className="bg-panel rounded-3xl p-6">
-            <h2 className="text-xl font-semibold text-ink-50">Quick actions</h2>
-            <p className="mt-3 text-sm text-ink-300">
+            <h2 className="text-xl font-semibold text-ink-50 text-balance">Quick actions</h2>
+            <p className="mt-3 text-sm text-ink-300 text-pretty">
               Jump directly into the workflows that unblock your team.
             </p>
             <div className="mt-6 flex flex-col gap-3">

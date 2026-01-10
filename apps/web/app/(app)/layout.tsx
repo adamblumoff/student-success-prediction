@@ -31,24 +31,24 @@ export default async function AppLayout({
       initialInsights={[]}
       initialInterventions={[]}
     >
-      <main className="min-h-screen px-6 py-8">
+      <main className="min-h-dvh px-6 py-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-6">
           <AppNav />
           <div className="flex flex-wrap items-center gap-4 rounded-3xl border border-ink-700/50 bg-ink-900/70 px-6 py-4 text-sm text-ink-200">
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-ink-500">District</span>
+              <span className="text-xs uppercase text-ink-500">District</span>
               <span className="font-semibold text-ink-50">{district?.name ?? 'District'}</span>
             </div>
             <div className="h-4 w-px bg-ink-700/70" />
             <InstitutionSwitcher institutions={institutions} />
             <div className="h-4 w-px bg-ink-700/70" />
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-ink-500">Term</span>
+              <span className="text-xs uppercase text-ink-500">Term</span>
               <span>Fall 2025</span>
             </div>
             <div className="h-4 w-px bg-ink-700/70" />
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-ink-500">Data Updated</span>
+              <span className="text-xs uppercase text-ink-500">Data Updated</span>
               <span>{updatedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
           </div>

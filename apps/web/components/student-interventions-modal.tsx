@@ -151,12 +151,12 @@ export default function StudentInterventionsModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 px-6 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
       <div className="w-full max-w-4xl rounded-3xl border border-ink-700/60 bg-ink-900/95 p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-ink-400">Student insights</p>
-            <h2 className="mt-2 text-2xl font-semibold text-ink-50">{header}</h2>
+            <p className="text-xs uppercase text-ink-400">Student insights</p>
+            <h2 className="mt-2 text-2xl font-semibold text-ink-50 text-balance">{header}</h2>
           </div>
           <button
             type="button"
