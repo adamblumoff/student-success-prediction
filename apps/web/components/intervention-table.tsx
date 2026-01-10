@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { updateInterventionStatus, deleteIntervention } from '@/lib/actions/interventions';
 import { cn } from '@/lib/cn';
+import { useAppData } from '@/components/app-data-provider';
 
 type Row = {
   intervention: {
@@ -27,6 +28,7 @@ const statusTone = (status: string | null) => {
 };
 
 export default function InterventionTable({ initialRows }: { initialRows: Row[] }) {
+  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
   const [rows, setRows] = useState(initialRows);
   const [isPending, startTransition] = useTransition();
 
@@ -44,6 +46,9 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
             : row
         )
       );
+      if (selectedInstitutionId) {
+        markDashboardStatsStale(selectedInstitutionId);
+      }
     });
   };
 
@@ -51,6 +56,9 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
     startTransition(async () => {
       await deleteIntervention(id);
       setRows((prev) => prev.filter((row) => row.intervention.id !== id));
+      if (selectedInstitutionId) {
+        markDashboardStatsStale(selectedInstitutionId);
+      }
     });
   };
 

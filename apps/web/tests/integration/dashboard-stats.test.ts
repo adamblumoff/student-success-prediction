@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/dashboard/stats/route';
+import { db, tables } from '@/db';
 import { seedIntervention, seedPrediction, seedStudent, seedTenant } from '../fixtures';
 
 const createRequest = (institutionId: number) =>
@@ -39,5 +40,48 @@ describe('GET /api/dashboard/stats', () => {
     expect(body.totalInterventions).toBe(1);
     expect(body.riskDistribution.high).toBeGreaterThan(0);
     expect(body.topRiskStudents.length).toBeGreaterThan(0);
+    expect(typeof body.version).toBe('string');
+  });
+
+  it('changes version when interventions change', async () => {
+    const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const orgId = `test-org-${suffix}`;
+    const userId = `test-user-${suffix}`;
+    process.env.TEST_ORG_ID = orgId;
+    process.env.TEST_USER_ID = userId;
+    const { district, institution } = await seedTenant({ externalId: orgId, userId });
+    const student = await seedStudent({
+      districtId: district.id,
+      institutionId: institution.id
+    });
+    const prediction = await seedPrediction({
+      districtId: district.id,
+      institutionId: institution.id,
+      studentDbId: student.id
+    });
+    await seedIntervention({
+      districtId: district.id,
+      institutionId: institution.id,
+      studentDbId: student.id,
+      predictionId: prediction.id
+    });
+
+    const firstResponse = await GET(createRequest(institution.id));
+    const firstBody = await firstResponse.json();
+
+    await db.insert(tables.interventions).values({
+      districtId: district.id,
+      institutionId: institution.id,
+      studentId: student.id,
+      predictionId: prediction.id,
+      interventionType: 'Check-in',
+      title: 'Second check-in',
+      status: 'planned'
+    });
+
+    const secondResponse = await GET(createRequest(institution.id));
+    const secondBody = await secondResponse.json();
+
+    expect(firstBody.version).not.toBe(secondBody.version);
   });
 });

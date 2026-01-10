@@ -38,7 +38,13 @@ export default function Providers({
     source.onmessage = (event) => {
       if (!event.data) return;
       try {
-        const payload = JSON.parse(event.data) as { type: string; paths?: string[] };
+        const payload = JSON.parse(event.data) as {
+          type: string;
+          paths?: string[];
+          districtId?: number | null;
+          institutionId?: number | null;
+        };
+        window.dispatchEvent(new CustomEvent('data:mutation', { detail: payload }));
         if (!payload.paths || payload.paths.length === 0) {
           router.refresh();
           return;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { assignCounselorAction, deleteStudentsAction } from '@/lib/actions/students';
 import StudentInterventionsModal from '@/components/student-interventions-modal';
 import { cn } from '@/lib/cn';
+import { useAppData } from '@/components/app-data-provider';
 
 export type StudentWithRisk = {
   id: number;
@@ -52,6 +53,7 @@ const getRiskLabel = (riskCategory: string | null) => {
 const STORAGE_PREFIX = 'insight-prefill:';
 
 export default function StudentRoster({ students }: { students: StudentWithRisk[] }) {
+  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
   const [roster, setRoster] = useState(students);
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
@@ -224,6 +226,9 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
       setRoster((prev) => prev.filter((student) => !result.deletedIds.includes(student.id)));
       setSelected(new Set());
       setStatusMessage(`Deleted ${result.deletedCount} student(s).`);
+      if (selectedInstitutionId) {
+        markDashboardStatsStale(selectedInstitutionId);
+      }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'Delete failed.');
     } finally {

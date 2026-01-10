@@ -2,15 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useAppData } from '@/components/app-data-provider';
+import { useAppData, type DashboardStatsPayload } from '@/components/app-data-provider';
 import { cn } from '@/lib/cn';
-
-type RiskDistribution = {
-  high: number;
-  medium: number;
-  low: number;
-  unknown: number;
-};
 
 const parseDate = (value: string | null) => {
   if (!value) return null;
@@ -18,28 +11,7 @@ const parseDate = (value: string | null) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-type DashboardStats = {
-  totalStudents: number;
-  totalPredictions: number;
-  totalInterventions: number;
-  riskDistribution: RiskDistribution;
-  latestPredictionDate: string | null;
-  recentPredictions: number;
-  previousPredictions: number;
-  recentInterventions: number;
-  completedInterventions: number;
-  topRiskStudents: Array<{
-    id: number;
-    name: string | null;
-    studentId: string;
-    gradeLevel: string | null;
-    riskScore: number;
-    riskCategory: string | null;
-    confidenceScore: number | null;
-  }>;
-};
-
-const emptyStats: DashboardStats = {
+const emptyStats = {
   totalStudents: 0,
   totalPredictions: 0,
   totalInterventions: 0,
@@ -53,13 +25,23 @@ const emptyStats: DashboardStats = {
 };
 
 export default function DashboardPageClient() {
-  const { selectedInstitutionId } = useAppData();
-  const [statsByInstitution, setStatsByInstitution] = useState<Record<number, DashboardStats>>({});
+  const {
+    selectedInstitutionId,
+    dashboardStatsByInstitution,
+    dashboardStatsStaleByInstitution,
+    setDashboardStatsForInstitution
+  } = useAppData();
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const cachedStats = selectedInstitutionId
+    ? dashboardStatsByInstitution[selectedInstitutionId]
+    : null;
+  const isStale = selectedInstitutionId
+    ? dashboardStatsStaleByInstitution[selectedInstitutionId]
+    : false;
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
-    if (statsByInstitution[selectedInstitutionId]) return;
+    if (cachedStats && !isStale) return;
 
     let cancelled = false;
     const loadStats = async () => {
@@ -70,12 +52,9 @@ export default function DashboardPageClient() {
           { cache: 'no-store' }
         );
         if (!response.ok) return;
-        const payload = (await response.json()) as DashboardStats;
+        const payload = (await response.json()) as DashboardStatsPayload;
         if (cancelled) return;
-        setStatsByInstitution((prev) => ({
-          ...prev,
-          [selectedInstitutionId]: payload
-        }));
+        setDashboardStatsForInstitution(selectedInstitutionId, payload, payload.version);
       } catch {
         // Ignore stats failures; fallback to zeros.
       } finally {
@@ -88,10 +67,10 @@ export default function DashboardPageClient() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [selectedInstitutionId, statsByInstitution]);
+  }, [selectedInstitutionId, cachedStats, isStale, setDashboardStatsForInstitution]);
 
   const stats = selectedInstitutionId
-    ? statsByInstitution[selectedInstitutionId] ?? emptyStats
+    ? cachedStats ?? emptyStats
     : emptyStats;
 
   const latestPredictionDate = useMemo(

@@ -31,7 +31,12 @@ export async function createIntervention(formData: FormData) {
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
   revalidateTag('dashboard-stats', { expire: 0 });
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/interventions', '/dashboard'],
+    districtId,
+    institutionId
+  });
 
   return created;
 }
@@ -58,7 +63,12 @@ export async function updateInterventionStatus(interventionId: number, status: s
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
   revalidateTag('dashboard-stats', { expire: 0 });
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/interventions', '/dashboard'],
+    districtId,
+    institutionId
+  });
 
   return updated;
 }
@@ -80,7 +90,12 @@ export async function deleteIntervention(interventionId: number) {
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
   revalidateTag('dashboard-stats', { expire: 0 });
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/interventions', '/dashboard'],
+    districtId,
+    institutionId
+  });
 
   return deleted;
 }
@@ -141,7 +156,12 @@ export async function updateInterventionDetails(
   revalidatePath('/interventions');
   revalidatePath('/dashboard');
   revalidateTag('dashboard-stats', { expire: 0 });
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/interventions', '/dashboard'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/interventions', '/dashboard'],
+    districtId,
+    institutionId
+  });
 
   return updated;
 }

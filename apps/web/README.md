@@ -98,7 +98,7 @@ UI:
 API:
 - `/api/health` - Health check
 - `/api/events` - Server-sent events stream for realtime updates
-- `/api/dashboard/stats` - Dashboard aggregates (query `institutionId` to override)
+- `/api/dashboard/stats` - Dashboard aggregates (query `institutionId` to override, includes `version` for cache invalidation)
 - `/api/data/all` - Data export (query: `institutionId`, `includeStudents`, `includeInsights`, `includeInterventions`)
 - `/api/insights/latest` - Latest GPT insights per student
 - `/api/insights/generate` - Generate a new GPT insight (POST with `{ studentId }`)

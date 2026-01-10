@@ -9,6 +9,7 @@ import {
   useRef,
   useState
 } from 'react';
+import type { RealtimeEvent } from '@/lib/realtime';
 
 export type InstitutionOption = {
   id: number;
@@ -57,6 +58,36 @@ export type InterventionPayload = {
   studentIdentifier: string | null;
 };
 
+export type DashboardStats = {
+  totalStudents: number;
+  totalPredictions: number;
+  totalInterventions: number;
+  riskDistribution: {
+    high: number;
+    medium: number;
+    low: number;
+    unknown: number;
+  };
+  latestPredictionDate: string | null;
+  recentPredictions: number;
+  previousPredictions: number;
+  recentInterventions: number;
+  completedInterventions: number;
+  topRiskStudents: Array<{
+    id: number;
+    name: string | null;
+    studentId: string;
+    gradeLevel: string | null;
+    riskScore: number;
+    riskCategory: string | null;
+    confidenceScore: number | null;
+  }>;
+};
+
+export type DashboardStatsPayload = DashboardStats & {
+  version: string | null;
+};
+
 type AppDataContextValue = {
   institutions: InstitutionOption[];
   selectedInstitutionId: number | null;
@@ -75,6 +106,15 @@ type AppDataContextValue = {
     institutionId?: number | null,
     options?: { force?: boolean }
   ) => Promise<void>;
+  dashboardStatsByInstitution: Record<number, DashboardStats>;
+  dashboardStatsVersionByInstitution: Record<number, string>;
+  dashboardStatsStaleByInstitution: Record<number, boolean>;
+  setDashboardStatsForInstitution: (
+    institutionId: number,
+    stats: DashboardStats,
+    version: string | null
+  ) => void;
+  markDashboardStatsStale: (institutionId?: number | null | 'all') => void;
   isLoadingInsights: boolean;
   isLoadingInterventions: boolean;
   isLoadingAll: boolean;
@@ -142,6 +182,15 @@ export default function AppDataProvider({
       ? { [initialInterventionsInstitutionId]: initialInterventions }
       : {}
   );
+  const [dashboardStatsByInstitution, setDashboardStatsByInstitution] = useState<
+    Record<number, DashboardStats>
+  >({});
+  const [dashboardStatsVersionByInstitution, setDashboardStatsVersionByInstitution] = useState<
+    Record<number, string>
+  >({});
+  const [dashboardStatsStaleByInstitution, setDashboardStatsStaleByInstitution] = useState<
+    Record<number, boolean>
+  >({});
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const [loadingInterventionsFor, setLoadingInterventionsFor] = useState<number | null>(null);
   const [loadingInsightsFor, setLoadingInsightsFor] = useState<number | null>(null);
@@ -243,6 +292,63 @@ export default function AppDataProvider({
     []
   );
 
+  const setDashboardStatsForInstitution = useCallback(
+    (institutionId: number, stats: DashboardStats, version: string | null) => {
+      if (!institutionId) return;
+      setDashboardStatsByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: stats
+      }));
+      if (version) {
+        setDashboardStatsVersionByInstitution((prev) => ({
+          ...prev,
+          [institutionId]: version
+        }));
+      }
+      setDashboardStatsStaleByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: false
+      }));
+    },
+    []
+  );
+
+  const markDashboardStatsStale = useCallback(
+    (institutionId?: number | null | 'all') => {
+      if (!institutionId || institutionId === 'all') {
+        setDashboardStatsStaleByInstitution((prev) => {
+          const next: Record<number, boolean> = { ...prev };
+          for (const item of institutions) {
+            next[item.id] = true;
+          }
+          return next;
+        });
+        return;
+      }
+      setDashboardStatsStaleByInstitution((prev) => ({
+        ...prev,
+        [institutionId]: true
+      }));
+    },
+    [institutions]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<RealtimeEvent>).detail;
+      if (!detail || detail.type !== 'data:mutation') return;
+      if (detail.paths && !detail.paths.includes('/dashboard')) return;
+      if (detail.institutionId) {
+        markDashboardStatsStale(detail.institutionId);
+        return;
+      }
+      markDashboardStatsStale('all');
+    };
+    window.addEventListener('data:mutation', handler as EventListener);
+    return () => window.removeEventListener('data:mutation', handler as EventListener);
+  }, [markDashboardStatsStale]);
+
   const loadInterventionsForInstitution = useCallback(
     async (institutionId?: number | null) => {
       if (!institutionId) return;
@@ -326,6 +432,11 @@ export default function AppDataProvider({
       seedInterventionsForInstitution,
       loadInterventionsForInstitution,
       loadInsightsForInstitution,
+      dashboardStatsByInstitution,
+      dashboardStatsVersionByInstitution,
+      dashboardStatsStaleByInstitution,
+      setDashboardStatsForInstitution,
+      markDashboardStatsStale,
       isLoadingInsights:
         selectedInstitutionId !== null && loadingInsightsFor === selectedInstitutionId,
       isLoadingInterventions:
@@ -344,6 +455,11 @@ export default function AppDataProvider({
       seedInterventionsForInstitution,
       loadInterventionsForInstitution,
       loadInsightsForInstitution,
+      dashboardStatsByInstitution,
+      dashboardStatsVersionByInstitution,
+      dashboardStatsStaleByInstitution,
+      setDashboardStatsForInstitution,
+      markDashboardStatsStale,
       loadingInsightsFor,
       loadingInterventionsFor,
       isLoadingAll

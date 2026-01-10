@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { analyzeGradebookAction, type AnalyzeState } from '@/lib/actions/analyze';
 import { cn } from '@/lib/cn';
+import { useAppData } from '@/components/app-data-provider';
 
 const initialState: AnalyzeState = { status: 'idle' };
 
@@ -25,6 +26,13 @@ function SubmitButton() {
 
 export default function UploadForm() {
   const [state, formAction] = useActionState(analyzeGradebookAction, initialState);
+  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+
+  useEffect(() => {
+    if (state.status !== 'success') return;
+    if (!selectedInstitutionId) return;
+    markDashboardStatsStale(selectedInstitutionId);
+  }, [markDashboardStatsStale, selectedInstitutionId, state.status]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">

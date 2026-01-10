@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { updateInterventionDetails, deleteIntervention } from '@/lib/actions/interventions';
+import { useAppData } from '@/components/app-data-provider';
 
 const formatDateInput = (value: string | null) => {
   if (!value) return '';
@@ -39,6 +40,7 @@ export default function StudentInterventionsModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [student, setStudent] = useState<StudentInfo | null>(null);
@@ -124,6 +126,9 @@ export default function StudentInterventionsModal({
               : row
           )
         );
+        if (selectedInstitutionId) {
+          markDashboardStatsStale(selectedInstitutionId);
+        }
       }
       cancelEdit();
     } catch (err) {
@@ -138,6 +143,9 @@ export default function StudentInterventionsModal({
     try {
       await deleteIntervention(rowId);
       setRows((prev) => prev.filter((row) => row.id !== rowId));
+      if (selectedInstitutionId) {
+        markDashboardStatsStale(selectedInstitutionId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed');
     }

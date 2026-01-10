@@ -160,7 +160,9 @@ export async function analyzeGradebook(formData: FormData) {
   revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({
     type: 'data:mutation',
-    paths: ['/dashboard', '/students', '/insights', '/upload']
+    paths: ['/dashboard', '/students', '/insights', '/upload'],
+    districtId,
+    institutionId
   });
 
   return {

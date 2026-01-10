@@ -25,6 +25,7 @@ const loadDashboardStats = (districtId: number, resolvedInstitutionId: number) =
       mediumRisk: number;
       lowRisk: number;
       unknownRisk: number;
+      studentLastUpdated: Date | null;
     }>(sql`
       select
         count(*)::int as "totalStudents",
@@ -40,7 +41,13 @@ const loadDashboardStats = (districtId: number, resolvedInstitutionId: number) =
           where s.latest_risk_category ilike 'moderate%' or s.latest_risk_category ilike 'medium%'
         )::int as "mediumRisk",
         count(*) filter (where s.latest_risk_category ilike 'low%')::int as "lowRisk",
-        count(*) filter (where s.latest_risk_category is null)::int as "unknownRisk"
+        count(*) filter (where s.latest_risk_category is null)::int as "unknownRisk",
+        max(
+          greatest(
+            coalesce(s.updated_at, s.created_at),
+            coalesce(s.latest_prediction_date, s.created_at)
+          )
+        ) as "studentLastUpdated"
       from ${tables.students} s
       where s.district_id = ${districtId}
         and s.institution_id = ${resolvedInstitutionId}
@@ -75,11 +82,18 @@ const loadDashboardStats = (districtId: number, resolvedInstitutionId: number) =
       totalInterventions: number;
       recentInterventions: number;
       completedInterventions: number;
+      interventionLastUpdated: Date | null;
     }>(sql`
       select
         count(*)::int as "totalInterventions",
         count(*) filter (where created_at >= now() - interval '7 days')::int as "recentInterventions",
-        count(*) filter (where completed_date >= now() - interval '7 days')::int as "completedInterventions"
+        count(*) filter (where completed_date >= now() - interval '7 days')::int as "completedInterventions",
+        max(
+          greatest(
+            coalesce(updated_at, created_at),
+            coalesce(completed_date, created_at)
+          )
+        ) as "interventionLastUpdated"
       from ${tables.interventions}
       where district_id = ${districtId}
         and institution_id = ${resolvedInstitutionId}
@@ -87,6 +101,14 @@ const loadDashboardStats = (districtId: number, resolvedInstitutionId: number) =
 
     const studentsRow = studentStats.rows[0];
     const interventionsRow = interventionsStats.rows[0];
+    const studentLastUpdated = toIso(studentsRow?.studentLastUpdated ?? null) ?? '0';
+    const interventionLastUpdated = toIso(interventionsRow?.interventionLastUpdated ?? null) ?? '0';
+    const version = [
+      `students:${studentsRow?.totalStudents ?? 0}`,
+      `interventions:${interventionsRow?.totalInterventions ?? 0}`,
+      `studentUpdated:${studentLastUpdated}`,
+      `interventionUpdated:${interventionLastUpdated}`
+    ].join('|');
 
     return {
       totalStudents: studentsRow?.totalStudents ?? 0,
@@ -103,7 +125,8 @@ const loadDashboardStats = (districtId: number, resolvedInstitutionId: number) =
       previousPredictions: studentsRow?.previousPredictions ?? 0,
       recentInterventions: interventionsRow?.recentInterventions ?? 0,
       completedInterventions: interventionsRow?.completedInterventions ?? 0,
-      topRiskStudents: topRiskStudents.rows
+      topRiskStudents: topRiskStudents.rows,
+      version
     };
     },
     ['dashboard-stats', String(districtId), String(resolvedInstitutionId)],

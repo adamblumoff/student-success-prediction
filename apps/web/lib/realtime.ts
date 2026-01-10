@@ -3,6 +3,8 @@ import { EventEmitter } from 'events';
 export type RealtimeEvent = {
   type: 'data:mutation' | 'ping' | 'connected';
   paths?: string[];
+  districtId?: number | null;
+  institutionId?: number | null;
 };
 
 const globalForRealtime = globalThis as typeof globalThis & {

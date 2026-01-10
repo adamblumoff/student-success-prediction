@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useMemo, useState } from 'react';
 import { createInterventionAction, type InterventionActionState } from '@/lib/actions/interventions';
+import { useAppData } from '@/components/app-data-provider';
 
 const initialState: InterventionActionState = { status: 'idle' };
 
@@ -62,6 +63,7 @@ export default function InterventionForm({
   prefillStudentName?: string | null;
   prefillSource?: 'insight' | 'student' | null;
 }) {
+  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
   const [state, formAction] = useActionState(createInterventionAction, initialState);
   const [templateId, setTemplateId] = useState('');
   const [title, setTitle] = useState(() => defaults?.title ?? '');
@@ -89,6 +91,12 @@ export default function InterventionForm({
     setDescription(selected.description);
     setPriority(selected.priority);
   };
+
+  useEffect(() => {
+    if (state.status !== 'success') return;
+    if (!selectedInstitutionId) return;
+    markDashboardStatsStale(selectedInstitutionId);
+  }, [markDashboardStatsStale, selectedInstitutionId, state.status]);
 
 
   return (

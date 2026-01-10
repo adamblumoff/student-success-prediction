@@ -82,7 +82,9 @@ export async function deleteStudentsAction(studentIds: number[]) {
   revalidateTag('dashboard-stats', { expire: 0 });
   emitRealtimeEvent({
     type: 'data:mutation',
-    paths: ['/students', '/dashboard', '/insights']
+    paths: ['/students', '/dashboard', '/insights'],
+    districtId,
+    institutionId
   });
 
   return { deletedIds: authorizedIds, deletedCount: authorizedIds.length };
@@ -130,7 +132,12 @@ export async function assignCounselorAction(studentIds: number[], counselor: str
 
   revalidatePath('/students');
   revalidateTag('dashboard-stats', { expire: 0 });
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/students'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/students'],
+    districtId,
+    institutionId
+  });
 
   return { updatedIds: authorizedIds, updatedCount: authorizedIds.length };
 }
