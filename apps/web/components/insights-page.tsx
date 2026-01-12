@@ -59,13 +59,13 @@ export default function InsightsPageClient({
     selectedInstitutionId
   ]);
 
-  const refreshInsights = useCallback(() => {
+  const refreshInsights = useCallback((force = false) => {
     if (!selectedInstitutionId) return;
-    void loadInsightsForInstitution(selectedInstitutionId, { force: true });
+    void loadInsightsForInstitution(selectedInstitutionId, { force });
   }, [loadInsightsForInstitution, selectedInstitutionId]);
 
   useEffect(() => {
-    refreshInsights();
+    refreshInsights(false);
   }, [refreshInsights]);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function InsightsPageClient({
   useEffect(() => {
     if (!hasPending) return;
     const interval = window.setInterval(() => {
-      refreshInsights();
+      refreshInsights(true);
     }, 3000);
     return () => window.clearInterval(interval);
   }, [hasPending, refreshInsights]);

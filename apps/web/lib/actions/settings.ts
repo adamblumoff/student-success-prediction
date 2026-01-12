@@ -26,7 +26,12 @@ export async function updateTenantSettings(formData: FormData) {
 
   revalidatePath('/settings');
   revalidatePath('/dashboard');
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/settings', '/dashboard'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/settings', '/dashboard'],
+    districtId,
+    institutionId: null
+  });
 
   return;
 }
@@ -48,7 +53,12 @@ export async function createInstitution(formData: FormData) {
     .returning();
 
   revalidatePath('/settings');
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/settings'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/settings'],
+    districtId,
+    institutionId: created?.id ?? null
+  });
 
   return;
 }
@@ -79,7 +89,12 @@ export async function updateInstitution(formData: FormData) {
     .returning();
 
   revalidatePath('/settings');
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/settings'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/settings'],
+    districtId,
+    institutionId: updated?.id ?? parsed.institutionId
+  });
 
   return;
 }
@@ -107,7 +122,12 @@ export async function setActiveInstitution(formData: FormData) {
   });
 
   revalidatePath('/', 'layout');
-  emitRealtimeEvent({ type: 'data:mutation', paths: ['/'] });
+  emitRealtimeEvent({
+    type: 'data:mutation',
+    paths: ['/'],
+    districtId,
+    institutionId: parsed.institutionId
+  });
 
   return { status: 'success' as const };
 }

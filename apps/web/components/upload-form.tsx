@@ -26,13 +26,26 @@ function SubmitButton() {
 
 export default function UploadForm() {
   const [state, formAction] = useActionState(analyzeGradebookAction, initialState);
-  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+  const {
+    selectedInstitutionId,
+    markDashboardStatsStale,
+    markStudentsStale,
+    markInsightsStale
+  } = useAppData();
 
   useEffect(() => {
     if (state.status !== 'success') return;
     if (!selectedInstitutionId) return;
     markDashboardStatsStale(selectedInstitutionId);
-  }, [markDashboardStatsStale, selectedInstitutionId, state.status]);
+    markStudentsStale(selectedInstitutionId);
+    markInsightsStale(selectedInstitutionId);
+  }, [
+    markDashboardStatsStale,
+    markInsightsStale,
+    markStudentsStale,
+    selectedInstitutionId,
+    state.status
+  ]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">

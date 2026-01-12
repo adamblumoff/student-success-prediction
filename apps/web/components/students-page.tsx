@@ -11,8 +11,13 @@ export default function StudentsPageClient({
   initialStudents: StudentWithRisk[];
   initialInstitutionId: number | null;
 }) {
-  const { students: contextStudents, isLoadingAll, selectedInstitutionId, seedStudentsForInstitution } =
-    useAppData();
+  const {
+    students: contextStudents,
+    isLoadingAll,
+    selectedInstitutionId,
+    seedStudentsForInstitution,
+    studentsVersionByInstitution
+  } = useAppData();
 
   useEffect(() => {
     if (!selectedInstitutionId) return;
@@ -33,6 +38,10 @@ export default function StudentsPageClient({
     return contextStudents.length > 0 ? contextStudents : initialStudents;
   }, [contextStudents, initialInstitutionId, initialStudents, selectedInstitutionId]);
 
+  const versionKey = selectedInstitutionId
+    ? studentsVersionByInstitution[selectedInstitutionId]
+    : undefined;
+
   return (
     <section className="space-y-6">
       <div>
@@ -42,7 +51,7 @@ export default function StudentsPageClient({
           Browse students pulled from the production database and jump into insights.
         </p>
       </div>
-      <StudentRoster students={students} />
+      <StudentRoster students={students} versionKey={versionKey} />
       {students.length === 0 && (
         <div className="bg-panel rounded-3xl p-8 text-sm text-ink-300 text-pretty">
           {isLoadingAll

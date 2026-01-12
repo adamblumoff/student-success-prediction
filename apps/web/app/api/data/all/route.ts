@@ -34,24 +34,43 @@ export async function GET(request: NextRequest) {
     ? !['0', 'false', 'no'].includes(includeInterventionsParam.toLowerCase())
     : true;
 
+  const studentsMeta = includeStudents
+    ? await db.execute<{
+        totalStudents: number;
+        lastUpdated: Date | null;
+      }>(sql`
+        select
+          count(*)::int as "totalStudents",
+          max(
+            greatest(
+              coalesce(s.updated_at, s.created_at),
+              coalesce(s.latest_prediction_date, s.created_at)
+            )
+          ) as "lastUpdated"
+        from ${tables.students} s
+        where s.district_id = ${districtId}
+          ${scopedInstitutionId ? sql`and s.institution_id = ${scopedInstitutionId}` : sql``}
+      `)
+    : { rows: [] as Array<{ totalStudents: number; lastUpdated: Date | null }> };
+
   const studentsResult = includeStudents
     ? await db.execute<{
-      id: number;
-      institutionId: number;
-    studentId: string;
-    name: string | null;
-    gradeLevel: string | null;
-    currentGpa: number | null;
-    attendanceRate: number | null;
-    enrollmentStatus: string | null;
-    assignedCounselor: string | null;
-    lastActivity: Date | null;
-    activeInterventions: number | null;
-    riskCategory: string | null;
-    riskScore: number | null;
-    confidenceScore: number | null;
-    predictionDate: Date | null;
-    }>(sql`
+        id: number;
+        institutionId: number;
+        studentId: string;
+        name: string | null;
+        gradeLevel: string | null;
+        currentGpa: number | null;
+        attendanceRate: number | null;
+        enrollmentStatus: string | null;
+        assignedCounselor: string | null;
+        lastActivity: Date | null;
+        activeInterventions: number | null;
+        riskCategory: string | null;
+        riskScore: number | null;
+        confidenceScore: number | null;
+        predictionDate: Date | null;
+      }>(sql`
       select
         s.id as "id",
         s.institution_id as "institutionId",
@@ -98,6 +117,20 @@ export async function GET(request: NextRequest) {
         predictionDate: Date | null;
       }> };
 
+  const insightsMeta = includeInsights
+    ? await db.execute<{
+        totalInsights: number;
+        lastUpdated: Date | null;
+      }>(sql`
+        select
+          count(*)::int as "totalInsights",
+          max(coalesce(g.updated_at, g.created_at)) as "lastUpdated"
+        from ${tables.gptInsights} g
+        where g.district_id = ${districtId}
+          ${scopedInstitutionId ? sql`and g.institution_id = ${scopedInstitutionId}` : sql``}
+      `)
+    : { rows: [] as Array<{ totalInsights: number; lastUpdated: Date | null }> };
+
   const insightsResult = includeInsights
     ? await db.execute<{
         studentDatabaseId: number;
@@ -124,6 +157,25 @@ export async function GET(request: NextRequest) {
         riskLevel: string | null;
         createdAt: Date | null;
       }> };
+
+  const interventionsMeta = includeInterventions
+    ? await db.execute<{
+        totalInterventions: number;
+        lastUpdated: Date | null;
+      }>(sql`
+        select
+          count(*)::int as "totalInterventions",
+          max(
+            greatest(
+              coalesce(i.updated_at, i.created_at),
+              coalesce(i.completed_date, i.created_at)
+            )
+          ) as "lastUpdated"
+        from ${tables.interventions} i
+        where i.district_id = ${districtId}
+          ${scopedInstitutionId ? sql`and i.institution_id = ${scopedInstitutionId}` : sql``}
+      `)
+    : { rows: [] as Array<{ totalInterventions: number; lastUpdated: Date | null }> };
 
   const interventionsResult = includeInterventions
     ? await db.execute<{
@@ -178,21 +230,46 @@ export async function GET(request: NextRequest) {
         studentIdentifier: string | null;
       }> };
 
+  const studentsMetaRow = studentsMeta.rows[0];
+  const insightsMetaRow = insightsMeta.rows[0];
+  const interventionsMetaRow = interventionsMeta.rows[0];
+  const studentsVersion = includeStudents
+    ? [
+        `count:${studentsMetaRow?.totalStudents ?? 0}`,
+        `updated:${toIso(studentsMetaRow?.lastUpdated ?? null) ?? '0'}`
+      ].join('|')
+    : null;
+  const insightsVersion = includeInsights
+    ? [
+        `count:${insightsMetaRow?.totalInsights ?? 0}`,
+        `updated:${toIso(insightsMetaRow?.lastUpdated ?? null) ?? '0'}`
+      ].join('|')
+    : null;
+  const interventionsVersion = includeInterventions
+    ? [
+        `count:${interventionsMetaRow?.totalInterventions ?? 0}`,
+        `updated:${toIso(interventionsMetaRow?.lastUpdated ?? null) ?? '0'}`
+      ].join('|')
+    : null;
+
   return NextResponse.json({
     students: studentsResult.rows.map((row) => ({
       ...row,
       lastActivity: toIso(row.lastActivity),
       predictionDate: toIso(row.predictionDate)
     })),
+    studentsVersion,
     insights: insightsResult.rows.map((row) => ({
       ...row,
       createdAt: toIso(row.createdAt)
     })),
+    insightsVersion,
     interventions: interventionsResult.rows.map((row) => ({
       ...row,
       dueDate: toIso(row.dueDate),
       createdAt: toIso(row.createdAt),
       completedDate: toIso(row.completedDate)
-    }))
+    })),
+    interventionsVersion
   });
 }

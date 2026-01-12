@@ -26,6 +26,7 @@ export default async function AppLayout({
   return (
     <AppDataProvider
       institutions={institutions}
+      districtId={district?.id ?? null}
       initialInstitutionId={institution?.id ?? null}
       initialStudents={[]}
       initialInsights={[]}

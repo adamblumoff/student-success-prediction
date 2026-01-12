@@ -28,7 +28,12 @@ const statusTone = (status: string | null) => {
 };
 
 export default function InterventionTable({ initialRows }: { initialRows: Row[] }) {
-  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+  const {
+    selectedInstitutionId,
+    markDashboardStatsStale,
+    markInsightsStale,
+    markInterventionsStale
+  } = useAppData();
   const [rows, setRows] = useState(initialRows);
   const [isPending, startTransition] = useTransition();
 
@@ -48,6 +53,8 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
       );
       if (selectedInstitutionId) {
         markDashboardStatsStale(selectedInstitutionId);
+        markInsightsStale(selectedInstitutionId);
+        markInterventionsStale(selectedInstitutionId);
       }
     });
   };
@@ -58,6 +65,8 @@ export default function InterventionTable({ initialRows }: { initialRows: Row[] 
       setRows((prev) => prev.filter((row) => row.intervention.id !== id));
       if (selectedInstitutionId) {
         markDashboardStatsStale(selectedInstitutionId);
+        markInsightsStale(selectedInstitutionId);
+        markInterventionsStale(selectedInstitutionId);
       }
     });
   };

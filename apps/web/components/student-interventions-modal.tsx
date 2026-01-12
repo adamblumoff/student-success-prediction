@@ -40,7 +40,12 @@ export default function StudentInterventionsModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+  const {
+    selectedInstitutionId,
+    markDashboardStatsStale,
+    markInsightsStale,
+    markInterventionsStale
+  } = useAppData();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [student, setStudent] = useState<StudentInfo | null>(null);
@@ -128,6 +133,8 @@ export default function StudentInterventionsModal({
         );
         if (selectedInstitutionId) {
           markDashboardStatsStale(selectedInstitutionId);
+          markInsightsStale(selectedInstitutionId);
+          markInterventionsStale(selectedInstitutionId);
         }
       }
       cancelEdit();
@@ -145,6 +152,8 @@ export default function StudentInterventionsModal({
       setRows((prev) => prev.filter((row) => row.id !== rowId));
       if (selectedInstitutionId) {
         markDashboardStatsStale(selectedInstitutionId);
+        markInsightsStale(selectedInstitutionId);
+        markInterventionsStale(selectedInstitutionId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Delete failed');

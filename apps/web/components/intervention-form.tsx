@@ -63,7 +63,12 @@ export default function InterventionForm({
   prefillStudentName?: string | null;
   prefillSource?: 'insight' | 'student' | null;
 }) {
-  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+  const {
+    selectedInstitutionId,
+    markDashboardStatsStale,
+    markInsightsStale,
+    markInterventionsStale
+  } = useAppData();
   const [state, formAction] = useActionState(createInterventionAction, initialState);
   const [templateId, setTemplateId] = useState('');
   const [title, setTitle] = useState(() => defaults?.title ?? '');
@@ -96,7 +101,15 @@ export default function InterventionForm({
     if (state.status !== 'success') return;
     if (!selectedInstitutionId) return;
     markDashboardStatsStale(selectedInstitutionId);
-  }, [markDashboardStatsStale, selectedInstitutionId, state.status]);
+    markInsightsStale(selectedInstitutionId);
+    markInterventionsStale(selectedInstitutionId);
+  }, [
+    markDashboardStatsStale,
+    markInsightsStale,
+    markInterventionsStale,
+    selectedInstitutionId,
+    state.status
+  ]);
 
 
   return (

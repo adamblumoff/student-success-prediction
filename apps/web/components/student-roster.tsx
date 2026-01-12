@@ -52,9 +52,21 @@ const getRiskLabel = (riskCategory: string | null) => {
 
 const STORAGE_PREFIX = 'insight-prefill:';
 
-export default function StudentRoster({ students }: { students: StudentWithRisk[] }) {
-  const { selectedInstitutionId, markDashboardStatsStale } = useAppData();
+export default function StudentRoster({
+  students,
+  versionKey
+}: {
+  students: StudentWithRisk[];
+  versionKey?: string;
+}) {
+  const {
+    selectedInstitutionId,
+    markDashboardStatsStale,
+    markInsightsStale,
+    markInterventionsStale
+  } = useAppData();
   const [roster, setRoster] = useState(students);
+  const lastVersionRef = useRef<string | null>(null);
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
   const [gradeFilter, setGradeFilter] = useState('all');
@@ -71,8 +83,10 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
   const visibleCountRef = useRef(visibleCount);
 
   useEffect(() => {
+    if (versionKey && lastVersionRef.current === versionKey) return;
     setRoster(students);
-  }, [students]);
+    lastVersionRef.current = versionKey ?? null;
+  }, [students, versionKey]);
 
   useEffect(() => {
     visibleCountRef.current = visibleCount;
@@ -228,6 +242,8 @@ export default function StudentRoster({ students }: { students: StudentWithRisk[
       setStatusMessage(`Deleted ${result.deletedCount} student(s).`);
       if (selectedInstitutionId) {
         markDashboardStatsStale(selectedInstitutionId);
+        markInsightsStale(selectedInstitutionId);
+        markInterventionsStale(selectedInstitutionId);
       }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'Delete failed.');
